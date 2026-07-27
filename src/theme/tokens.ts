@@ -79,7 +79,10 @@ export const spacing = {
   lg: 24,
   xl: 32,
   fab: 56,
-  tabBar: 56,
+  // Must match tabBarStyle.height in app/(tabs)/_layout.tsx. MadhavFab positions
+  // itself off this token; when the two drifted (56 here, 64 there) the FAB sat
+  // 8px low and crowded the tab bar. See /autoplan finding F5.
+  tabBar: 64,
   fabInset: 20,
 } as const;
 

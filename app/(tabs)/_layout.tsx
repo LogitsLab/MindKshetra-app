@@ -42,32 +42,37 @@ export default function TabsLayout() {
         tabBarShowLabel: false,
       }}
     >
+      {/*
+        tabBarShowLabel is false, so TabIcon renders the only text the user sees.
+        It must come from t() — passing literals here shipped an English-only tab
+        bar in a two-language app. See /autoplan finding F6.
+      */}
       <Tabs.Screen
         name="index"
         options={{
           title: t("navHome"),
-          tabBarIcon: ({ focused }) => <TabIcon label="Home" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon label={t("navHome")} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="explore/index"
         options={{
           title: t("navExplore"),
-          tabBarIcon: ({ focused }) => <TabIcon label="Explore" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon label={t("navExplore")} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="mood/index"
         options={{
           title: t("navMood"),
-          tabBarIcon: ({ focused }) => <TabIcon label="Mood" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon label={t("navMood")} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="astrology/index"
         options={{
           title: t("navAstrology"),
-          tabBarIcon: ({ focused }) => <TabIcon label="Jyotish" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon label={t("navAstrology")} focused={focused} />,
         }}
       />
       <Tabs.Screen name="explore/[chapter]" options={{ href: null }} />

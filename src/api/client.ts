@@ -1,3 +1,4 @@
+import { fetch as expoFetch } from "expo/fetch";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
 
 const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://mindkshetra.app").replace(
@@ -62,19 +63,101 @@ export type SseHandlers = {
   onChartEpigraph?: (text: string) => void;
 };
 
-/** Parse SSE from POST /api/chat */
+/**
+ * Dispatch a single SSE block (the text between two blank lines) to handlers.
+ *
+ * Extracted unchanged from the previous buffered implementation so the transport
+ * fix does not quietly alter parsing semantics.
+ */
+export function dispatchSseBlock(block: string, handlers: SseHandlers): void {
+  const lines = block.split("\n");
+  let event = "message";
+  let data = "";
+  for (const line of lines) {
+    if (line.startsWith("event:")) event = line.slice(6).trim();
+    else if (line.startsWith("data:")) data += line.slice(5).trim();
+  }
+  if (!data) return;
+  try {
+    const parsed = JSON.parse(data);
+    // API sends `{ type, ... }` without `event:` lines; prefer explicit event when present.
+    const kind =
+      event !== "message" ? event : typeof parsed.type === "string" ? parsed.type : "message";
+    switch (kind) {
+      case "session":
+        handlers.onSession?.(parsed.sessionId ?? parsed.id ?? parsed);
+        break;
+      case "citations":
+        handlers.onCitations?.(parsed.citations ?? parsed);
+        break;
+      case "token":
+        handlers.onToken?.(parsed.token ?? parsed.content ?? "");
+        break;
+      case "replace":
+        handlers.onReplace?.(parsed.content ?? parsed.text ?? "");
+        break;
+      case "reading":
+      case "chart":
+      case "chartContext":
+      case "epigraph":
+        handlers.onChartEpigraph?.(parsed.text ?? parsed.content ?? "");
+        break;
+      case "done":
+        handlers.onDone?.(parsed);
+        break;
+      case "error":
+        handlers.onError?.(parsed.error ?? parsed.message ?? "Chat error");
+        break;
+      default:
+        if (parsed.token) handlers.onToken?.(parsed.token);
+        else if (parsed.content && !parsed.type) handlers.onToken?.(parsed.content);
+        break;
+    }
+  } catch {
+    if (event === "token") handlers.onToken?.(data);
+  }
+}
+
+function networkMessage(e: unknown): string {
+  const msg = (e as Error)?.message;
+  if (!msg || /network request failed/i.test(msg)) {
+    return "Could not reach Madhav. Check your connection and try again.";
+  }
+  return msg;
+}
+
+/**
+ * Stream SSE from POST /api/chat.
+ *
+ * Uses `expo/fetch` rather than the global fetch: React Native's fetch is
+ * XHR-backed and never exposes `response.body`, so the previous implementation
+ * had to `await res.text()` and only fired onToken once the whole reply had
+ * landed. Chat looked frozen for the full model latency. See /autoplan finding F2.
+ *
+ * Falls back to the buffered path if streaming is unavailable at runtime, so a
+ * missing ReadableStream or TextDecoder degrades to the old behavior instead of
+ * throwing.
+ */
 export async function streamChat(
   body: Record<string, unknown>,
   handlers: SseHandlers,
   signal?: AbortSignal
 ): Promise<void> {
   const headers = await authHeaders();
-  const res = await fetch(`${API_URL}/api/chat`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-    signal,
-  });
+
+  let res: Awaited<ReturnType<typeof expoFetch>>;
+  try {
+    res = await expoFetch(`${API_URL}/api/chat`, {
+      method: "POST",
+      headers: { ...headers, Accept: "text/event-stream" },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (e) {
+    if ((e as Error)?.name === "AbortError") return;
+    handlers.onError?.(networkMessage(e));
+    return;
+  }
 
   if (!res.ok) {
     let message = res.statusText;
@@ -88,54 +171,41 @@ export async function streamChat(
     return;
   }
 
-  const text = await res.text();
-  const blocks = text.split("\n\n");
-  for (const block of blocks) {
-    const lines = block.split("\n");
-    let event = "message";
-    let data = "";
-    for (const line of lines) {
-      if (line.startsWith("event:")) event = line.slice(6).trim();
-      else if (line.startsWith("data:")) data += line.slice(5).trim();
-    }
-    if (!data) continue;
+  const stream = res.body;
+
+  if (!stream || typeof stream.getReader !== "function" || typeof TextDecoder === "undefined") {
     try {
-      const parsed = JSON.parse(data);
-      // API sends `{ type, ... }` without `event:` lines; prefer explicit event when present.
-      const kind =
-        event !== "message" ? event : typeof parsed.type === "string" ? parsed.type : "message";
-      switch (kind) {
-        case "session":
-          handlers.onSession?.(parsed.sessionId ?? parsed.id ?? parsed);
-          break;
-        case "citations":
-          handlers.onCitations?.(parsed.citations ?? parsed);
-          break;
-        case "token":
-          handlers.onToken?.(parsed.token ?? parsed.content ?? "");
-          break;
-        case "replace":
-          handlers.onReplace?.(parsed.content ?? parsed.text ?? "");
-          break;
-        case "reading":
-        case "chart":
-        case "chartContext":
-        case "epigraph":
-          handlers.onChartEpigraph?.(parsed.text ?? parsed.content ?? "");
-          break;
-        case "done":
-          handlers.onDone?.(parsed);
-          break;
-        case "error":
-          handlers.onError?.(parsed.error ?? parsed.message ?? "Chat error");
-          break;
-        default:
-          if (parsed.token) handlers.onToken?.(parsed.token);
-          else if (parsed.content && !parsed.type) handlers.onToken?.(parsed.content);
-          break;
-      }
-    } catch {
-      if (event === "token") handlers.onToken?.(data);
+      const text = await res.text();
+      for (const block of text.split("\n\n")) dispatchSseBlock(block, handlers);
+    } catch (e) {
+      if ((e as Error)?.name !== "AbortError") handlers.onError?.(networkMessage(e));
     }
+    return;
+  }
+
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      // stream: true keeps multi-byte sequences intact across chunk boundaries,
+      // which matters because Devanagari is 3 bytes per character.
+      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+
+      let idx: number;
+      while ((idx = buffer.indexOf("\n\n")) !== -1) {
+        dispatchSseBlock(buffer.slice(0, idx), handlers);
+        buffer = buffer.slice(idx + 2);
+      }
+    }
+
+    buffer += decoder.decode();
+    if (buffer.trim()) dispatchSseBlock(buffer, handlers);
+  } catch (e) {
+    if ((e as Error)?.name === "AbortError") return;
+    handlers.onError?.(networkMessage(e));
   }
 }

@@ -8,8 +8,6 @@ import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 
-const TAB_BAR_HEIGHT = 56;
-
 export function MadhavFab() {
   const pathname = usePathname();
   const router = useRouter();
@@ -47,8 +45,10 @@ export function MadhavFab() {
 
   if (hide) return null;
 
+  // VISUAL_SYSTEM.md wants clear air between the FAB and the tab bar, so this is
+  // tabBar height + a full md gap, not the previous sm gap that left them touching.
   const bottom =
-    insets.bottom + spacing.sm + (onTabs ? TAB_BAR_HEIGHT : spacing.md);
+    insets.bottom + (onTabs ? spacing.tabBar + spacing.md : spacing.md);
 
   return (
     <Animated.View

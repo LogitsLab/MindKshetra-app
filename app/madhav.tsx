@@ -17,6 +17,7 @@ import { chatApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
+import { detectUserCrisis, mentionsCrisisResource } from "@/safety/crisis";
 import {
   getChatSessionId,
   setChatSessionId,
@@ -25,10 +26,6 @@ import { radii, spacing } from "@/theme/tokens";
 import type { ChatMessage, Citation } from "@/types";
 
 type UiMessage = ChatMessage & { id: string };
-
-function looksLikeCrisis(text: string): boolean {
-  return /helpline|icall|9152987821|vandrevala|आत्महत्या|आपतकाल/i.test(text);
-}
 
 export default function MadhavScreen() {
   const router = useRouter();
@@ -95,8 +92,13 @@ export default function MadhavScreen() {
       if (!trimmed || sending.current) return;
       sending.current = true;
       setError(null);
-      setCrisisBanner(null);
       setInput("");
+
+      // Check the PERSON, not the reply. This fires before the request goes out,
+      // so the helpline is on screen even if the network is slow, the API errors,
+      // or the model answers without naming a resource. See src/safety/crisis.ts.
+      const userCrisis = detectUserCrisis(trimmed);
+      setCrisisBanner(userCrisis ? t("crisisBody") : null);
 
       const userMsg: UiMessage = {
         id: `u-${Date.now()}`,
@@ -177,10 +179,10 @@ export default function MadhavScreen() {
             },
             onError: (message) => {
               setError(message);
-              if (looksLikeCrisis(message)) setCrisisBanner(message);
+              if (!userCrisis && mentionsCrisisResource(message)) setCrisisBanner(message);
             },
             onDone: () => {
-              if (looksLikeCrisis(full)) setCrisisBanner(full);
+              if (!userCrisis && mentionsCrisisResource(full)) setCrisisBanner(full);
             },
           }
         );
@@ -195,13 +197,13 @@ export default function MadhavScreen() {
               m.id === assistantId ? { ...m, content: fallback, citations } : m
             )
           );
-        } else if (looksLikeCrisis(full)) {
+        } else if (!userCrisis && mentionsCrisisResource(full)) {
           setCrisisBanner(full);
         }
       } catch (e) {
         const message = (e as Error).message ?? "Chat failed";
         setError(message);
-        if (looksLikeCrisis(message)) setCrisisBanner(message);
+        if (!userCrisis && mentionsCrisisResource(message)) setCrisisBanner(message);
         setMessages((prev) => {
           const current = prev.find((m) => m.id === assistantId);
           if (current?.content?.trim()) return prev;
@@ -216,7 +218,7 @@ export default function MadhavScreen() {
         );
       }
     },
-    [messages, lang, sessionId, memberId, chartSessionId, setStreaming]
+    [messages, lang, sessionId, memberId, chartSessionId, setStreaming, t]
   );
 
   useEffect(() => {
@@ -229,7 +231,7 @@ export default function MadhavScreen() {
 
   const renderMessage = ({ item }: { item: UiMessage }) => {
     const isUser = item.role === "user";
-    const crisis = !isUser && looksLikeCrisis(item.content);
+    const crisis = !isUser && mentionsCrisisResource(item.content);
 
     return (
       <View
