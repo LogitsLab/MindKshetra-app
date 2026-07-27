@@ -150,8 +150,8 @@ function MoodPathMark({ size = 36 }: { size?: number }) {
 export type PathMarkKind = "explore" | "mood" | "madhav" | "astrology";
 
 /**
- * Full-width path card — landscape crop matches web `/images/paths/*`.
- * Portrait 2×2 tiles cropped those photos into unrecognizable slices.
+ * Path card for the home 2×2 grid. Landscape web photos use cover;
+ * keep tiles near-square so the scene stays recognizable.
  */
 export function PathTile({
   title,
@@ -180,18 +180,14 @@ export function PathTile({
         { opacity: pressed ? 0.94 : 1, borderColor: colors.line },
       ]}
     >
-      <Image
-        source={image}
-        style={styles.pathImage}
-        resizeMode="cover"
-      />
+      <Image source={image} style={styles.pathImage} resizeMode="cover" />
       <LinearGradient
         colors={[
-          "rgba(7,9,15,0.12)",
-          "rgba(7,9,15,0.4)",
-          "rgba(7,9,15,0.88)",
+          "rgba(7,9,15,0.1)",
+          "rgba(7,9,15,0.35)",
+          "rgba(7,9,15,0.9)",
         ]}
-        locations={[0, 0.5, 1]}
+        locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFillObject}
       />
       <View style={styles.pathFooter}>
@@ -203,9 +199,9 @@ export function PathTile({
               resizeMode="cover"
             />
           ) : mark === "mood" ? (
-            <MoodPathMark />
+            <MoodPathMark size={28} />
           ) : (
-            <ExplorePathMark />
+            <ExplorePathMark size={28} />
           )}
         </View>
         <Text variant="eyebrow" color={colors.brassSoft} numberOfLines={1}>
@@ -222,7 +218,7 @@ export function PathTile({
         <Text
           variant="soft"
           color={colors.onMediaMuted}
-          numberOfLines={2}
+          numberOfLines={1}
           style={styles.pathBody}
         >
           {body}
@@ -248,10 +244,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   path: {
-    width: "100%",
-    // Landscape — same framing as web object-cover path cards
-    aspectRatio: 16 / 10,
-    minHeight: 168,
+    flex: 1,
+    aspectRatio: 0.92,
     borderRadius: radii.lg,
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth * 2,
@@ -262,30 +256,30 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: "100%",
     height: "100%",
-    opacity: 0.78,
+    opacity: 0.8,
   },
   pathFooter: {
-    padding: spacing.md,
+    padding: spacing.sm + 4,
     justifyContent: "flex-end",
   },
   pathMark: {
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   madhavMark: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderColor: "rgba(201, 162, 39, 0.5)",
   },
   pathTitle: {
-    marginTop: 4,
-    fontSize: 22,
-    lineHeight: 28,
+    marginTop: 2,
+    fontSize: 17,
+    lineHeight: 22,
   },
   pathBody: {
-    marginTop: 4,
-    fontSize: 14,
-    lineHeight: 20,
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 16,
   },
 });
