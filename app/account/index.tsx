@@ -13,6 +13,9 @@ import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button, Hairline } from "@/components/Button";
+import { Panel } from "@/components/Panel";
+import { BrandMark } from "@/components/BrandMark";
+import { Rise } from "@/components/Rise";
 import { userApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -79,17 +82,22 @@ export default function AccountScreen() {
         contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
         keyboardShouldPersistTaps="handled"
       >
-        <Text variant="eyebrow">{t("account")}</Text>
-        <Text variant="display" style={{ marginTop: spacing.sm }}>
-          {isSignedIn ? t("welcomeBack") : t("signInTitle")}
-        </Text>
-        <Text variant="soft" style={{ marginTop: spacing.sm }}>
-          {isAnonymous
-            ? t("upgradeAccountBlurb")
-            : isSignedIn
-              ? user?.email ?? t("libraryBlurb")
-              : t("accountSignInBlurb")}
-        </Text>
+        <Rise>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+            <BrandMark size={28} />
+            <Text variant="eyebrow">{t("account")}</Text>
+          </View>
+          <Text variant="display" style={{ marginTop: spacing.sm }}>
+            {isSignedIn ? t("welcomeBack") : t("signInTitle")}
+          </Text>
+          <Text variant="soft" style={{ marginTop: spacing.sm }}>
+            {isAnonymous
+              ? t("upgradeAccountBlurb")
+              : isSignedIn
+                ? user?.email ?? t("libraryBlurb")
+                : t("accountSignInBlurb")}
+          </Text>
+        </Rise>
 
         {!configured ? (
           <Text variant="muted" style={{ marginTop: spacing.md, color: colors.danger }}>
@@ -98,17 +106,12 @@ export default function AccountScreen() {
         ) : null}
 
         {isSignedIn && streak > 0 ? (
-          <View
-            style={[
-              styles.streak,
-              { borderColor: colors.line, backgroundColor: colors.panel },
-            ]}
-          >
+          <Panel style={{ marginTop: spacing.lg }}>
             <Text variant="eyebrow">{t("streakLabel")}</Text>
             <Text variant="title" style={{ marginTop: spacing.xs }}>
               {streak} {t("streakDays")}
             </Text>
-          </View>
+          </Panel>
         ) : null}
 
         <Hairline style={{ marginVertical: spacing.lg }} />

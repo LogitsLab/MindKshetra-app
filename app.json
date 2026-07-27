@@ -36,7 +36,6 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
-      "expo-sharing",
       "expo-apple-authentication",
       [
         "expo-splash-screen",
@@ -47,7 +46,7 @@
       ]
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": false
     }
   }
 }

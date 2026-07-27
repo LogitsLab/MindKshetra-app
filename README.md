@@ -12,13 +12,18 @@ Expo app for iOS and Android — same Supabase data and Next.js API as the [Mind
 
 ## Setup
 
+Requires **Expo Go for SDK 54** (App Store / Play Store current build).
+
 ```bash
 cp .env.example .env
 # Set EXPO_PUBLIC_API_URL, EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY
+# On a physical device, use your Mac LAN IP, e.g. http://192.168.x.x:3000
 
-npm install
+npm install --legacy-peer-deps
 npx expo start
 ```
+
+Scan the QR with Expo Go, or press `i` / `a` / `w`.
 
 ## Design
 

@@ -1,108 +1,56 @@
-# MindKshetra Mobile — Design R&D
+# MindKshetra Mobile — Visual System
 
-Locked visual and interaction system for the Expo app. Brand DNA from web `DESIGN.md`; composition is mobile-native.
+Shipped design language for Expo SDK 54. Brand DNA from web `DESIGN.md`; atmosphere and compositions are mobile-native.
 
-## Moodboard (direction)
+## Atmosphere
 
-- Night field / ink void with a single brass accent
-- Warm serif (Fraunces) for verse & brand; geometric sans (Sora) for chrome
-- Hairline borders, almost no shadows — elevation via surface opacity
-- Calm wellness apps (generous reading space, quiet chrome) without purple gradients or emoji UI
-- Reference energy: Gmail’s single FAB (one primary action) + immersive reading apps
+Fixed stack behind every `Screen` (unless `atmosphere="none"`):
 
-## Information architecture
+1. `assets/backgrounds/hero.jpg` — cover, focal slightly high
+2. Teal radial wash (top)
+3. Brass radial wash (top-right)
+4. Vertical void veil
+5. Optional brass breathe ring (respects reduce-motion)
 
-| Zone | Contents |
-|------|----------|
-| Bottom tabs (4) | Home · Explore · Mood · Astrology |
-| FAB (bottom-right) | Madhav — only primary floating action |
-| Stack / header | Account, Favorites, VOTD, Sloka detail, Madhav full-screen |
+## Brand
 
-Madhav is **not** a tab. Always open via the brass FAB.
+- **Mark:** lotus leaf SVG (`BrandMark`) — Home, Account, Astrology hero
+- **Madhav:** portrait on chat header; glyph on FAB (not letter-M)
+- **Type:** Fraunces display / Sanskrit; Sora body / chrome
+- **Accent:** brass only (`#c9a227` / `#e2c45a`). Teal is atmosphere-only.
 
-## Wireframe notes (key screens)
+## Surfaces
 
-### Home
-- Brand mark + “MindKshetra” as hero signal
-- One short line of supporting copy
-- Verse of the Day teaser (tap → VOTD)
-- Three path rows: Explore / Mood / Astrology (not a dashboard of cards)
-- Quiet streak chip near account avatar (top-right)
+| Primitive | Use |
+|-----------|-----|
+| `Panel` | Contained content with `--line` border |
+| `Glass` / blur panels | Reading / chat where supported (iOS BlurView) |
+| `surface` rows | Browse lists — hairline, not card soup |
+| Path tiles | Photo + media scrim (Explore / Mood / Madhav / Astrology) |
 
-### Explore
-- Search in header
-- Chapter grid (18) with thin brass progress marks
-- Chapter → verse list → Sloka
+## Navigation
 
-### Sloka (immersive)
-- Devanagari first, then IAST, then translation/meaning
-- Bottom toolbar: favorite · speak · share · journal · complete
-- FAB remains; long-press can “Ask Madhav about this verse”
+- Tabs: Home · Explore · Mood · Astrology with custom icons + blur tab bar
+- Madhav: brass FAB bottom-right with Madhav glyph + streaming pulse
+- Lists reserve `contentBottom` so FAB never covers the last row
 
-### Mood
-- 18 mood tiles, calm labels
-- Mood → matched verse list → Sloka
+## Motion
 
-### Astrology hub
-- Chart as hero when available
-- Segmented: Chart / Dasha / Predictions
-- Members list + Incognito entry
-- Details in bottom sheets where possible
+1. `Rise` — screen enter fade + 18px Y
+2. FAB haptic + pulse while streaming
+3. Favorite / complete haptics
+4. Tab active → brass-soft
+5. Kill all when reduce-motion is on
 
-### Madhav (full-screen from FAB)
-- Message list, citations as hairline list
-- Two-voice reply: chart epigraph (Fraunces) + Madhav glass reply
-- Composer pinned bottom; crisis helplines when triggered
+## Screen compositions
 
-### Account
-- Sign-in (anonymous / Google / Email / Apple)
-- Theme, language, profile, VOTD email, export, reflections
+- **Home:** brand + hero copy + VOTD glass + image path tiles
+- **Explore:** 2-col chapter grid with brass number rings
+- **Mood:** accent-tinted tiles
+- **Sloka:** immersive reading + brass divider + icon toolbar
+- **Madhav:** portrait header + glass replies + chart epigraph
+- **Astrology:** image hero + clear CTAs
 
-## FAB placement (thumb zone)
+## Anti-patterns
 
-```
-┌─────────────────────┐
-│                     │
-│      content        │
-│                     │
-│              ┌───┐  │  ← FAB ~16–20px from right
-│              │ M │  │     above tab bar + safe area
-│              └───┘  │
-├─────────────────────┤
-│  Home Explore Mood …│
-└─────────────────────┘
-```
-
-- Hide FAB on Madhav screen and when keyboard covers composer
-- Lists use `paddingBottom` ≥ FAB height + tab bar + 24
-
-## Motion / haptic shortlist (max 5)
-
-1. Screen enter: soft fade + 8px rise (200ms)
-2. FAB tap: light haptic + spring open to Madhav
-3. Favorite / verse complete: light haptic + brass flash
-4. Madhav streaming: low-opacity brass pulse on FAB (when minimized) or on send button
-5. Tab focus: subtle label color to brass-soft
-
-`prefers-reduced-motion` / accessibility: disable non-essential motion; keep haptics optional.
-
-## Light + dark QA targets
-
-| Token | Dark | Light |
-|-------|------|-------|
-| void | `#07090f` | cool mist field (near-transparent over soft blue-grey) |
-| field | `#0e1420` | translucent white-mist |
-| brass | `#c9a227` | `#c9a227` |
-| brass-soft | `#e2c45a` | `#8a6410` |
-| text | `#eef2f7` | `#0c1220` |
-| text-soft | `#c3ccd9` | `#2b3a4f` |
-| text-muted | `#9aa8bc` | `#334155` |
-
-## Anti-patterns (do not ship)
-
-- Multi-FAB / speed-dial
-- Purple-to-indigo wellness gradients
-- Cream + terracotta “AI default” look
-- Card soup on Home
-- Stats strips / pill clusters in the first viewport
-- Uppercase or letter-spacing on Devanagari
+No purple gradients, multi-FAB, emoji chrome, uppercase Devanagari, or dashboard stats strips on Home.

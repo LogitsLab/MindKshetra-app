@@ -1,12 +1,14 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet, View } from "react-native";
+import { Animated, Pressable, StyleSheet } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Text } from "@/components/Text";
+import { MadhavMark } from "@/components/BrandMark";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
+
+const TAB_BAR_HEIGHT = spacing.tabBar;
 
 export function MadhavFab() {
   const pathname = usePathname();
@@ -17,8 +19,7 @@ export function MadhavFab() {
   const pulse = useRef(new Animated.Value(1)).current;
 
   const hide =
-    pathname?.includes("/madhav") ||
-    pathname?.includes("auth/callback");
+    pathname?.includes("/madhav") || pathname?.includes("auth/callback");
 
   const onTabs =
     pathname === "/" ||
@@ -35,8 +36,16 @@ export function MadhavFab() {
     }
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.08, duration: 700, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulse, {
+          toValue: 1.08,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
       ])
     );
     loop.start();
@@ -45,10 +54,8 @@ export function MadhavFab() {
 
   if (hide) return null;
 
-  // VISUAL_SYSTEM.md wants clear air between the FAB and the tab bar, so this is
-  // tabBar height + a full md gap, not the previous sm gap that left them touching.
   const bottom =
-    insets.bottom + (onTabs ? spacing.tabBar + spacing.md : spacing.md);
+    insets.bottom + spacing.sm + (onTabs ? TAB_BAR_HEIGHT : spacing.md);
 
   return (
     <Animated.View
@@ -69,9 +76,7 @@ export function MadhavFab() {
           router.push("/madhav");
         }}
         onLongPress={() => {
-          if (slokaId) {
-            askAboutVerse(slokaId);
-          }
+          if (slokaId) askAboutVerse(slokaId);
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           router.push("/madhav");
         }}
@@ -79,22 +84,12 @@ export function MadhavFab() {
           styles.fab,
           {
             backgroundColor: colors.brass,
-            opacity: pressed ? 0.85 : 1,
+            opacity: pressed ? 0.88 : 1,
             shadowColor: colors.brass,
           },
         ]}
       >
-        <View style={[styles.ring, { borderColor: colors.onBrass }]}>
-          <Text
-            style={{
-              color: colors.onBrass,
-              fontFamily: "Fraunces_600SemiBold",
-              fontSize: 18,
-            }}
-          >
-            M
-          </Text>
-        </View>
+        <MadhavMark size={30} />
       </Pressable>
     </Animated.View>
   );
@@ -111,17 +106,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.fab,
     alignItems: "center",
     justifyContent: "center",
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  ring: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    alignItems: "center",
-    justifyContent: "center",
+    elevation: 8,
   },
 });

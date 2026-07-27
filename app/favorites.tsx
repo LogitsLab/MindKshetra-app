@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
+import { Rise } from "@/components/Rise";
 import { SlokaCard, EmptyState } from "@/components/SlokaCard";
 import { userApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
@@ -67,12 +68,14 @@ export default function FavoritesScreen() {
 
   return (
     <Screen>
-      <Text variant="display" style={{ marginTop: spacing.sm }}>
-        {t("favorites")}
-      </Text>
-      <Text variant="soft" style={{ marginTop: spacing.xs }}>
-        {t("favoritesBlurb")}
-      </Text>
+      <Rise>
+        <Text variant="display" style={{ marginTop: spacing.sm }}>
+          {t("favorites")}
+        </Text>
+        <Text variant="soft" style={{ marginTop: spacing.xs }}>
+          {t("favoritesBlurb")}
+        </Text>
+      </Rise>
       {loading ? (
         <ActivityIndicator color={colors.brass} style={{ marginTop: spacing.xl }} />
       ) : error ? (

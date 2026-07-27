@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
+import { Panel } from "@/components/Panel";
+import { Rise } from "@/components/Rise";
+import { BrandMark } from "@/components/BrandMark";
 import { astrologyApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
-import { radii, spacing } from "@/theme/tokens";
+import { images } from "@/theme/assets";
+import { spacing } from "@/theme/tokens";
 import type { AstrologyMember } from "@/types";
 
 export default function AstrologyHub() {
@@ -28,20 +33,39 @@ export default function AstrologyHub() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}>
-        <Text variant="display">{lang === "hi" ? "ज्योतिष" : "Astrology"}</Text>
-        <Text variant="soft" style={{ marginTop: spacing.sm }}>
-          {lang === "hi"
-            ? "कुंडली के साथ गीता पढ़ें।"
-            : "Read the Gita beside a birth chart."}
-        </Text>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: spacing.contentBottom, paddingTop: spacing.sm }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Rise>
+          <Text variant="display">{lang === "hi" ? "ज्योतिष" : "Astrology"}</Text>
+          <Text variant="soft" style={{ marginTop: spacing.sm }}>
+            {lang === "hi"
+              ? "जन्म कुंडली, दशा और विस्तृत ज्योतिष पठन।"
+              : "Birth charts, dashas, and detailed Jyotish readings."}
+          </Text>
+        </Rise>
 
-        <View style={[styles.hero, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-          <Text variant="eyebrow">Chart</Text>
-          <Text variant="title" style={{ marginTop: spacing.sm }}>
+        <View style={styles.hero}>
+          <Image
+            source={images.pathExplore}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={["transparent", "rgba(7,9,15,0.55)", "rgba(7,9,15,0.92)"]}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <View style={styles.heroMark}>
+            <BrandMark size={40} />
+          </View>
+          <Text variant="eyebrow" color={colors.brassSoft}>
+            Chart
+          </Text>
+          <Text variant="title" color={colors.onMedia} style={{ marginTop: spacing.sm }}>
             {lang === "hi" ? "कुंडली केंद्र" : "Chart center"}
           </Text>
-          <Text variant="soft" style={{ marginTop: spacing.xs }}>
+          <Text variant="soft" color={colors.onMediaMuted} style={{ marginTop: spacing.xs }}>
             {lang === "hi"
               ? "सदस्य सहेजें या गुप्त सत्र शुरू करें।"
               : "Save members or start an incognito session."}
@@ -60,7 +84,10 @@ export default function AstrologyHub() {
           />
           {!isSignedIn ? (
             <Pressable onPress={() => router.push("/account")}>
-              <Text variant="muted" style={{ textAlign: "center", marginTop: spacing.sm }}>
+              <Text
+                variant="muted"
+                style={{ textAlign: "center", marginTop: spacing.sm }}
+              >
                 {lang === "hi"
                   ? "सदस्य सहेजने के लिए साइन इन करें"
                   : "Sign in to save members"}
@@ -70,13 +97,19 @@ export default function AstrologyHub() {
         </View>
 
         {members.length > 0 ? (
-          <View style={{ marginTop: spacing.xl }}>
+          <Panel style={{ marginTop: spacing.xl }}>
             <Text variant="eyebrow">Recent</Text>
-            {members.slice(0, 5).map((m) => (
+            {members.slice(0, 5).map((m, i) => (
               <Pressable
                 key={m.id}
                 onPress={() => router.push(`/astrology/members/${m.id}`)}
-                style={[styles.member, { borderColor: colors.hairline }]}
+                style={[
+                  styles.member,
+                  {
+                    borderBottomColor: colors.hairline,
+                    borderBottomWidth: i === members.slice(0, 5).length - 1 ? 0 : StyleSheet.hairlineWidth * 2,
+                  },
+                ]}
               >
                 <Text variant="title" style={{ fontSize: 18 }}>
                   {m.name}
@@ -84,7 +117,7 @@ export default function AstrologyHub() {
                 <Text variant="muted">{m.placeLabel ?? m.dob}</Text>
               </Pressable>
             ))}
-          </View>
+          </Panel>
         ) : null}
       </ScrollView>
     </Screen>
@@ -94,14 +127,19 @@ export default function AstrologyHub() {
 const styles = StyleSheet.create({
   hero: {
     marginTop: spacing.lg,
+    minHeight: 180,
+    borderRadius: 16,
+    overflow: "hidden",
+    justifyContent: "flex-end",
     padding: spacing.lg,
-    borderRadius: radii.lg,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    minHeight: 140,
-    justifyContent: "center",
+  },
+  heroMark: {
+    position: "absolute",
+    top: spacing.md,
+    right: spacing.md,
+    opacity: 0.9,
   },
   member: {
     paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
   },
 });

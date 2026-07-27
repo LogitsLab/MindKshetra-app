@@ -10,11 +10,13 @@ import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
+import { Panel } from "@/components/Panel";
+import { Rise } from "@/components/Rise";
 import { EmptyState } from "@/components/SlokaCard";
 import { contentApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
-import { radii, spacing } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 import type { Sloka } from "@/types";
 
 export default function VerseOfTheDayScreen() {
@@ -51,7 +53,7 @@ export default function VerseOfTheDayScreen() {
 
   if (loading) {
     return (
-      <Screen>
+      <Screen atmosphere="soft">
         <ActivityIndicator color={colors.brass} style={{ marginTop: spacing.xl }} />
       </Screen>
     );
@@ -62,7 +64,10 @@ export default function VerseOfTheDayScreen() {
       <Screen>
         <EmptyState
           title={lang === "hi" ? "श्लोक नहीं मिला" : "Verse unavailable"}
-          body={error ?? (lang === "hi" ? "बाद में फिर कोशिश करें।" : "Try again later.")}
+          body={
+            error ??
+            (lang === "hi" ? "बाद में फिर कोशिश करें।" : "Try again later.")
+          }
         />
       </Screen>
     );
@@ -72,32 +77,33 @@ export default function VerseOfTheDayScreen() {
     lang === "hi" ? sloka.hindi_translation : sloka.english_translation;
 
   return (
-    <Screen>
+    <Screen atmosphere="soft">
       <ScrollView contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}>
-        <Text variant="eyebrow">Verse of the day</Text>
-        <Text variant="display" style={{ marginTop: spacing.sm }}>
-          {lang === "hi" ? "आज का श्लोक" : "Today’s verse"}
-        </Text>
+        <Rise>
+          <Text variant="eyebrow" color={colors.brassSoft}>
+            Verse of the day
+          </Text>
+          <Text variant="display" style={{ marginTop: spacing.sm }}>
+            {lang === "hi" ? "आज का श्लोक" : "Today’s verse"}
+          </Text>
+        </Rise>
 
-        <Pressable
-          onPress={() => router.push(`/sloka/${sloka.id}`)}
-          style={[
-            styles.card,
-            { backgroundColor: colors.panel, borderColor: colors.line },
-          ]}
-        >
-          <Text variant="eyebrow">
-            {sloka.chapter}.{sloka.verse_number}
-          </Text>
-          <Text variant="sanskrit" style={{ marginTop: spacing.md }}>
-            {sloka.sanskrit_devanagari}
-          </Text>
-          <Text variant="muted" style={{ marginTop: spacing.md }}>
-            {sloka.transliteration_iast}
-          </Text>
-          <Text variant="soft" style={{ marginTop: spacing.lg, fontSize: 17 }}>
-            {translation}
-          </Text>
+        <Pressable onPress={() => router.push(`/sloka/${sloka.id}`)}>
+          <Panel style={{ marginTop: spacing.lg }}>
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {sloka.chapter}.{sloka.verse_number}
+            </Text>
+            <Text variant="sanskrit" style={{ marginTop: spacing.md }}>
+              {sloka.sanskrit_devanagari}
+            </Text>
+            <View style={[styles.divider, { backgroundColor: colors.line }]} />
+            <Text variant="muted" style={{ marginTop: spacing.md, fontStyle: "italic" }}>
+              {sloka.transliteration_iast}
+            </Text>
+            <Text variant="soft" style={{ marginTop: spacing.lg, fontSize: 17 }}>
+              {translation}
+            </Text>
+          </Panel>
         </Pressable>
 
         <View style={{ marginTop: spacing.lg }}>
@@ -112,10 +118,9 @@ export default function VerseOfTheDayScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: {
+  divider: {
     marginTop: spacing.lg,
-    padding: spacing.lg,
-    borderRadius: radii.lg,
-    borderWidth: StyleSheet.hairlineWidth * 2,
+    height: StyleSheet.hairlineWidth * 2,
+    width: 48,
   },
 });

@@ -46,9 +46,9 @@ export function Button({
             ? colors.brass
             : isDanger
               ? colors.dangerBg
-              : colors.surface,
+              : "rgba(255,255,255,0.08)",
           borderColor: isPrimary ? colors.brass : colors.line,
-          opacity: pressed || disabled ? 0.75 : 1,
+          opacity: pressed || disabled ? 0.8 : 1,
         },
       ]}
       {...rest}
@@ -60,6 +60,7 @@ export function Button({
           variant="body"
           style={{
             fontFamily: "Sora_600SemiBold",
+            fontSize: 15,
             color: isPrimary
               ? colors.onBrass
               : isDanger
@@ -76,7 +77,14 @@ export function Button({
 
 export function Hairline({ style }: { style?: object }) {
   const { colors } = useTheme();
-  return <View style={[{ height: StyleSheet.hairlineWidth * 2, backgroundColor: colors.hairline }, style]} />;
+  return (
+    <View
+      style={[
+        { height: StyleSheet.hairlineWidth * 2, backgroundColor: colors.hairline },
+        style,
+      ]}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

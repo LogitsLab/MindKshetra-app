@@ -16,12 +16,17 @@ export type ThemeColors = {
   surfaceHover: string;
   panel: string;
   panelStrong: string;
+  glass: string;
   inputBg: string;
   hairline: string;
   scrim: string;
   danger: string;
   dangerBg: string;
   navBg: string;
+  onMedia: string;
+  onMediaMuted: string;
+  atmosphereTeal: string;
+  atmosphereBrass: string;
 };
 
 export const darkColors: ThemeColors = {
@@ -38,14 +43,19 @@ export const darkColors: ThemeColors = {
   line: "rgba(201, 162, 39, 0.22)",
   surface: "rgba(238, 242, 247, 0.04)",
   surfaceHover: "rgba(238, 242, 247, 0.08)",
-  panel: "rgba(14, 20, 32, 0.85)",
-  panelStrong: "rgba(14, 20, 32, 0.92)",
+  panel: "rgba(14, 20, 32, 0.55)",
+  panelStrong: "rgba(14, 20, 32, 0.78)",
+  glass: "rgba(14, 20, 32, 0.55)",
   inputBg: "rgba(0, 0, 0, 0.28)",
   hairline: "rgba(255, 255, 255, 0.06)",
   scrim: "rgba(7, 9, 15, 0.72)",
   danger: "#f0c4c8",
   dangerBg: "rgba(140, 60, 70, 0.2)",
-  navBg: "rgba(7, 9, 15, 0.92)",
+  navBg: "rgba(7, 9, 15, 0.85)",
+  onMedia: "#f4f6fa",
+  onMediaMuted: "rgba(238, 242, 247, 0.78)",
+  atmosphereTeal: "rgba(61, 122, 106, 0.22)",
+  atmosphereBrass: "rgba(201, 162, 39, 0.08)",
 };
 
 export const lightColors: ThemeColors = {
@@ -62,14 +72,19 @@ export const lightColors: ThemeColors = {
   line: "rgba(107, 78, 10, 0.28)",
   surface: "rgba(255, 255, 255, 0.55)",
   surfaceHover: "rgba(255, 255, 255, 0.72)",
-  panel: "rgba(255, 255, 255, 0.85)",
-  panelStrong: "rgba(255, 255, 255, 0.92)",
+  panel: "rgba(255, 255, 255, 0.55)",
+  panelStrong: "rgba(255, 255, 255, 0.72)",
+  glass: "rgba(255, 255, 255, 0.82)",
   inputBg: "rgba(255, 255, 255, 0.4)",
   hairline: "rgba(12, 18, 32, 0.14)",
   scrim: "rgba(12, 18, 32, 0.18)",
   danger: "#9f1239",
   dangerBg: "rgba(159, 18, 57, 0.1)",
-  navBg: "rgba(248, 250, 252, 0.92)",
+  navBg: "rgba(248, 250, 252, 0.55)",
+  onMedia: "#f8fafc",
+  onMediaMuted: "rgba(248, 250, 252, 0.82)",
+  atmosphereTeal: "rgba(15, 118, 110, 0.08)",
+  atmosphereBrass: "rgba(201, 162, 39, 0.1)",
 };
 
 export const spacing = {
@@ -78,17 +93,34 @@ export const spacing = {
   md: 16,
   lg: 24,
   xl: 32,
+  xxl: 48,
   fab: 56,
-  // Must match tabBarStyle.height in app/(tabs)/_layout.tsx. MadhavFab positions
-  // itself off this token; when the two drifted (56 here, 64 there) the FAB sat
-  // 8px low and crowded the tab bar. See /autoplan finding F5.
   tabBar: 64,
   fabInset: 20,
+  contentBottom: 140,
 } as const;
 
 export const radii = {
   sm: 8,
   md: 12,
   lg: 16,
+  xl: 20,
   fab: 28,
+} as const;
+
+export const motion = {
+  enterMs: 700,
+  riseY: 18,
+  staggerMs: 120,
+  fabPulseMs: 700,
+} as const;
+
+export const typeScale = {
+  display: { size: 32, line: 38 },
+  title: { size: 22, line: 28 },
+  sanskrit: { size: 24, line: 36 },
+  body: { size: 16, line: 24 },
+  soft: { size: 15, line: 22 },
+  muted: { size: 13, line: 18 },
+  eyebrow: { size: 11, line: 14 },
 } as const;

@@ -9,6 +9,8 @@ import {
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
+import { Panel } from "@/components/Panel";
+import { Rise } from "@/components/Rise";
 import { getChapterMetas } from "@/data/chapters";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -33,51 +35,58 @@ export default function ExploreScreen() {
 
   return (
     <Screen>
-      <Text variant="display" style={{ marginTop: spacing.md }}>
-        {lang === "hi" ? "अन्वेषण" : "Explore"}
-      </Text>
-      <TextInput
-        value={q}
-        onChangeText={setQ}
-        placeholder={lang === "hi" ? "अध्याय खोजें" : "Search chapters"}
-        placeholderTextColor={colors.textMuted}
-        style={[
-          styles.search,
-          {
-            backgroundColor: colors.inputBg,
-            borderColor: colors.line,
-            color: colors.text,
-          },
-        ]}
-      />
+      <Rise>
+        <Text variant="display" style={{ marginTop: spacing.sm }}>
+          {lang === "hi" ? "अन्वेषण" : "Explore"}
+        </Text>
+        <Text variant="soft" style={{ marginTop: spacing.xs }}>
+          {lang === "hi" ? "अठारह अध्याय, एक मार्ग" : "Eighteen chapters, one path"}
+        </Text>
+      </Rise>
+      <Panel style={{ marginTop: spacing.md, padding: 0 }} padded={false}>
+        <TextInput
+          value={q}
+          onChangeText={setQ}
+          placeholder={lang === "hi" ? "अध्याय खोजें" : "Search chapters"}
+          placeholderTextColor={colors.textMuted}
+          style={[styles.search, { color: colors.text }]}
+        />
+      </Panel>
       <FlatList
         data={chapters}
         keyExtractor={(c) => String(c.number)}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        numColumns={2}
+        columnWrapperStyle={{ gap: spacing.sm }}
+        contentContainerStyle={{
+          gap: spacing.sm,
+          paddingTop: spacing.md,
+          paddingBottom: spacing.contentBottom,
+        }}
         renderItem={({ item }) => (
           <Pressable
             onPress={() => router.push(`/(tabs)/explore/${item.number}`)}
             style={({ pressed }) => [
-              styles.row,
+              styles.tile,
               {
                 backgroundColor: pressed ? colors.surfaceHover : colors.surface,
-                borderColor: colors.hairline,
+                borderColor: colors.line,
               },
             ]}
           >
-            <View style={[styles.num, { borderColor: colors.line }]}>
-              <Text color={colors.brassSoft} style={{ fontFamily: "Sora_600SemiBold" }}>
+            <View style={[styles.progress, { borderColor: colors.brass }]}>
+              <Text
+                color={colors.brassSoft}
+                style={{ fontFamily: "Sora_600SemiBold", fontSize: 13 }}
+              >
                 {item.number}
               </Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text variant="title" style={{ fontSize: 18 }}>
-                {item.name}
-              </Text>
-              <Text variant="muted" style={{ marginTop: 2 }}>
-                {item.name_sanskrit} · {item.verses_count} verses
-              </Text>
-            </View>
+            <Text variant="title" style={{ fontSize: 16, marginTop: spacing.sm }} numberOfLines={2}>
+              {item.name}
+            </Text>
+            <Text variant="muted" style={{ marginTop: 4 }} numberOfLines={1}>
+              {item.verses_count} verses
+            </Text>
           </Pressable>
         )}
       />
@@ -87,28 +96,22 @@ export default function ExploreScreen() {
 
 const styles = StyleSheet.create({
   search: {
-    marginTop: spacing.md,
-    marginBottom: spacing.md,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radii.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: 12,
+    paddingVertical: 14,
     fontFamily: "Sora_400Regular",
     fontSize: 16,
   },
-  row: {
-    flexDirection: "row",
-    gap: spacing.md,
-    alignItems: "center",
-    padding: spacing.md,
-    borderRadius: radii.md,
+  tile: {
+    flex: 1,
+    minHeight: 120,
+    borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth * 2,
-    marginBottom: spacing.sm,
+    padding: spacing.md,
   },
-  num: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  progress: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth * 2,
     alignItems: "center",
     justifyContent: "center",

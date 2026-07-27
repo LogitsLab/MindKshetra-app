@@ -42,7 +42,7 @@ export default function ChapterScreen() {
 
   return (
     <Screen>
-      <Text variant="eyebrow" style={{ marginTop: spacing.sm }}>
+      <Text variant="eyebrow" style={{ marginTop: spacing.sm }} color={colors.brassSoft}>
         Chapter {chapterNum}
       </Text>
       <Text variant="display" style={{ marginTop: spacing.xs }}>

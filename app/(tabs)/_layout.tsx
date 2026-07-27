@@ -1,29 +1,18 @@
 import React from "react";
+import { Platform, StyleSheet } from "react-native";
+import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
-import { View, StyleSheet } from "react-native";
-import { Text } from "@/components/Text";
+import {
+  TabAstrologyIcon,
+  TabExploreIcon,
+  TabHomeIcon,
+  TabMoodIcon,
+} from "@/components/BrandMark";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 
-function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const { colors } = useTheme();
-  return (
-    <View style={styles.iconWrap}>
-      <Text
-        style={{
-          fontFamily: "Sora_600SemiBold",
-          fontSize: 11,
-          color: focused ? colors.brassSoft : colors.textMuted,
-        }}
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 export default function TabsLayout() {
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const { t } = useLanguage();
 
   return (
@@ -31,48 +20,62 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.navBg,
+          position: "absolute",
+          backgroundColor:
+            Platform.OS === "ios" ? "transparent" : colors.navBg,
           borderTopColor: colors.hairline,
+          borderTopWidth: StyleSheet.hairlineWidth * 2,
           height: 64,
           paddingBottom: 8,
           paddingTop: 8,
+          elevation: 0,
         },
+        tabBarBackground:
+          Platform.OS === "ios"
+            ? () => (
+                <BlurView
+                  intensity={mode === "dark" ? 40 : 60}
+                  tint={mode === "dark" ? "dark" : "light"}
+                  style={StyleSheet.absoluteFill}
+                />
+              )
+            : undefined,
         tabBarActiveTintColor: colors.brassSoft,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: {
+          fontFamily: "Sora_600SemiBold",
+          fontSize: 10,
+          marginTop: 2,
+        },
       }}
     >
-      {/*
-        tabBarShowLabel is false, so TabIcon renders the only text the user sees.
-        It must come from t() — passing literals here shipped an English-only tab
-        bar in a two-language app. See /autoplan finding F6.
-      */}
       <Tabs.Screen
         name="index"
         options={{
           title: t("navHome"),
-          tabBarIcon: ({ focused }) => <TabIcon label={t("navHome")} focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabHomeIcon focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="explore/index"
         options={{
           title: t("navExplore"),
-          tabBarIcon: ({ focused }) => <TabIcon label={t("navExplore")} focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabExploreIcon focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="mood/index"
         options={{
           title: t("navMood"),
-          tabBarIcon: ({ focused }) => <TabIcon label={t("navMood")} focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabMoodIcon focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="astrology/index"
         options={{
           title: t("navAstrology"),
-          tabBarIcon: ({ focused }) => <TabIcon label={t("navAstrology")} focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabAstrologyIcon focused={focused} />,
         }}
       />
       <Tabs.Screen name="explore/[chapter]" options={{ href: null }} />
@@ -80,7 +83,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  iconWrap: { alignItems: "center", justifyContent: "center" },
-});

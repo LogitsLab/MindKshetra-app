@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -22,6 +23,7 @@ import {
   getChatSessionId,
   setChatSessionId,
 } from "@/storage/local";
+import { images } from "@/theme/assets";
 import { radii, spacing } from "@/theme/tokens";
 import type { ChatMessage, Citation } from "@/types";
 
@@ -293,12 +295,33 @@ export default function MadhavScreen() {
   };
 
   return (
-    <Screen padded={false} edges={["left", "right", "bottom"]}>
+    <Screen padded={false} edges={["left", "right", "bottom"]} atmosphere="soft">
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={88}
       >
+        <View
+          style={[
+            styles.header,
+            { borderBottomColor: colors.hairline, backgroundColor: colors.panel },
+          ]}
+        >
+          <Image
+            source={images.madhavPortrait}
+            style={styles.portrait}
+            resizeMode="cover"
+          />
+          <View style={{ flex: 1 }}>
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              Madhav
+            </Text>
+            <Text variant="title" style={{ fontSize: 18, marginTop: 2 }}>
+              {lang === "hi" ? "माधव से पूछें" : "Ask Madhav"}
+            </Text>
+          </View>
+        </View>
+
         {crisisBanner ? (
           <View
             style={[
@@ -400,6 +423,19 @@ export default function MadhavScreen() {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+  },
+  portrait: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
   bubble: {
     maxWidth: "92%",
     borderWidth: StyleSheet.hairlineWidth * 2,
