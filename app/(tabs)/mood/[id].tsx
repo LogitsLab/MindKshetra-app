@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
-import { Text } from "@/components/Text";
 import { SlokaCard, EmptyState } from "@/components/SlokaCard";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { contentApi } from "@/api/endpoints";
 import { getMoodById } from "@/data/moods";
 import { useLanguage } from "@/context/LanguageContext";
@@ -40,9 +40,12 @@ export default function MoodDetailScreen() {
 
   return (
     <Screen>
-      <Text variant="display" style={{ marginTop: spacing.sm }}>
-        {lang === "hi" ? mood?.labelHi : mood?.label ?? id}
-      </Text>
+      <ScreenHeader
+        showBack
+        backFallback="/(tabs)/mood"
+        title={lang === "hi" ? mood?.labelHi : mood?.label ?? id}
+      />
+
       {loading ? (
         <View style={{ marginTop: spacing.xl }}>
           <ActivityIndicator color={colors.brass} />
@@ -58,7 +61,11 @@ export default function MoodDetailScreen() {
           ListEmptyComponent={
             <EmptyState
               title={lang === "hi" ? "कोई श्लोक नहीं" : "No verses yet"}
-              body={lang === "hi" ? "इस मनोदशा के लिए श्लोक नहीं मिले।" : "No verses for this mood."}
+              body={
+                lang === "hi"
+                  ? "इस मनोदशा के लिए श्लोक नहीं मिले।"
+                  : "No verses for this mood."
+              }
             />
           }
         />

@@ -6,8 +6,8 @@ import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
-import { Rise } from "@/components/Rise";
 import { BrandMark } from "@/components/BrandMark";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { astrologyApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -37,14 +37,14 @@ export default function AstrologyHub() {
         contentContainerStyle={{ paddingBottom: spacing.contentBottom, paddingTop: spacing.sm }}
         showsVerticalScrollIndicator={false}
       >
-        <Rise>
-          <Text variant="display">{lang === "hi" ? "ज्योतिष" : "Astrology"}</Text>
-          <Text variant="soft" style={{ marginTop: spacing.sm }}>
-            {lang === "hi"
+        <ScreenHeader
+          title={lang === "hi" ? "ज्योतिष" : "Astrology"}
+          subtitle={
+            lang === "hi"
               ? "जन्म कुंडली, दशा और विस्तृत ज्योतिष पठन।"
-              : "Birth charts, dashas, and detailed Jyotish readings."}
-          </Text>
-        </Rise>
+              : "Birth charts, dashas, and detailed Jyotish readings."
+          }
+        />
 
         <View style={styles.hero}>
           <Image

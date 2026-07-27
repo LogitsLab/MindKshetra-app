@@ -435,6 +435,8 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: "rgba(201, 162, 39, 0.45)",
   },
   bubble: {
     maxWidth: "92%",

@@ -6,12 +6,15 @@ import {
   Image,
   type StyleProp,
   type ViewStyle,
+  type ImageSourcePropType,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
 import { useTheme } from "@/context/ThemeContext";
+import { images } from "@/theme/assets";
 import { radii, spacing } from "@/theme/tokens";
 import type { Sloka } from "@/types";
 
@@ -88,19 +91,83 @@ export function EmptyState({
   );
 }
 
+function ExplorePathMark({ size = 36 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <Rect
+        x="10"
+        y="10"
+        width="44"
+        height="44"
+        stroke="#c9a227"
+        strokeWidth="1.25"
+        opacity={0.55}
+      />
+      <Path
+        d="M20 44V20h16l8 8v16H20z"
+        stroke="#e2c45a"
+        strokeWidth="1.25"
+      />
+      <Path d="M36 20v8h8" stroke="#e2c45a" strokeWidth="1.25" />
+      <Circle cx="32" cy="36" r="5" stroke="#c9a227" strokeWidth="1" />
+    </Svg>
+  );
+}
+
+function MoodPathMark({ size = 36 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <Circle
+        cx="32"
+        cy="32"
+        r="18"
+        stroke="#c9a227"
+        strokeWidth="1.25"
+        opacity={0.7}
+      />
+      <Path
+        d="M24 30c0-1.5 1.2-2.5 2.5-2.5S29 28.5 29 30"
+        stroke="#e2c45a"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+      />
+      <Path
+        d="M35 30c0-1.5 1.2-2.5 2.5-2.5S40 28.5 40 30"
+        stroke="#e2c45a"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+      />
+      <Path
+        d="M24 38c2.5 3 5.5 4.5 8 4.5s5.5-1.5 8-4.5"
+        stroke="#c9a227"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+export type PathMarkKind = "explore" | "mood" | "madhav" | "astrology";
+
+/**
+ * Full-width path card — landscape crop matches web `/images/paths/*`.
+ * Portrait 2×2 tiles cropped those photos into unrecognizable slices.
+ */
 export function PathTile({
   title,
   body,
   image,
   index,
   onPress,
+  mark = "explore",
   style,
 }: {
   title: string;
   body: string;
-  image: number;
+  image: ImageSourcePropType;
   index: string;
   onPress: () => void;
+  mark?: PathMarkKind;
   style?: StyleProp<ViewStyle>;
 }) {
   const { colors } = useTheme();
@@ -110,26 +177,37 @@ export function PathTile({
       style={({ pressed }) => [
         styles.path,
         style,
-        { opacity: pressed ? 0.92 : 1, borderColor: colors.line },
+        { opacity: pressed ? 0.94 : 1, borderColor: colors.line },
       ]}
     >
       <Image
         source={image}
-        style={StyleSheet.absoluteFillObject}
+        style={styles.pathImage}
         resizeMode="cover"
       />
-      {/* Heavy uniform scrim so bright tiles (Madhav) match quiet ones */}
-      <View style={styles.pathScrim} />
       <LinearGradient
         colors={[
-          "rgba(7,9,15,0.2)",
-          "rgba(7,9,15,0.55)",
-          "rgba(7,9,15,0.94)",
+          "rgba(7,9,15,0.12)",
+          "rgba(7,9,15,0.4)",
+          "rgba(7,9,15,0.88)",
         ]}
-        locations={[0, 0.45, 1]}
+        locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFillObject}
       />
       <View style={styles.pathFooter}>
+        <View style={styles.pathMark}>
+          {mark === "madhav" ? (
+            <Image
+              source={images.madhavMark}
+              style={styles.madhavMark}
+              resizeMode="cover"
+            />
+          ) : mark === "mood" ? (
+            <MoodPathMark />
+          ) : (
+            <ExplorePathMark />
+          )}
+        </View>
         <Text variant="eyebrow" color={colors.brassSoft} numberOfLines={1}>
           {index}
         </Text>
@@ -144,7 +222,7 @@ export function PathTile({
         <Text
           variant="soft"
           color={colors.onMediaMuted}
-          numberOfLines={1}
+          numberOfLines={2}
           style={styles.pathBody}
         >
           {body}
@@ -170,30 +248,44 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   path: {
-    flex: 1,
-    aspectRatio: 1,
+    width: "100%",
+    // Landscape — same framing as web object-cover path cards
+    aspectRatio: 16 / 10,
+    minHeight: 168,
     borderRadius: radii.lg,
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth * 2,
     justifyContent: "flex-end",
+    backgroundColor: "#0e1420",
   },
-  pathScrim: {
+  pathImage: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(7,9,15,0.35)",
+    width: "100%",
+    height: "100%",
+    opacity: 0.78,
   },
   pathFooter: {
-    padding: spacing.sm + 4,
-    minHeight: 72,
+    padding: spacing.md,
     justifyContent: "flex-end",
+  },
+  pathMark: {
+    marginBottom: spacing.xs,
+  },
+  madhavMark: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: "rgba(201, 162, 39, 0.5)",
   },
   pathTitle: {
     marginTop: 4,
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 22,
+    lineHeight: 28,
   },
   pathBody: {
-    marginTop: 2,
-    fontSize: 12,
-    lineHeight: 16,
+    marginTop: 4,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

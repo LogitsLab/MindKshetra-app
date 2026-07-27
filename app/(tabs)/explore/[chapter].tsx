@@ -4,6 +4,7 @@ import { useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { SlokaCard, EmptyState } from "@/components/SlokaCard";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { contentApi } from "@/api/endpoints";
 import { getChapterMeta } from "@/data/chapters";
 import { useLanguage } from "@/context/LanguageContext";
@@ -42,14 +43,14 @@ export default function ChapterScreen() {
 
   return (
     <Screen>
-      <Text variant="eyebrow" style={{ marginTop: spacing.sm }} color={colors.brassSoft}>
-        Chapter {chapterNum}
-      </Text>
-      <Text variant="display" style={{ marginTop: spacing.xs }}>
-        {meta?.name ?? `Chapter ${chapterNum}`}
-      </Text>
+      <ScreenHeader
+        showBack
+        backFallback="/(tabs)/explore"
+        title={meta?.name ?? `Chapter ${chapterNum}`}
+        subtitle={`Chapter ${chapterNum}`}
+      />
       {meta?.summary ? (
-        <Text variant="soft" style={{ marginTop: spacing.sm }}>
+        <Text variant="soft" style={{ marginBottom: spacing.sm }}>
           {meta.summary}
         </Text>
       ) : null}
@@ -69,7 +70,11 @@ export default function ChapterScreen() {
           ListEmptyComponent={
             <EmptyState
               title={lang === "hi" ? "कोई श्लोक नहीं" : "No verses"}
-              body={lang === "hi" ? "API से श्लोक नहीं मिले।" : "No verses returned from the API."}
+              body={
+                lang === "hi"
+                  ? "API से श्लोक नहीं मिले।"
+                  : "No verses returned from the API."
+              }
             />
           }
         />

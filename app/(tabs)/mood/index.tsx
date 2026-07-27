@@ -3,7 +3,7 @@ import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { Rise } from "@/components/Rise";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { moods } from "@/data/moods";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -17,16 +17,15 @@ export default function MoodScreen() {
 
   return (
     <Screen>
-      <Rise>
-        <Text variant="display" style={{ marginTop: spacing.sm }}>
-          {lang === "hi" ? "मनोदशा" : "Mood"}
-        </Text>
-        <Text variant="soft" style={{ marginTop: spacing.sm, marginBottom: spacing.md }}>
-          {lang === "hi"
+      <ScreenHeader
+        title={lang === "hi" ? "मनोदशा" : "Mood"}
+        subtitle={
+          lang === "hi"
             ? "आज कैसा अनुभव है — उसके लिए श्लोक।"
-            : "Choose how you feel. We’ll meet you with verses."}
-        </Text>
-      </Rise>
+            : "Choose how you feel. We’ll meet you with verses."
+        }
+        style={{ marginBottom: spacing.md }}
+      />
       <FlatList
         data={moods}
         keyExtractor={(m) => m.id}

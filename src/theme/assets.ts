@@ -1,9 +1,13 @@
 export const images = {
   hero: require("../../assets/backgrounds/hero.jpg"),
-  pathExplore: require("../../assets/paths/explore.jpg"),
-  pathMood: require("../../assets/paths/mood.jpg"),
-  pathMadhav: require("../../assets/paths/madhav.jpg"),
+  /** Exact copies of MindKshetra/public/images/paths/* */
+  pathExplore: require("../../assets/paths/path-explore.jpg"),
+  pathMood: require("../../assets/paths/path-mood.jpg"),
+  pathMadhav: require("../../assets/paths/path-madhav.jpg"),
+  /** Web placeholder: astrology reuses explore photo */
+  pathAstrology: require("../../assets/paths/path-explore.jpg"),
   madhavPortrait: require("../../assets/brand/madhav.jpg"),
+  madhavMark: require("../../assets/paths/path-madhav-mark.jpg"),
 };
 
 export const moodAccent: Record<string, string> = {

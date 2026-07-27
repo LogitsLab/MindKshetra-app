@@ -16,6 +16,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { Panel } from "@/components/Panel";
 import { PathTile } from "@/components/SlokaCard";
 import { Rise } from "@/components/Rise";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { contentApi, userApi } from "@/api/endpoints";
 import { moods } from "@/data/moods";
 import { useAuth } from "@/context/AuthContext";
@@ -81,6 +82,7 @@ export default function HomeScreen() {
       title: t("homeExploreTitle"),
       body: lang === "hi" ? "१८ अध्याय" : "18 chapters",
       image: images.pathExplore,
+      mark: "explore" as const,
       href: "/(tabs)/explore" as const,
     },
     {
@@ -88,6 +90,7 @@ export default function HomeScreen() {
       title: t("homeMoodTitle"),
       body: lang === "hi" ? "भाव से" : "By feeling",
       image: images.pathMood,
+      mark: "mood" as const,
       href: "/(tabs)/mood" as const,
     },
     {
@@ -95,13 +98,16 @@ export default function HomeScreen() {
       title: t("homeMadhavTitle"),
       body: lang === "hi" ? "पूछें और सुनें" : "Ask & listen",
       image: images.pathMadhav,
+      mark: "madhav" as const,
       href: "/madhav" as const,
     },
     {
       index: "04",
       title: t("homeAstroTitle"),
       body: lang === "hi" ? "आपकी कुंडली" : "Your chart",
+      // Same as web: astrology reuses explore path photo until a dedicated asset exists
       image: images.pathExplore,
+      mark: "astrology" as const,
       href: "/(tabs)/astrology" as const,
     },
   ];
@@ -116,36 +122,22 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Top chrome */}
-        <View style={styles.topRow}>
-          <Rise>
-            <View style={styles.brandRow}>
-              <BrandMark size={28} />
-              <Text
-                variant="muted"
-                style={{ marginLeft: spacing.sm }}
-                color={colors.brassSoft}
-              >
-                {streak > 0 ? `${streak} ${t("homeStreakLabel")}` : "MindKshetra"}
-              </Text>
-            </View>
-          </Rise>
-          <Pressable
-            onPress={() => router.push("/account")}
-            style={[
-              styles.avatar,
-              { borderColor: colors.line, backgroundColor: colors.panel },
-            ]}
-          >
-            <Text
-              style={{
-                color: colors.brassSoft,
-                fontFamily: "Sora_600SemiBold",
-              }}
-            >
-              A
-            </Text>
-          </Pressable>
-        </View>
+        <ScreenHeader
+          leading={
+            <Rise>
+              <View style={styles.brandRow}>
+                <BrandMark size={28} />
+                <Text
+                  variant="muted"
+                  style={{ marginLeft: spacing.sm }}
+                  color={colors.brassSoft}
+                >
+                  {streak > 0 ? `${streak} ${t("homeStreakLabel")}` : "MindKshetra"}
+                </Text>
+              </View>
+            </Rise>
+          }
+        />
 
         {/* Brand-first hero */}
         <Rise delay={motion.staggerMs} style={styles.hero}>
@@ -155,12 +147,9 @@ export default function HomeScreen() {
           >
             मनः
           </Text>
-          <Text variant="eyebrow" color={colors.brassSoft}>
-            {t("homeEyebrow")}
-          </Text>
           <Text
             variant="display"
-            style={{ marginTop: spacing.sm, fontSize: 40, lineHeight: 44 }}
+            style={{ fontSize: 40, lineHeight: 44 }}
           >
             MindKshetra
           </Text>
@@ -262,39 +251,18 @@ export default function HomeScreen() {
           <Text variant="eyebrow" color={colors.brassSoft}>
             {t("homePaths")}
           </Text>
-          <View style={styles.pathGrid}>
-            <View style={styles.pathRow}>
+          <View style={styles.pathStack}>
+            {paths.map((p) => (
               <PathTile
-                index={paths[0].index}
-                title={paths[0].title}
-                body={paths[0].body}
-                image={paths[0].image}
-                onPress={() => router.push(paths[0].href)}
+                key={p.index}
+                index={p.index}
+                title={p.title}
+                body={p.body}
+                image={p.image}
+                mark={p.mark}
+                onPress={() => router.push(p.href)}
               />
-              <PathTile
-                index={paths[1].index}
-                title={paths[1].title}
-                body={paths[1].body}
-                image={paths[1].image}
-                onPress={() => router.push(paths[1].href)}
-              />
-            </View>
-            <View style={styles.pathRow}>
-              <PathTile
-                index={paths[2].index}
-                title={paths[2].title}
-                body={paths[2].body}
-                image={paths[2].image}
-                onPress={() => router.push(paths[2].href)}
-              />
-              <PathTile
-                index={paths[3].index}
-                title={paths[3].title}
-                body={paths[3].body}
-                image={paths[3].image}
-                onPress={() => router.push(paths[3].href)}
-              />
-            </View>
+            ))}
           </View>
         </Rise>
 
@@ -397,20 +365,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
   brandRow: { flexDirection: "row", alignItems: "center", flexShrink: 1 },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   hero: {
     marginTop: spacing.xl,
     minHeight: 200,
@@ -439,12 +394,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  pathGrid: {
+  pathStack: {
     marginTop: spacing.md,
-    gap: spacing.sm,
-  },
-  pathRow: {
-    flexDirection: "row",
     gap: spacing.sm,
   },
   moodHead: {

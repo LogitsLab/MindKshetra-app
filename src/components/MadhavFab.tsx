@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet } from "react-native";
+import { Animated, Image, Pressable, StyleSheet, View } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MadhavMark } from "@/components/BrandMark";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
+import { images } from "@/theme/assets";
 import { radii, spacing } from "@/theme/tokens";
 
 const TAB_BAR_HEIGHT = spacing.tabBar;
@@ -83,13 +83,21 @@ export function MadhavFab() {
         style={({ pressed }) => [
           styles.fab,
           {
-            backgroundColor: colors.brass,
-            opacity: pressed ? 0.88 : 1,
+            borderColor: colors.brass,
+            opacity: pressed ? 0.9 : 1,
             shadowColor: colors.brass,
           },
         ]}
       >
-        <MadhavMark size={30} />
+        <Image
+          source={images.madhavPortrait}
+          style={styles.photo}
+          resizeMode="cover"
+        />
+        <View
+          pointerEvents="none"
+          style={[styles.ring, { borderColor: colors.brassSoft }]}
+        />
       </Pressable>
     </Animated.View>
   );
@@ -104,11 +112,22 @@ const styles = StyleSheet.create({
     width: spacing.fab,
     height: spacing.fab,
     borderRadius: radii.fab,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowOpacity: 0.4,
+    overflow: "hidden",
+    borderWidth: 2,
+    shadowOpacity: 0.45,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 8,
+    backgroundColor: "#0e1420",
+  },
+  photo: {
+    width: "100%",
+    height: "100%",
+  },
+  ring: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: radii.fab,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    opacity: 0.55,
   },
 });

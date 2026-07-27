@@ -1,6 +1,8 @@
 import React from "react";
+import { Image, StyleSheet, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { useTheme } from "@/context/ThemeContext";
+import { images } from "@/theme/assets";
 
 type Props = {
   size?: number;
@@ -53,43 +55,31 @@ export function BrandMark({ size = 28 }: Props) {
   );
 }
 
-/** Ports public/brand/madhav.svg — crowned figure (not a map pin). */
-export function MadhavMark({ size = 28 }: Props) {
+/** Krishna portrait — matches web `/brand/madhav.jpg`. */
+export function MadhavMark({
+  size = 28,
+  ring = true,
+}: Props & { ring?: boolean }) {
   const { colors } = useTheme();
   return (
-    <Svg width={size} height={size} viewBox="0 0 80 80" fill="none">
-      <Circle
-        cx="40"
-        cy="40"
-        r="38"
-        stroke={colors.onBrass}
-        strokeWidth="1"
-        opacity={0.35}
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        overflow: "hidden",
+        borderWidth: ring ? StyleSheet.hairlineWidth * 2 : 0,
+        borderColor: colors.brass,
+        backgroundColor: colors.panel,
+      }}
+    >
+      <Image
+        source={images.madhavPortrait}
+        style={{ width: size, height: size }}
+        resizeMode="cover"
+        accessibilityLabel="Madhav"
       />
-      <Circle
-        cx="40"
-        cy="40"
-        r="30"
-        fill="rgba(7,9,15,0.12)"
-        stroke={colors.onBrass}
-        strokeWidth="1"
-        opacity={0.7}
-      />
-      <Circle cx="40" cy="34" r="11" stroke={colors.onBrass} strokeWidth="1.6" />
-      <Path
-        d="M22 62c3-12 9.5-18 18-18s15 6 18 18"
-        stroke={colors.onBrass}
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-      <Path
-        d="M40 14v5M33 16.5l2.5 3.5M47 16.5l-2.5 3.5"
-        stroke={colors.onBrass}
-        strokeWidth="1.2"
-        opacity={0.75}
-      />
-      <Circle cx="40" cy="13" r="2" fill={colors.onBrass} />
-    </Svg>
+    </View>
   );
 }
 

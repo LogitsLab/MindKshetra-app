@@ -10,7 +10,7 @@ import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
-import { Rise } from "@/components/Rise";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { getChapterMetas } from "@/data/chapters";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -35,14 +35,12 @@ export default function ExploreScreen() {
 
   return (
     <Screen>
-      <Rise>
-        <Text variant="display" style={{ marginTop: spacing.sm }}>
-          {lang === "hi" ? "अन्वेषण" : "Explore"}
-        </Text>
-        <Text variant="soft" style={{ marginTop: spacing.xs }}>
-          {lang === "hi" ? "अठारह अध्याय, एक मार्ग" : "Eighteen chapters, one path"}
-        </Text>
-      </Rise>
+      <ScreenHeader
+        title={lang === "hi" ? "अन्वेषण" : "Explore"}
+        subtitle={
+          lang === "hi" ? "अठारह अध्याय, एक मार्ग" : "Eighteen chapters, one path"
+        }
+      />
       <Panel style={{ marginTop: spacing.md, padding: 0 }} padded={false}>
         <TextInput
           value={q}

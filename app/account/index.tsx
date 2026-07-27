@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Platform,
   Pressable,
   ScrollView,
   Share,
   StyleSheet,
   TextInput,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
@@ -16,7 +15,7 @@ import { Button, Hairline } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { BrandMark } from "@/components/BrandMark";
 import { Rise } from "@/components/Rise";
-import { userApi } from "@/api/endpoints";
+import { userApi, votdApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -33,8 +32,6 @@ export default function AccountScreen() {
     isAnonymous,
     isSignedIn,
     signInAnonymously,
-    signInWithGoogle,
-    signInWithApple,
     signInWithEmail,
     signOut,
   } = useAuth();
@@ -42,7 +39,15 @@ export default function AccountScreen() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [linkSent, setLinkSent] = useState(false);
   const [streak, setStreak] = useState(0);
+
+  const [votdConfigured, setVotdConfigured] = useState(false);
+  const [votdEnabled, setVotdEnabled] = useState(true);
+  const [prefsBusy, setPrefsBusy] = useState(false);
+  const [votdEmailStatus, setVotdEmailStatus] = useState<
+    "idle" | "sending" | "sent"
+  >("idle");
 
   useEffect(() => {
     if (!isSignedIn) {
@@ -54,6 +59,31 @@ export default function AccountScreen() {
       .then((s) => setStreak(s.current ?? 0))
       .catch(() => undefined);
   }, [isSignedIn]);
+
+  useEffect(() => {
+    if (!isSignedIn || isAnonymous) {
+      setVotdConfigured(false);
+      setVotdEnabled(true);
+      return;
+    }
+    let alive = true;
+    Promise.all([
+      votdApi.status().catch(() => null),
+      userApi.preferences().catch(() => null),
+    ]).then(([status, prefs]) => {
+      if (!alive) return;
+      if (status) {
+        setVotdConfigured(Boolean(status.configured));
+        setVotdEnabled(Boolean(status.enabled));
+      }
+      if (typeof prefs?.votdEmailEnabled === "boolean") {
+        setVotdEnabled(prefs.votdEmailEnabled);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [isSignedIn, isAnonymous]);
 
   async function run(action: () => Promise<void>, ok?: string) {
     setBusy(true);
@@ -68,13 +98,52 @@ export default function AccountScreen() {
     }
   }
 
+  async function onToggleVotdEmails() {
+    const next = !votdEnabled;
+    setPrefsBusy(true);
+    setMessage(null);
+    try {
+      const data = await userApi.updatePreferences({ votdEmailEnabled: next });
+      setVotdEnabled(Boolean(data.votdEmailEnabled));
+    } catch (e) {
+      setMessage((e as Error).message);
+    } finally {
+      setPrefsBusy(false);
+    }
+  }
+
+  async function onEmailVotd() {
+    if (!votdConfigured) {
+      setMessage(t("emailVotdUnavailable"));
+      return;
+    }
+    if (!votdEnabled) {
+      setMessage(t("emailVotdDisabled"));
+      return;
+    }
+    setVotdEmailStatus("sending");
+    setMessage(null);
+    try {
+      await votdApi.send();
+      setVotdEmailStatus("sent");
+    } catch (e) {
+      setMessage((e as Error).message);
+      setVotdEmailStatus("idle");
+    }
+  }
+
   if (loading) {
     return (
       <Screen>
-        <ActivityIndicator color={colors.brass} style={{ marginTop: spacing.xl }} />
+        <ActivityIndicator
+          color={colors.brass}
+          style={{ marginTop: spacing.xl }}
+        />
       </Screen>
     );
   }
+
+  const showAuth = !isSignedIn || isAnonymous;
 
   return (
     <Screen>
@@ -83,12 +152,18 @@ export default function AccountScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Rise>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: spacing.sm,
+            }}
+          >
             <BrandMark size={28} />
             <Text variant="eyebrow">{t("account")}</Text>
           </View>
           <Text variant="display" style={{ marginTop: spacing.sm }}>
-            {isSignedIn ? t("welcomeBack") : t("signInTitle")}
+            {isSignedIn && !isAnonymous ? t("welcomeBack") : t("signInTitle")}
           </Text>
           <Text variant="soft" style={{ marginTop: spacing.sm }}>
             {isAnonymous
@@ -100,12 +175,15 @@ export default function AccountScreen() {
         </Rise>
 
         {!configured ? (
-          <Text variant="muted" style={{ marginTop: spacing.md, color: colors.danger }}>
+          <Text
+            variant="muted"
+            style={{ marginTop: spacing.md, color: colors.danger }}
+          >
             {t("authNotConfigured")}
           </Text>
         ) : null}
 
-        {isSignedIn && streak > 0 ? (
+        {isSignedIn && !isAnonymous && streak > 0 ? (
           <Panel style={{ marginTop: spacing.lg }}>
             <Text variant="eyebrow">{t("streakLabel")}</Text>
             <Text variant="title" style={{ marginTop: spacing.xs }}>
@@ -116,8 +194,83 @@ export default function AccountScreen() {
 
         <Hairline style={{ marginVertical: spacing.lg }} />
 
-        {!isSignedIn || isAnonymous ? (
+        {showAuth ? (
           <View style={{ gap: spacing.sm }}>
+            {linkSent ? (
+              <Panel>
+                <Text variant="soft" color={colors.brassSoft}>
+                  {t("magicLinkSent")}
+                </Text>
+                <Text variant="muted" style={{ marginTop: spacing.sm }}>
+                  {t("magicLinkHint")}
+                </Text>
+                {email ? (
+                  <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                    {email}
+                  </Text>
+                ) : null}
+                <Pressable
+                  onPress={() => {
+                    setLinkSent(false);
+                    setEmail("");
+                    setMessage(null);
+                  }}
+                  style={{ marginTop: spacing.md }}
+                >
+                  <Text variant="muted" color={colors.brassSoft}>
+                    {t("useDifferentEmail")}
+                  </Text>
+                </Pressable>
+              </Panel>
+            ) : (
+              <>
+                <Text variant="eyebrow">{t("emailLabel")}</Text>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  textContentType="emailAddress"
+                  placeholder={t("emailPlaceholder")}
+                  placeholderTextColor={colors.textMuted}
+                  style={[
+                    styles.input,
+                    {
+                      color: colors.text,
+                      borderColor: colors.line,
+                      backgroundColor: colors.inputBg,
+                    },
+                  ]}
+                />
+                <Button
+                  label={busy ? t("sendingLink") : t("signInEmail")}
+                  loading={busy}
+                  disabled={!email.trim()}
+                  onPress={() =>
+                    void run(async () => {
+                      await signInWithEmail(email.trim());
+                      setLinkSent(true);
+                    }, t("magicLinkSent"))
+                  }
+                />
+              </>
+            )}
+
+            <Text
+              variant="muted"
+              style={{ textAlign: "center", marginVertical: spacing.sm }}
+            >
+              {t("orDivider")}
+            </Text>
+
+            <Button
+              label={t("signInGoogleSoon")}
+              variant="ghost"
+              disabled
+              onPress={() => undefined}
+            />
+
             {!user ? (
               <Button
                 label={t("guest")}
@@ -126,52 +279,11 @@ export default function AccountScreen() {
                 onPress={() => void run(signInAnonymously)}
               />
             ) : null}
-            <Button
-              label={t("signInGoogle")}
-              loading={busy}
-              onPress={() => void run(signInWithGoogle)}
-            />
-            {Platform.OS === "ios" ? (
-              <Button
-                label={lang === "hi" ? "Apple से जारी रखें" : "Continue with Apple"}
-                variant="ghost"
-                loading={busy}
-                onPress={() => void run(signInWithApple)}
-              />
-            ) : null}
-            <Text variant="muted" style={{ textAlign: "center", marginTop: spacing.sm }}>
-              {t("orDivider")}
-            </Text>
-            <Text variant="eyebrow">{t("emailLabel")}</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              placeholder={t("emailPlaceholder")}
-              placeholderTextColor={colors.textMuted}
-              style={[
-                styles.input,
-                {
-                  color: colors.text,
-                  borderColor: colors.line,
-                  backgroundColor: colors.inputBg,
-                },
-              ]}
-            />
-            <Button
-              label={t("signInEmail")}
-              loading={busy}
-              onPress={() =>
-                void run(
-                  () => signInWithEmail(email.trim()),
-                  t("magicLinkSent")
-                )
-              }
-            />
+
             <Text variant="muted" style={{ marginTop: spacing.xs }}>
               {t("authPrivacyNote")}
             </Text>
+
             {user ? (
               <Button
                 label={t("signOut")}
@@ -225,13 +337,89 @@ export default function AccountScreen() {
           </Text>
         ) : null}
 
+        {/* Verse email — signed-in members only (matches web) */}
+        {isSignedIn && !isAnonymous ? (
+          <>
+            <Hairline style={{ marginVertical: spacing.lg }} />
+            <Text variant="eyebrow">{t("preferencesTitle")}</Text>
+            <Text variant="soft" style={{ marginTop: spacing.xs }}>
+              {t("preferencesBlurb")}
+            </Text>
+            <Panel style={{ marginTop: spacing.md }}>
+              <View style={styles.votdRow}>
+                <View style={{ flex: 1, paddingRight: spacing.md }}>
+                  <Text variant="body">{t("votdEmailToggle")}</Text>
+                  <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                    {t("votdEmailToggleBlurb")}
+                  </Text>
+                  {!votdConfigured ? (
+                    <Text
+                      variant="muted"
+                      style={{ marginTop: spacing.xs, opacity: 0.8 }}
+                    >
+                      {t("votdEmailNotReady")}
+                    </Text>
+                  ) : null}
+                </View>
+                <Pressable
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: votdEnabled }}
+                  disabled={prefsBusy}
+                  onPress={() => void onToggleVotdEmails()}
+                  style={[
+                    styles.switch,
+                    {
+                      borderColor: votdEnabled ? colors.brass : colors.line,
+                      backgroundColor: votdEnabled
+                        ? "rgba(201,162,39,0.25)"
+                        : colors.surface,
+                      opacity: prefsBusy ? 0.5 : 1,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.switchKnob,
+                      {
+                        backgroundColor: colors.brassSoft,
+                        alignSelf: votdEnabled ? "flex-end" : "flex-start",
+                        opacity: votdEnabled ? 1 : 0.5,
+                      },
+                    ]}
+                  />
+                </Pressable>
+              </View>
+              {votdConfigured && votdEnabled ? (
+                <Pressable
+                  onPress={() => void onEmailVotd()}
+                  disabled={votdEmailStatus === "sending"}
+                  style={{ marginTop: spacing.md }}
+                >
+                  <Text variant="muted" color={colors.brassSoft}>
+                    {votdEmailStatus === "sending"
+                      ? t("emailVotdSending")
+                      : votdEmailStatus === "sent"
+                        ? t("emailVotdSent")
+                        : t("emailVotd")}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </Panel>
+          </>
+        ) : null}
+
         <Hairline style={{ marginVertical: spacing.lg }} />
 
-        <Text variant="eyebrow">{t("preferencesTitle")}</Text>
+        <Text variant="eyebrow">
+          {lang === "hi" ? "दिखावट" : "Appearance"}
+        </Text>
         <View style={styles.row}>
           <Pressable
             onPress={toggle}
-            style={[styles.chip, { borderColor: colors.line, backgroundColor: colors.surface }]}
+            style={[
+              styles.chip,
+              { borderColor: colors.line, backgroundColor: colors.surface },
+            ]}
           >
             <Text variant="muted">
               {lang === "hi"
@@ -245,9 +433,14 @@ export default function AccountScreen() {
           </Pressable>
           <Pressable
             onPress={() => setLang(lang === "en" ? "hi" : "en")}
-            style={[styles.chip, { borderColor: colors.line, backgroundColor: colors.surface }]}
+            style={[
+              styles.chip,
+              { borderColor: colors.line, backgroundColor: colors.surface },
+            ]}
           >
-            <Text variant="muted">{lang === "en" ? "EN → हिं" : "हिं → EN"}</Text>
+            <Text variant="muted">
+              {lang === "en" ? "EN → हिं" : "हिं → EN"}
+            </Text>
           </Pressable>
         </View>
 
@@ -265,12 +458,6 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  streak: {
-    marginTop: spacing.lg,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-  },
   input: {
     minHeight: 48,
     borderWidth: StyleSheet.hairlineWidth * 2,
@@ -288,5 +475,24 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radii.md,
     borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  votdRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+  switch: {
+    width: 56,
+    height: 32,
+    borderRadius: radii.sm,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    justifyContent: "center",
+  },
+  switchKnob: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
   },
 });

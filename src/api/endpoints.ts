@@ -40,13 +40,31 @@ export const userApi = {
       body: JSON.stringify({ slokaId, reflection }),
     }),
   streak: () => apiFetch<Streak>("/api/account/streak"),
-  preferences: () => apiFetch<Record<string, unknown>>("/api/account/preferences"),
+  preferences: () =>
+    apiFetch<{
+      votdEmailEnabled?: boolean;
+      displayName?: string;
+      email?: string | null;
+      [key: string]: unknown;
+    }>("/api/account/preferences"),
   updatePreferences: (body: Record<string, unknown>) =>
-    apiFetch<Record<string, unknown>>("/api/account/preferences", {
-      method: "POST",
+    apiFetch<{
+      votdEmailEnabled?: boolean;
+      [key: string]: unknown;
+    }>("/api/account/preferences", {
+      method: "PATCH",
       body: JSON.stringify(body),
     }),
   exportData: () => apiFetch<Record<string, unknown>>("/api/account/export"),
+};
+
+export const votdApi = {
+  status: () =>
+    apiFetch<{ configured: boolean; enabled: boolean }>("/api/votd/email"),
+  send: () =>
+    apiFetch<{ ok: boolean; ref?: string; to?: string }>("/api/votd/email", {
+      method: "POST",
+    }),
 };
 
 export const progressApi = {
