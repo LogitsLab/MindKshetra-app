@@ -116,7 +116,10 @@ export const motion = {
 } as const;
 
 export const typeScale = {
+  poster: { size: 52, line: 58 },
   display: { size: 32, line: 38 },
+  /** Compact headings: list rows, card titles. Between body and title. */
+  subtitle: { size: 18, line: 24 },
   title: { size: 22, line: 28 },
   sanskrit: { size: 24, line: 36 },
   body: { size: 16, line: 24 },

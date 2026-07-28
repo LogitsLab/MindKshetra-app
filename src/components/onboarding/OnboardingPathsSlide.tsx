@@ -7,7 +7,7 @@ import { MadhavMark } from "@/components/BrandMark";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { images } from "@/theme/assets";
-import { radii, spacing } from "@/theme/tokens";
+import { radii, spacing, typeScale } from "@/theme/tokens";
 import type { DictKey } from "@/i18n/dictionary";
 import type { PathMarkKind } from "@/components/SlokaCard";
 
@@ -50,7 +50,8 @@ const PATHS: PathCard[] = [
   },
 ];
 
-const ROW_HEIGHT = 72;
+/** Fits a subtitle plus two lines of readable blurb without clipping in Hindi. */
+const ROW_HEIGHT = 88;
 
 function PathRow({ item }: { item: PathCard }) {
   const { colors } = useTheme();
@@ -83,7 +84,13 @@ function PathRow({ item }: { item: PathCard }) {
         <Text variant="title" style={styles.rowTitle}>
           {t(item.titleKey)}
         </Text>
-        <Text variant="soft" color={colors.textMuted} numberOfLines={2} style={styles.rowBlurb}>
+        {/*
+          These four sentences are the only explanation of what the product
+          does. DESIGN.md reserves text-muted for chrome and text-soft for prose
+          someone is meant to read; this is prose. `soft` also carries its own
+          colour, so no override is needed.
+        */}
+        <Text variant="soft" numberOfLines={2} style={styles.rowBlurb}>
           {t(item.blurbKey)}
         </Text>
       </View>
@@ -127,16 +134,15 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xs,
   },
   heading: {
     marginTop: spacing.xs,
-    marginBottom: spacing.sm,
-    fontSize: 24,
-    lineHeight: 30,
+    marginBottom: spacing.md,
   },
   list: {
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   row: {
     flexDirection: "row",
@@ -145,7 +151,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   thumbWrap: {
-    width: 80,
+    width: 88,
     position: "relative",
     backgroundColor: "#0e1420",
   },
@@ -160,17 +166,17 @@ const styles = StyleSheet.create({
   },
   copy: {
     flex: 1,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     justifyContent: "center",
-    gap: 2,
+    gap: spacing.xs,
   },
   rowTitle: {
-    fontSize: 16,
-    lineHeight: 21,
+    fontSize: typeScale.subtitle.size,
+    lineHeight: typeScale.subtitle.line,
   },
   rowBlurb: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: typeScale.muted.size,
+    lineHeight: typeScale.muted.line,
   },
 });
