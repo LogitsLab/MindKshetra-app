@@ -43,6 +43,7 @@ export default function AccountScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [linkSent, setLinkSent] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
   const [streak, setStreak] = useState(0);
 
   const [votdConfigured, setVotdConfigured] = useState(false);
@@ -59,6 +60,7 @@ export default function AccountScreen() {
     if (!authError) return;
     if (authError === "otp_expired") setMessage(t("authLinkExpired"));
     else setMessage(t("authLinkFailed"));
+    setEmailOpen(true);
   }, [params.auth_error, t]);
   useEffect(() => {
     if (!isSignedIn) {
@@ -216,6 +218,29 @@ export default function AccountScreen() {
 
         {showAuth ? (
           <View style={{ gap: spacing.sm }}>
+            <Button
+              label={t("signInGoogle")}
+              variant="primary"
+              loading={busy}
+              onPress={() => void run(signInWithGoogle)}
+            />
+
+            {!user ? (
+              <Button
+                label={t("guest")}
+                variant="ghost"
+                loading={busy}
+                onPress={() => void run(signInAnonymously)}
+              />
+            ) : null}
+
+            <Text
+              variant="muted"
+              style={{ textAlign: "center", marginVertical: spacing.sm }}
+            >
+              {t("orDivider")}
+            </Text>
+
             {linkSent ? (
               <Panel>
                 <Text variant="soft" color={colors.brassSoft}>
@@ -234,6 +259,7 @@ export default function AccountScreen() {
                     setLinkSent(false);
                     setEmail("");
                     setMessage(null);
+                    setEmailOpen(true);
                   }}
                   style={{ marginTop: spacing.md }}
                 >
@@ -242,7 +268,7 @@ export default function AccountScreen() {
                   </Text>
                 </Pressable>
               </Panel>
-            ) : (
+            ) : emailOpen ? (
               <>
                 <Text variant="eyebrow">{t("emailLabel")}</Text>
                 <TextInput
@@ -250,6 +276,7 @@ export default function AccountScreen() {
                   onChangeText={setEmail}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  autoFocus
                   keyboardType="email-address"
                   textContentType="emailAddress"
                   placeholder={t("emailPlaceholder")}
@@ -276,6 +303,7 @@ export default function AccountScreen() {
                           )
                         : t("signInEmail")
                   }
+                  variant="ghost"
                   loading={busy}
                   disabled={!email.trim() || emailCooldownSec > 0}
                   onPress={() =>
@@ -292,31 +320,25 @@ export default function AccountScreen() {
                       : t("authRateLimited")}
                   </Text>
                 ) : null}
+                <Pressable
+                  onPress={() => setEmailOpen(false)}
+                  style={{ paddingVertical: spacing.xs }}
+                >
+                  <Text
+                    variant="muted"
+                    style={{ textAlign: "center", fontSize: 12 }}
+                  >
+                    {t("hideEmailSignIn")}
+                  </Text>
+                </Pressable>
               </>
-            )}
-
-            <Text
-              variant="muted"
-              style={{ textAlign: "center", marginVertical: spacing.sm }}
-            >
-              {t("orDivider")}
-            </Text>
-
-            <Button
-              label={t("signInGoogle")}
-              variant="ghost"
-              loading={busy}
-              onPress={() => void run(signInWithGoogle)}
-            />
-
-            {!user ? (
+            ) : (
               <Button
-                label={t("guest")}
+                label={t("useEmailInstead")}
                 variant="ghost"
-                loading={busy}
-                onPress={() => void run(signInAnonymously)}
+                onPress={() => setEmailOpen(true)}
               />
-            ) : null}
+            )}
 
             <Text variant="muted" style={{ marginTop: spacing.xs }}>
               {t("authPrivacyNote")}
