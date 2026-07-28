@@ -11,7 +11,7 @@ import {
 import { useRouter, Redirect } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
-import { OnboardingStepDots } from "@/components/onboarding/OnboardingStepDots";
+import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import { OnboardingHeroSlide } from "@/components/onboarding/OnboardingHeroSlide";
 import { OnboardingPathsSlide } from "@/components/onboarding/OnboardingPathsSlide";
 import { OnboardingLanguageStep } from "@/components/onboarding/OnboardingLanguageStep";
@@ -29,6 +29,14 @@ import type { AppLang } from "@/i18n/dictionary";
 
 const MAIN_STEPS = ["welcome", "language", "account"] as const;
 type MainStep = (typeof MAIN_STEPS)[number];
+
+/**
+ * Four screens, counted the same way from start to finish: the two welcome
+ * pages, language, account. `welcome` is one MAIN_STEP holding a two-page
+ * pager, but the person going through it is looking at four screens, so that
+ * is what progress reports.
+ */
+const FLOW_TOTAL = 4;
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -56,6 +64,7 @@ export default function OnboardingScreen() {
   const welcomeRef = useRef<FlatList>(null);
 
   const mainIndex = MAIN_STEPS.indexOf(mainStep);
+  const flowStep = mainStep === "welcome" ? welcomeSub : mainIndex + 1;
   const onPoster = mainStep === "welcome" && welcomeSub === 0;
   const reading = useReadingVeil(!onPoster);
 
@@ -125,10 +134,7 @@ export default function OnboardingScreen() {
         edges={["top", "left", "right", "bottom"]}
       >
       <View style={styles.header}>
-        <OnboardingStepDots
-          step={mainIndex}
-          welcomeSub={mainStep === "welcome" ? welcomeSub : undefined}
-        />
+        <OnboardingProgress step={flowStep} total={FLOW_TOTAL} />
       </View>
 
       {mainStep === "welcome" ? (
