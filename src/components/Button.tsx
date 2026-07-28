@@ -48,9 +48,13 @@ export function Button({
               ? colors.dangerBg
               : "rgba(255,255,255,0.08)",
           borderColor: isPrimary ? colors.brass : colors.line,
-          opacity: pressed || disabled ? 0.8 : 1,
+          // Disabled and pressed were both 0.8, so a button you cannot use
+          // looked like a button mid-tap. Unavailable has to read as
+          // unavailable at rest, without waiting for an interaction.
+          opacity: disabled ? 0.4 : pressed ? 0.75 : 1,
         },
       ]}
+      accessibilityState={{ disabled: Boolean(disabled || loading), busy: Boolean(loading) }}
       {...rest}
     >
       {loading ? (

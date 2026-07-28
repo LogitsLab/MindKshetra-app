@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   BackHandler,
   FlatList,
+  Platform,
   ScrollView,
   StyleSheet,
   View,
@@ -9,6 +10,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter, Redirect } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
@@ -16,7 +18,10 @@ import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingHeroSlide } from "@/components/onboarding/OnboardingHeroSlide";
 import { OnboardingPathsSlide } from "@/components/onboarding/OnboardingPathsSlide";
 import { OnboardingLanguageStep } from "@/components/onboarding/OnboardingLanguageStep";
-import { OnboardingAuthStep } from "@/components/onboarding/OnboardingAuthStep";
+import {
+  OnboardingAuthStep,
+  type AuthAction,
+} from "@/components/onboarding/OnboardingAuthStep";
 import {
   OnboardingBackdrop,
   useReadingVeil,
@@ -50,6 +55,7 @@ export default function OnboardingScreen() {
     signInAnonymously,
     signInWithEmail,
     signInWithGoogle,
+    signInWithApple,
     emailCooldownSec,
   } = useAuth();
 
@@ -59,15 +65,32 @@ export default function OnboardingScreen() {
   const [email, setEmail] = useState("");
   const [emailOpen, setEmailOpen] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<AuthAction | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [guestFailed, setGuestFailed] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
   const welcomeRef = useRef<FlatList>(null);
 
   const mainIndex = MAIN_STEPS.indexOf(mainStep);
   const flowStep = mainStep === "welcome" ? welcomeSub : mainIndex + 1;
   const onPoster = mainStep === "welcome" && welcomeSub === 0;
   const reading = useReadingVeil(!onPoster);
+
+  // Apple requires Sign in with Apple wherever a third-party sign-in is offered
+  // (App Store guideline 4.8). isAvailableAsync also covers iPads and iOS
+  // versions where the capability is absent.
+  useEffect(() => {
+    let alive = true;
+    if (Platform.OS !== "ios") return;
+    AppleAuthentication.isAvailableAsync()
+      .then((ok) => {
+        if (alive) setAppleAvailable(ok);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // The route sets gestureEnabled: false, so without this Android's back button
   // would try to pop the stack and leave the app rather than step back a screen.
@@ -138,17 +161,28 @@ export default function OnboardingScreen() {
     setMainStep("language");
   }
 
+  /**
+   * `which` is what makes the feedback legible: a single boolean meant every
+   * button on the step reported busy at once, so tapping "continue as guest"
+   * also spun the Google button and nothing said which one you had started.
+   */
   async function runAuth(
-    action: () => Promise<void>,
-    options: { finishAfter?: boolean; isGuest?: boolean } = {}
+    which: AuthAction,
+    action: () => Promise<boolean | void>,
+    options: { finishAfter?: boolean } = {}
   ) {
-    const { finishAfter = true, isGuest = false } = options;
-    setBusy(true);
+    const { finishAfter = true } = options;
+    const isGuest = which === "guest";
+    if (pending) return;
+    setPending(which);
     setMessage(null);
     if (!isGuest) setGuestFailed(false);
     try {
-      await action();
-      if (finishAfter) await finish();
+      // A provider that resolves false means the person dismissed the sheet.
+      // Finishing there would mark onboarding complete and drop them into the
+      // app signed out, with no way back to the other sign-in options.
+      const started = await action();
+      if (finishAfter && started !== false) await finish();
     } catch (e) {
       const raw = (e as Error).message || "";
       if (
@@ -162,7 +196,7 @@ export default function OnboardingScreen() {
       }
       if (isGuest) setGuestFailed(true);
     } finally {
-      setBusy(false);
+      setPending(null);
     }
   }
 
@@ -232,18 +266,21 @@ export default function OnboardingScreen() {
           {mainStep === "account" ? (
             <OnboardingAuthStep
               configured={configured}
-              busy={busy}
+              pending={pending}
               message={message}
               email={email}
               emailOpen={emailOpen}
               linkSent={linkSent}
               emailCooldownSec={emailCooldownSec}
               guestFailed={guestFailed}
+              appleAvailable={appleAvailable}
               onEmailChange={setEmail}
               onEmailOpen={() => setEmailOpen(true)}
-              onGoogle={() => void runAuth(signInWithGoogle)}
+              onApple={() => void runAuth("apple", signInWithApple)}
+              onGoogle={() => void runAuth("google", signInWithGoogle)}
               onEmailSubmit={() =>
                 void runAuth(
+                  "email",
                   async () => {
                     await signInWithEmail(email.trim());
                     setLinkSent(true);
@@ -251,7 +288,7 @@ export default function OnboardingScreen() {
                   { finishAfter: false }
                 )
               }
-              onGuest={() => void runAuth(signInAnonymously, { isGuest: true })}
+              onGuest={() => void runAuth("guest", signInAnonymously)}
               onEnterAnyway={() => void finish()}
             />
           ) : null}

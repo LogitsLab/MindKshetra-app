@@ -87,8 +87,10 @@ type AuthContextValue = {
   /** Seconds remaining before another magic-link request is allowed */
   emailCooldownSec: number;
   signInAnonymously: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
-  signInWithApple: () => Promise<void>;
+  /** false means the person cancelled; callers must not treat that as done. */
+  signInWithGoogle: () => Promise<boolean>;
+  /** false means the person cancelled; callers must not treat that as done. */
+  signInWithApple: () => Promise<boolean>;
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -173,8 +175,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw new Error(friendlyAuthError(error.message, "anonymous"));
   }, []);
 
+  /** Resolves false when the person backed out, true when a session started. */
   const signInWithGoogle = useCallback(async () => {
-    if (!supabaseConfigured) return;
+    if (!supabaseConfigured) return false;
     const redirectTo = makeRedirectUri({
       scheme: "mindkshetra",
       path: "auth/callback",
@@ -187,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!data.url) throw new Error("Google sign-in failed to start.");
 
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== "success" || !result.url) return;
+    if (result.type !== "success" || !result.url) return false;
 
     const hashIdx = result.url.indexOf("#");
     const queryIdx = result.url.indexOf("?");
@@ -219,16 +222,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error("Google sign-in did not return a session.");
     }
     await mergeOnUpgrade();
+    return true;
   }, []);
 
+  /** Resolves false when the person backed out, true when a session started. */
   const signInWithApple = useCallback(async () => {
-    if (!supabaseConfigured || Platform.OS !== "ios") return;
-    const credential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-    });
+    if (!supabaseConfigured || Platform.OS !== "ios") return false;
+    let credential: AppleAuthentication.AppleAuthenticationCredential;
+    try {
+      credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+    } catch (e) {
+      // Dismissing the Apple sheet is a decision, not a failure. Surfacing it
+      // as an error message would blame the user for changing their mind.
+      if ((e as { code?: string }).code === "ERR_REQUEST_CANCELED") return false;
+      throw e;
+    }
     if (!credential.identityToken) throw new Error("Apple Sign-In failed");
     const { error } = await supabase.auth.signInWithIdToken({
       provider: "apple",
@@ -236,6 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     if (error) throw error;
     await mergeOnUpgrade();
+    return true;
   }, []);
 
   const signInWithEmail = useCallback(async (email: string) => {

@@ -103,7 +103,7 @@ export default function AccountScreen() {
     };
   }, [isSignedIn, isAnonymous]);
 
-  async function run(action: () => Promise<void>, ok?: string) {
+  async function run(action: () => Promise<boolean | void>, ok?: string) {
     setBusy(true);
     setMessage(null);
     try {

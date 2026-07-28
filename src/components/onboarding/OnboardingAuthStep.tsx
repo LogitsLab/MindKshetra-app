@@ -1,32 +1,36 @@
 import React from "react";
 import {
-  Image,
-  ImageBackground,
+  ActivityIndicator,
+  Pressable,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Text } from "@/components/Text";
-import { Button } from "@/components/Button";
+import { Button, Hairline } from "@/components/Button";
+import { BrandMark } from "@/components/BrandMark";
 import { Panel } from "@/components/Panel";
 import { Rise } from "@/components/Rise";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
-import { images } from "@/theme/assets";
 import { radii, spacing } from "@/theme/tokens";
+
+/** Which sign-in is in flight, so only that control reports as busy. */
+export type AuthAction = "apple" | "google" | "email" | "guest";
 
 type Props = {
   configured: boolean;
-  busy: boolean;
+  pending: AuthAction | null;
   message: string | null;
   email: string;
   emailOpen: boolean;
   linkSent: boolean;
   emailCooldownSec: number;
   guestFailed: boolean;
+  appleAvailable: boolean;
   onEmailChange: (value: string) => void;
   onEmailOpen: () => void;
+  onApple: () => void;
   onGoogle: () => void;
   onEmailSubmit: () => void;
   onGuest: () => void;
@@ -35,15 +39,17 @@ type Props = {
 
 export function OnboardingAuthStep({
   configured,
-  busy,
+  pending,
   message,
   email,
   emailOpen,
   linkSent,
   emailCooldownSec,
   guestFailed,
+  appleAvailable,
   onEmailChange,
   onEmailOpen,
+  onApple,
   onGoogle,
   onEmailSubmit,
   onGuest,
@@ -52,183 +58,204 @@ export function OnboardingAuthStep({
   const { colors } = useTheme();
   const { t } = useLanguage();
 
+  /** Anything running locks the rest, so two sign-ins cannot race. */
+  const blocked = (self: AuthAction) => pending !== null && pending !== self;
+
   return (
     <Rise>
-      <View style={[styles.heroBand, { borderColor: colors.line }]}>
-        <ImageBackground
-          source={images.pathMadhav}
-          style={styles.heroBandBg}
-          imageStyle={styles.heroBandImage}
-          resizeMode="cover"
-        >
-          <LinearGradient
-            colors={["rgba(7,9,15,0.2)", "rgba(7,9,15,0.88)"]}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <View style={styles.heroBandInner}>
-            <Image
-              source={images.madhavPortrait}
-              style={[styles.portrait, { borderColor: colors.brass }]}
-            />
-            <View style={{ flex: 1 }}>
-              <Text variant="eyebrow" color={colors.brassSoft}>
-                {t("onboardingAuthEyebrow")}
-              </Text>
-              <Text variant="title" color={colors.onMedia} style={styles.heroTitle}>
-                {t("onboardingAuthTitle")}
-              </Text>
-            </View>
-          </View>
-        </ImageBackground>
+      {/*
+        The step is about saving your own data, so it opens under the brand
+        mark. It previously opened on Madhav's portrait laid over the Madhav
+        path photograph — the same subject twice, and it borrowed the guide's
+        identity for an account system. DESIGN.md is explicit that the portrait
+        means Madhav specifically.
+      */}
+      <View style={styles.brandRow}>
+        <BrandMark size={22} />
+        <Text variant="eyebrow" color={colors.brassSoft}>
+          {t("onboardingAuthEyebrow")}
+        </Text>
       </View>
 
+      <Text variant="display" style={styles.title}>
+        {t("onboardingAuthTitle")}
+      </Text>
       <Text variant="soft" style={styles.body}>
         {t("onboardingAuthBody")}
       </Text>
 
       {!configured ? (
-        <Text variant="muted" style={{ marginTop: spacing.md, color: colors.danger }}>
+        <Text variant="muted" style={[styles.body, { color: colors.danger }]}>
           {t("authNotConfigured")}
         </Text>
       ) : null}
 
-      <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
-        {linkSent ? (
-          <Panel>
-            <Text variant="soft" color={colors.brassSoft}>
-              {t("magicLinkSent")}
-            </Text>
-            <Text variant="muted" style={{ marginTop: spacing.sm }}>
-              {t("magicLinkHint")}
-            </Text>
+      {linkSent ? (
+        <Panel style={styles.sent}>
+          <Text variant="soft" color={colors.brassSoft}>
+            {t("magicLinkSent")}
+          </Text>
+          <Text variant="muted" style={styles.sentHint}>
+            {t("magicLinkHint")}
+          </Text>
+          <Button
+            label={t("onboardingGetStarted")}
+            onPress={onEnterAnyway}
+            style={styles.sentCta}
+          />
+        </Panel>
+      ) : (
+        <View style={styles.methods}>
+          {appleAvailable ? (
             <Button
-              label={t("onboardingGetStarted")}
-              onPress={onEnterAnyway}
-              style={{ marginTop: spacing.md }}
+              label={t("signInApple")}
+              loading={pending === "apple"}
+              disabled={blocked("apple")}
+              onPress={onApple}
             />
-          </Panel>
-        ) : (
-          <>
-            <Button label={t("signInGoogle")} loading={busy} onPress={onGoogle} />
+          ) : null}
 
-            {emailOpen ? (
-              <>
-                <Text variant="eyebrow">{t("emailLabel")}</Text>
-                <TextInput
-                  value={email}
-                  onChangeText={onEmailChange}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoFocus
-                  keyboardType="email-address"
-                  textContentType="emailAddress"
-                  placeholder={t("emailPlaceholder")}
-                  placeholderTextColor={colors.textMuted}
-                  style={[
-                    styles.input,
-                    {
-                      color: colors.text,
-                      borderColor: colors.line,
-                      backgroundColor: colors.inputBg,
-                    },
-                  ]}
-                />
-                <Button
-                  label={
-                    busy
-                      ? t("sendingLink")
-                      : emailCooldownSec > 0
-                        ? t("authCooldown").replace(
-                            "{seconds}",
-                            emailCooldownSec >= 60
-                              ? `${Math.ceil(emailCooldownSec / 60)}m`
-                              : String(emailCooldownSec)
-                          )
-                        : t("signInEmail")
-                  }
-                  variant="ghost"
-                  loading={busy}
-                  disabled={!email.trim() || emailCooldownSec > 0}
-                  onPress={onEmailSubmit}
-                />
-              </>
-            ) : (
-              <Button
-                label={t("useEmailInstead")}
-                variant="ghost"
-                onPress={onEmailOpen}
+          <Button
+            label={t("signInGoogle")}
+            variant={appleAvailable ? "ghost" : "primary"}
+            loading={pending === "google"}
+            disabled={blocked("google")}
+            onPress={onGoogle}
+          />
+
+          {emailOpen ? (
+            <View style={styles.emailBlock}>
+              <Text variant="eyebrow" style={styles.emailLabel}>
+                {t("emailLabel")}
+              </Text>
+              <TextInput
+                value={email}
+                onChangeText={onEmailChange}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoFocus
+                keyboardType="email-address"
+                textContentType="emailAddress"
+                accessibilityLabel={t("emailLabel")}
+                placeholder={t("emailPlaceholder")}
+                placeholderTextColor={colors.textMuted}
+                style={[
+                  styles.input,
+                  {
+                    color: colors.text,
+                    borderColor: colors.line,
+                    backgroundColor: colors.inputBg,
+                  },
+                ]}
               />
-            )}
-
-            <Text
-              variant="muted"
-              style={{ textAlign: "center", marginVertical: spacing.xs }}
-            >
-              {t("orDivider")}
-            </Text>
-
+              <Button
+                label={
+                  pending === "email"
+                    ? t("sendingLink")
+                    : emailCooldownSec > 0
+                      ? t("authCooldown").replace(
+                          "{seconds}",
+                          emailCooldownSec >= 60
+                            ? `${Math.ceil(emailCooldownSec / 60)}m`
+                            : String(emailCooldownSec)
+                        )
+                      : t("signInEmail")
+                }
+                variant="ghost"
+                loading={pending === "email"}
+                disabled={
+                  !email.trim() || emailCooldownSec > 0 || blocked("email")
+                }
+                onPress={onEmailSubmit}
+              />
+            </View>
+          ) : (
             <Button
-              label={t("onboardingContinueGuest")}
+              label={t("useEmailInstead")}
               variant="ghost"
-              loading={busy}
-              onPress={onGuest}
+              disabled={blocked("email")}
+              onPress={onEmailOpen}
             />
-
-            {guestFailed ? (
-              <Button
-                label={t("onboardingGetStarted")}
-                variant="ghost"
-                onPress={onEnterAnyway}
-              />
-            ) : null}
-          </>
-        )}
-
-        <Text variant="muted">{t("authPrivacyNote")}</Text>
-      </View>
+          )}
+        </View>
+      )}
 
       {message ? (
-        <Text variant="soft" style={{ marginTop: spacing.md, color: colors.danger }}>
+        <Text variant="soft" style={[styles.message, { color: colors.danger }]}>
           {message}
         </Text>
       ) : null}
+
+      {!linkSent ? (
+        <>
+          <View style={styles.divider}>
+            <Hairline style={styles.dividerRule} />
+            <Text variant="muted">{t("orDivider")}</Text>
+            <Hairline style={styles.dividerRule} />
+          </View>
+
+          {/*
+            Skipping sign-in is a different kind of act from choosing a sign-in
+            method, so it stops being a fourth identical ghost button and
+            becomes a link. Three stacked ghosts gave the reader no way to tell
+            "another way in" from "no way in".
+          */}
+          <Pressable
+            onPress={guestFailed ? onEnterAnyway : onGuest}
+            disabled={blocked("guest")}
+            accessibilityRole="link"
+            hitSlop={12}
+            style={({ pressed }) => [
+              styles.guest,
+              { opacity: blocked("guest") ? 0.4 : pressed ? 0.7 : 1 },
+            ]}
+          >
+            {pending === "guest" ? (
+              <ActivityIndicator color={colors.brassSoft} />
+            ) : (
+              <Text
+                variant="body"
+                color={colors.brassSoft}
+                style={styles.guestLabel}
+              >
+                {guestFailed
+                  ? t("onboardingGetStarted")
+                  : t("onboardingContinueGuest")}
+              </Text>
+            )}
+          </Pressable>
+        </>
+      ) : null}
+
+      {/* Chrome. Separated by a rule so it stops reading as another control. */}
+      <Hairline style={styles.noteRule} />
+      <Text variant="muted">{t("authPrivacyNote")}</Text>
     </Rise>
   );
 }
 
 const styles = StyleSheet.create({
-  heroBand: {
-    borderRadius: radii.lg,
-    overflow: "hidden",
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    marginBottom: spacing.md,
-  },
-  heroBandBg: {
-    minHeight: 120,
-    justifyContent: "flex-end",
-  },
-  heroBandImage: {
-    opacity: 0.9,
-  },
-  heroBandInner: {
+  brandRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
-    padding: spacing.md,
+    gap: spacing.sm,
   },
-  portrait: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-  },
-  heroTitle: {
-    marginTop: 4,
-    fontSize: 22,
-    lineHeight: 28,
+  title: {
+    marginTop: spacing.sm,
   },
   body: {
+    marginTop: spacing.md,
     lineHeight: 24,
+  },
+  methods: {
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  emailBlock: {
+    gap: spacing.sm,
+  },
+  emailLabel: {
+    marginTop: spacing.xs,
   },
   input: {
     minHeight: 48,
@@ -236,5 +263,40 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     fontFamily: "Sora_400Regular",
+  },
+  sent: {
+    marginTop: spacing.lg,
+  },
+  sentHint: {
+    marginTop: spacing.sm,
+  },
+  sentCta: {
+    marginTop: spacing.md,
+  },
+  message: {
+    marginTop: spacing.md,
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  dividerRule: {
+    flex: 1,
+  },
+  guest: {
+    marginTop: spacing.md,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  guestLabel: {
+    fontFamily: "Sora_600SemiBold",
+    fontSize: 15,
+  },
+  noteRule: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
   },
 });
