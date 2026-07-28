@@ -35,6 +35,10 @@ export const en = {
   onboardingStepWelcome: "Welcome",
   onboardingStepLanguage: "Language",
   onboardingStepAccount: "Account",
+  /** Says what it skips. "Skip" alone reads as "skip to the app", which is a lie. */
+  onboardingSkipIntro: "Skip intro",
+  onboardingBack: "Go back",
+  onboardingLangSelected: "Selected",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -74,4 +78,7 @@ export const hi: Record<keyof typeof en, string> = {
   onboardingStepWelcome: "स्वागत",
   onboardingStepLanguage: "भाषा",
   onboardingStepAccount: "खाता",
+  onboardingSkipIntro: "परिचय छोड़ें",
+  onboardingBack: "पीछे जाएँ",
+  onboardingLangSelected: "चुना गया",
 };

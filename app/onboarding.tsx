@@ -1,5 +1,6 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  BackHandler,
   FlatList,
   ScrollView,
   StyleSheet,
@@ -11,7 +12,7 @@ import {
 import { useRouter, Redirect } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
-import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
+import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingHeroSlide } from "@/components/onboarding/OnboardingHeroSlide";
 import { OnboardingPathsSlide } from "@/components/onboarding/OnboardingPathsSlide";
 import { OnboardingLanguageStep } from "@/components/onboarding/OnboardingLanguageStep";
@@ -68,6 +69,13 @@ export default function OnboardingScreen() {
   const onPoster = mainStep === "welcome" && welcomeSub === 0;
   const reading = useReadingVeil(!onPoster);
 
+  // The route sets gestureEnabled: false, so without this Android's back button
+  // would try to pop the stack and leave the app rather than step back a screen.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", goBack);
+    return () => sub.remove();
+  }, [mainStep, welcomeSub]);
+
   if (complete) {
     return <Redirect href="/(tabs)/home" />;
   }
@@ -82,10 +90,14 @@ export default function OnboardingScreen() {
     setWelcomeSub(index);
   }
 
+  function goToWelcomePage(index: number) {
+    setWelcomeSub(index);
+    welcomeRef.current?.scrollToIndex({ index, animated: true });
+  }
+
   function advanceWelcome() {
     if (welcomeSub === 0) {
-      welcomeRef.current?.scrollToIndex({ index: 1, animated: true });
-      setWelcomeSub(1);
+      goToWelcomePage(1);
       return;
     }
     setMainStep("language");
@@ -94,6 +106,29 @@ export default function OnboardingScreen() {
   function advanceLanguage() {
     setLang(draftLang);
     setMainStep("account");
+  }
+
+  /** Returns true when it consumed the gesture, which is what BackHandler wants. */
+  function goBack() {
+    if (mainStep === "account") {
+      setMainStep("language");
+      return true;
+    }
+    if (mainStep === "language") {
+      setMainStep("welcome");
+      setWelcomeSub(1);
+      return true;
+    }
+    if (welcomeSub > 0) {
+      goToWelcomePage(welcomeSub - 1);
+      return true;
+    }
+    return false;
+  }
+
+  /** Drops the two intro pages. Language and account are real choices, so they stay. */
+  function skipIntro() {
+    setMainStep("language");
   }
 
   async function runAuth(
@@ -133,9 +168,12 @@ export default function OnboardingScreen() {
         style={styles.transparent}
         edges={["top", "left", "right", "bottom"]}
       >
-      <View style={styles.header}>
-        <OnboardingProgress step={flowStep} total={FLOW_TOTAL} />
-      </View>
+      <OnboardingHeader
+        step={flowStep}
+        total={FLOW_TOTAL}
+        onBack={flowStep > 0 ? goBack : undefined}
+        onSkip={mainStep === "welcome" ? skipIntro : undefined}
+      />
 
       {mainStep === "welcome" ? (
         <View style={styles.welcomeBody}>
@@ -148,6 +186,14 @@ export default function OnboardingScreen() {
             keyExtractor={(item) => String(item)}
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={onWelcomeScroll}
+            // Restores the page you were on when Back brings you here from
+            // language; the pager unmounts while the later steps are on screen.
+            initialScrollIndex={welcomeSub}
+            getItemLayout={(_, index) => ({
+              length: width,
+              offset: width * index,
+              index,
+            })}
             renderItem={({ item }) => (
               <View style={[styles.welcomeSlide, { width }]}>
                 {item === 0 ? <OnboardingHeroSlide /> : <OnboardingPathsSlide />}
@@ -220,10 +266,6 @@ const styles = StyleSheet.create({
   transparent: {
     backgroundColor: "transparent",
   },
-  header: {
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
   welcomeBody: {
     flex: 1,
   },
@@ -236,6 +278,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
   },
   footer: {
