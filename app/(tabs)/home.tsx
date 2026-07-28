@@ -122,6 +122,13 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Top chrome */}
+        {/*
+          The brand and the streak are two different facts and used to share one
+          slot: once you had a streak, "MindKshetra" was replaced by "4 days" and
+          the app stopped naming itself on its own home screen. They sit side by
+          side now, with the streak as a brass count that only appears when there
+          is one.
+        */}
         <ScreenHeader
           leading={
             <Rise>
@@ -130,10 +137,20 @@ export default function HomeScreen() {
                 <Text
                   variant="muted"
                   style={{ marginLeft: spacing.sm }}
-                  color={colors.brassSoft}
+                  color={colors.textSoft}
                 >
-                  {streak > 0 ? `${streak} ${t("homeStreakLabel")}` : "MindKshetra"}
+                  MindKshetra
                 </Text>
+                {streak > 0 ? (
+                  <>
+                    <View
+                      style={[styles.brandDot, { backgroundColor: colors.brass }]}
+                    />
+                    <Text variant="muted" color={colors.brassSoft}>
+                      {streak} {t("homeStreakLabel")}
+                    </Text>
+                  </>
+                ) : null}
               </View>
             </Rise>
           }
@@ -390,7 +407,18 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  brandRow: { flexDirection: "row", alignItems: "center", flexShrink: 1 },
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 1,
+    gap: spacing.sm,
+  },
+  brandDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    opacity: 0.7,
+  },
   hero: {
     marginTop: spacing.xl,
     minHeight: 200,
