@@ -24,7 +24,12 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
-import { cacheVerse, getCachedVerse, markGuestComplete } from "@/storage/local";
+import {
+  cacheVerse,
+  getCachedVerse,
+  markGuestComplete,
+  setGuestCursor,
+} from "@/storage/local";
 import { getApiUrl } from "@/api/client";
 import { radii, spacing } from "@/theme/tokens";
 import type { Sloka } from "@/types";
@@ -73,6 +78,7 @@ export default function SlokaScreen() {
 
   useEffect(() => {
     if (!sloka) return;
+    void setGuestCursor(sloka.chapter, sloka.verse_number);
     contentApi
       .story(sloka.id, lang)
       .then((r) => setStory(r.story))

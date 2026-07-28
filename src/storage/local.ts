@@ -61,6 +61,15 @@ export async function markGuestComplete(slokaId: number): Promise<void> {
   }
 }
 
+export async function setGuestCursor(
+  chapter: number,
+  verse: number
+): Promise<void> {
+  const p = await getGuestProgress();
+  p.cursor = { chapter, verse };
+  await setGuestProgress(p);
+}
+
 export async function cacheVerse(id: number, payload: unknown): Promise<void> {
   const raw = await AsyncStorage.getItem(KEYS.verseCache);
   const map: Record<string, unknown> = raw ? JSON.parse(raw) : {};

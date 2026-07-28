@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -6,24 +6,35 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import {
+  chapterMoral,
+  chapterSubtitle,
   chapterTitle,
   getChapterMetas,
 } from "@/data/chapters";
+import { progressApi } from "@/api/endpoints";
+import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { getGuestProgress } from "@/storage/local";
 import { radii, spacing } from "@/theme/tokens";
 
 export default function ExploreScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
+  const { isSignedIn } = useAuth();
   const [q, setQ] = useState("");
+  const [continueCursor, setContinueCursor] = useState<{
+    chapter: number;
+    verse: number;
+  } | null>(null);
   const chapters = useMemo(() => {
     const all = getChapterMetas();
     if (!q.trim()) return all;
@@ -36,6 +47,23 @@ export default function ExploreScreen() {
         String(c.number).includes(needle)
     );
   }, [q]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      (async () => {
+        try {
+          const data = isSignedIn ? await progressApi.get() : await getGuestProgress();
+          if (alive) setContinueCursor(data.cursor ?? null);
+        } catch {
+          if (alive) setContinueCursor(null);
+        }
+      })();
+      return () => {
+        alive = false;
+      };
+    }, [isSignedIn])
+  );
 
   return (
     <Screen>
@@ -54,6 +82,14 @@ export default function ExploreScreen() {
           style={[styles.search, { color: colors.text }]}
         />
       </Panel>
+      {continueCursor ? (
+        <View style={{ marginTop: spacing.md }}>
+          <Button
+            label={`${t("continueReading")} · ${continueCursor.chapter}.${continueCursor.verse}`}
+            onPress={() => router.push(`/(tabs)/explore/${continueCursor.chapter}`)}
+          />
+        </View>
+      ) : null}
       <FlatList
         data={chapters}
         keyExtractor={(c) => String(c.number)}
@@ -90,8 +126,18 @@ export default function ExploreScreen() {
             >
               {chapterTitle(item, lang)}
             </Text>
-            <Text variant="muted" style={{ marginTop: 4 }} numberOfLines={1}>
-              {item.verses_count} {lang === "hi" ? "श्लोक" : "verses"}
+            {chapterSubtitle(item, lang) ? (
+              <Text variant="muted" style={{ marginTop: 4 }} numberOfLines={1}>
+                {chapterSubtitle(item, lang)}
+              </Text>
+            ) : null}
+            {chapterMoral(item, lang) ? (
+              <Text variant="soft" style={{ marginTop: spacing.sm }} numberOfLines={3}>
+                {chapterMoral(item, lang)}
+              </Text>
+            ) : null}
+            <Text variant="muted" style={{ marginTop: spacing.sm }} numberOfLines={1}>
+              {item.verses_count} {lang === "hi" ? "श्लोक" : "verses"} →
             </Text>
           </Pressable>
         )}
@@ -109,7 +155,7 @@ const styles = StyleSheet.create({
   },
   tile: {
     flex: 1,
-    minHeight: 120,
+    minHeight: 180,
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth * 2,
     padding: spacing.md,

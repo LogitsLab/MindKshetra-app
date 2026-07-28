@@ -10,8 +10,11 @@ import type { Session, User } from "@supabase/supabase-js";
 import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { makeRedirectUri } from "expo-auth-session";
+import * as Linking from "expo-linking";
+import { router } from "expo-router";
 import { Platform } from "react-native";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
+import { getAuthCallbackRedirect } from "@/auth/redirect";
 import { chatApi, progressApi } from "@/api/endpoints";
 import { getChatSessionId, getGuestProgress } from "@/storage/local";
 
@@ -128,6 +131,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const id = setInterval(tick, 500);
     return () => clearInterval(id);
   }, [emailCooldownUntil]);
+
+  useEffect(() => {
+    const rescueAuthRedirect = (url: string | null) => {
+      if (!url) return;
+      const target = getAuthCallbackRedirect(url);
+      if (target) router.replace(target);
+    };
+
+    void Linking.getInitialURL().then(rescueAuthRedirect);
+    const sub = Linking.addEventListener("url", ({ url }) => {
+      rescueAuthRedirect(url);
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     if (!supabaseConfigured) {
