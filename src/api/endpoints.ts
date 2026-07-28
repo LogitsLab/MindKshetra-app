@@ -60,7 +60,11 @@ export const userApi = {
 
 export const votdApi = {
   status: () =>
-    apiFetch<{ configured: boolean; enabled: boolean }>("/api/votd/email"),
+    apiFetch<{
+      configured: boolean;
+      enabled: boolean;
+      testingMode?: boolean;
+    }>("/api/votd/email"),
   send: () =>
     apiFetch<{ ok: boolean; ref?: string; to?: string }>("/api/votd/email", {
       method: "POST",

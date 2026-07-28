@@ -47,6 +47,7 @@ export default function AccountScreen() {
   const [streak, setStreak] = useState(0);
 
   const [votdConfigured, setVotdConfigured] = useState(false);
+  const [votdTestingMode, setVotdTestingMode] = useState(false);
   const [votdEnabled, setVotdEnabled] = useState(true);
   const [prefsBusy, setPrefsBusy] = useState(false);
   const [votdEmailStatus, setVotdEmailStatus] = useState<
@@ -76,6 +77,7 @@ export default function AccountScreen() {
   useEffect(() => {
     if (!isSignedIn || isAnonymous) {
       setVotdConfigured(false);
+      setVotdTestingMode(false);
       setVotdEnabled(true);
       return;
     }
@@ -87,6 +89,7 @@ export default function AccountScreen() {
       if (!alive) return;
       if (status) {
         setVotdConfigured(Boolean(status.configured));
+        setVotdTestingMode(Boolean(status.testingMode));
         setVotdEnabled(Boolean(status.enabled));
       }
       if (typeof prefs?.votdEmailEnabled === "boolean") {
@@ -425,6 +428,13 @@ export default function AccountScreen() {
                       style={{ marginTop: spacing.xs, opacity: 0.8 }}
                     >
                       {t("votdEmailNotReady")}
+                    </Text>
+                  ) : votdTestingMode ? (
+                    <Text
+                      variant="muted"
+                      style={{ marginTop: spacing.xs, opacity: 0.8 }}
+                    >
+                      {t("votdEmailTestingMode")}
                     </Text>
                   ) : null}
                 </View>
