@@ -37,4 +37,10 @@ Navigation: **Home · Explore · Mood · Astrology** tabs + **Madhav FAB** (not 
 npx eas build --platform all --profile preview
 ```
 
-Configure Supabase redirect URLs: `mindkshetra://auth/callback`.
+Configure Supabase Redirect URLs:
+
+- `mindkshetra://auth/callback` (dev builds / production app)
+- `exp://127.0.0.1:8081/--/auth/callback` (Expo Go local)
+- Web callbacks on the MindKshetra Next.js project (`/auth/callback`)
+
+Google Sign-In is enabled on Account → **Continue with Google** (Supabase Google provider must be on).

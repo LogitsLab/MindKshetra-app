@@ -55,6 +55,14 @@ export const en = {
   upgradeAccountBlurb: "You’re browsing as a guest. Sign in with email to keep favorites, reflections, and chats across devices.",
   accountSignInBlurb: "Save favorites, reflections, and Madhav chats — then pick up on any device.",
   authNotConfigured: "Sign-in isn’t configured for this environment yet.",
+  authLinkExpired:
+    "That sign-in link is invalid or has expired. Request a new one below — open it on this same device.",
+  authLinkFailed: "Sign-in didn’t complete. Request a new email link and try again.",
+  authRateLimited:
+    "Too many sign-in emails were requested. Check your inbox for an earlier link, or wait about a minute before trying again.",
+  authEmailQuota:
+    "Sign-in email limit reached (default Supabase mail allows only a couple per hour). Check inbox/spam for an earlier link, or wait up to an hour — then try once.",
+  authCooldown: "Wait {seconds}s before requesting another link",
   authPrivacyNote: "We only use your email to sign you in. No spam, no public profile.",
   favorites: "Favorites",
   favoritesBlurb: "Verses you have bookmarked.",
@@ -123,6 +131,14 @@ export const hi: Record<keyof typeof en, string> = {
   upgradeAccountBlurb: "आप अतिथि के रूप में ब्राउज़ कर रहे हैं। पसंदीदा, चिंतन और वार्ता सभी उपकरणों पर रखने के लिए ईमेल से साइन इन करें।",
   accountSignInBlurb: "पसंदीदा, चिंतन और माधव वार्ता सहेजें — फिर किसी भी उपकरण पर जारी रखें।",
   authNotConfigured: "इस वातावरण में साइन-इन अभी कॉन्फ़िगर नहीं है।",
+  authLinkExpired:
+    "वह साइन-इन लिंक अमान्य है या समाप्त हो गया है। नीचे नया लिंक माँगें — इसे इसी उपकरण पर खोलें।",
+  authLinkFailed: "साइन-इन पूरा नहीं हुआ। नया ईमेल लिंक माँगकर फिर कोशिश करें।",
+  authRateLimited:
+    "बहुत अधिक साइन-इन ईमेल माँगे गए। पहले भेजे लिंक के लिए इनबॉक्स देखें, या लगभग एक मिनट बाद फिर कोशिश करें।",
+  authEmailQuota:
+    "साइन-इन ईमेल सीमा पूरी हो गई (डिफ़ॉल्ट Supabase मेल पर प्रति घंटे केवल कुछ ईमेल)। इनबॉक्स/स्पैम में पहले का लिंक देखें, या लगभग एक घंटा रुककर एक बार कोशिश करें।",
+  authCooldown: "दूसरा लिंक माँगने से पहले {seconds} सेकंड रुकें",
   authPrivacyNote: "हम आपका ईमेल केवल साइन इन के लिए उपयोग करते हैं। कोई स्पैम नहीं, कोई सार्वजनिक प्रोफ़ाइल नहीं।",
   favorites: "पसंदीदा",
   favoritesBlurb: "आपके द्वारा सहेजे गए श्लोक।",

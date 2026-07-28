@@ -3,10 +3,17 @@ import { ActivityIndicator, FlatList, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
+import { Panel } from "@/components/Panel";
 import { SlokaCard, EmptyState } from "@/components/SlokaCard";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { contentApi } from "@/api/endpoints";
-import { getChapterMeta } from "@/data/chapters";
+import {
+  chapterMoral,
+  chapterSubtitle,
+  chapterSummary,
+  chapterTitle,
+  getChapterMeta,
+} from "@/data/chapters";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { spacing } from "@/theme/tokens";
@@ -16,11 +23,16 @@ export default function ChapterScreen() {
   const { chapter } = useLocalSearchParams<{ chapter: string }>();
   const chapterNum = Number(chapter);
   const meta = getChapterMeta(chapterNum);
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const { colors } = useTheme();
   const [slokas, setSlokas] = useState<Sloka[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const title = chapterTitle(meta, lang, `${t("chapter")} ${chapterNum}`);
+  const subtitle = chapterSubtitle(meta, lang);
+  const summary = chapterSummary(meta, lang);
+  const moral = chapterMoral(meta, lang);
 
   useEffect(() => {
     let alive = true;
@@ -46,13 +58,23 @@ export default function ChapterScreen() {
       <ScreenHeader
         showBack
         backFallback="/(tabs)/explore"
-        title={meta?.name ?? `Chapter ${chapterNum}`}
-        subtitle={`Chapter ${chapterNum}`}
+        title={title}
+        subtitle={subtitle || `${t("chapter")} ${chapterNum}`}
       />
-      {meta?.summary ? (
+      {summary ? (
         <Text variant="soft" style={{ marginBottom: spacing.sm }}>
-          {meta.summary}
+          {summary}
         </Text>
+      ) : null}
+      {moral ? (
+        <Panel style={{ marginBottom: spacing.sm }}>
+          <Text variant="eyebrow" color={colors.brassSoft}>
+            {t("chapterMoral")}
+          </Text>
+          <Text variant="soft" style={{ marginTop: spacing.xs }}>
+            {moral}
+          </Text>
+        </Panel>
       ) : null}
 
       {loading ? (

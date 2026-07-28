@@ -8,7 +8,7 @@ import {
   View,
   ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button, Hairline } from "@/components/Button";
@@ -23,6 +23,7 @@ import { radii, spacing } from "@/theme/tokens";
 
 export default function AccountScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ auth_error?: string }>();
   const { colors, mode, toggle } = useTheme();
   const { lang, setLang, t } = useLanguage();
   const {
@@ -33,7 +34,9 @@ export default function AccountScreen() {
     isSignedIn,
     signInAnonymously,
     signInWithEmail,
+    signInWithGoogle,
     signOut,
+    emailCooldownSec,
   } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -49,6 +52,14 @@ export default function AccountScreen() {
     "idle" | "sending" | "sent"
   >("idle");
 
+  useEffect(() => {
+    const authError = Array.isArray(params.auth_error)
+      ? params.auth_error[0]
+      : params.auth_error;
+    if (!authError) return;
+    if (authError === "otp_expired") setMessage(t("authLinkExpired"));
+    else setMessage(t("authLinkFailed"));
+  }, [params.auth_error, t]);
   useEffect(() => {
     if (!isSignedIn) {
       setStreak(0);
@@ -92,7 +103,16 @@ export default function AccountScreen() {
       await action();
       if (ok) setMessage(ok);
     } catch (e) {
-      setMessage((e as Error).message);
+      const raw = (e as Error).message || "";
+      if (
+        raw === "EMAIL_QUOTA" ||
+        raw === "RATE_LIMITED" ||
+        /rate|too many|wait a minute/i.test(raw)
+      ) {
+        setMessage(t("authEmailQuota"));
+      } else {
+        setMessage(raw);
+      }
     } finally {
       setBusy(false);
     }
@@ -244,9 +264,20 @@ export default function AccountScreen() {
                   ]}
                 />
                 <Button
-                  label={busy ? t("sendingLink") : t("signInEmail")}
+                  label={
+                    busy
+                      ? t("sendingLink")
+                      : emailCooldownSec > 0
+                        ? t("authCooldown").replace(
+                            "{seconds}",
+                            emailCooldownSec >= 60
+                              ? `${Math.ceil(emailCooldownSec / 60)}m`
+                              : String(emailCooldownSec)
+                          )
+                        : t("signInEmail")
+                  }
                   loading={busy}
-                  disabled={!email.trim()}
+                  disabled={!email.trim() || emailCooldownSec > 0}
                   onPress={() =>
                     void run(async () => {
                       await signInWithEmail(email.trim());
@@ -254,6 +285,13 @@ export default function AccountScreen() {
                     }, t("magicLinkSent"))
                   }
                 />
+                {emailCooldownSec > 0 && !linkSent ? (
+                  <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                    {emailCooldownSec >= 120
+                      ? t("authEmailQuota")
+                      : t("authRateLimited")}
+                  </Text>
+                ) : null}
               </>
             )}
 
@@ -265,10 +303,10 @@ export default function AccountScreen() {
             </Text>
 
             <Button
-              label={t("signInGoogleSoon")}
+              label={t("signInGoogle")}
               variant="ghost"
-              disabled
-              onPress={() => undefined}
+              loading={busy}
+              onPress={() => void run(signInWithGoogle)}
             />
 
             {!user ? (
@@ -331,7 +369,14 @@ export default function AccountScreen() {
         {message ? (
           <Text
             variant="soft"
-            style={{ marginTop: spacing.md, color: colors.brassSoft }}
+            style={{
+              marginTop: spacing.md,
+              color:
+                message === t("authLinkExpired") ||
+                message === t("authLinkFailed")
+                  ? colors.danger
+                  : colors.brassSoft,
+            }}
           >
             {message}
           </Text>

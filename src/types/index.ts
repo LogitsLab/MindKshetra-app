@@ -36,9 +36,12 @@ export type Citation = {
 export type ChapterMeta = {
   number: number;
   name: string;
+  /** Hindi common title (not transliteration of English). */
+  name_hi?: string;
   name_sanskrit: string;
   verses_count: number;
   summary: string;
+  summary_hi?: string;
   moral?: string;
   moral_hi?: string;
 };

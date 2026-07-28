@@ -11,7 +11,10 @@ import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { getChapterMetas } from "@/data/chapters";
+import {
+  chapterTitle,
+  getChapterMetas,
+} from "@/data/chapters";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
@@ -28,6 +31,7 @@ export default function ExploreScreen() {
     return all.filter(
       (c) =>
         c.name.toLowerCase().includes(needle) ||
+        (c.name_hi ?? "").includes(q) ||
         c.name_sanskrit.includes(q) ||
         String(c.number).includes(needle)
     );
@@ -79,11 +83,15 @@ export default function ExploreScreen() {
                 {item.number}
               </Text>
             </View>
-            <Text variant="title" style={{ fontSize: 16, marginTop: spacing.sm }} numberOfLines={2}>
-              {item.name}
+            <Text
+              variant="title"
+              style={{ fontSize: 16, marginTop: spacing.sm }}
+              numberOfLines={2}
+            >
+              {chapterTitle(item, lang)}
             </Text>
             <Text variant="muted" style={{ marginTop: 4 }} numberOfLines={1}>
-              {item.verses_count} verses
+              {item.verses_count} {lang === "hi" ? "श्लोक" : "verses"}
             </Text>
           </Pressable>
         )}

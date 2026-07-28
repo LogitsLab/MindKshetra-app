@@ -132,6 +132,7 @@ export default function MadhavScreen() {
           {
             language: lang,
             sessionId: sessionId ?? undefined,
+            chatSessionId: sessionId ?? undefined,
             memberId: memberId ?? undefined,
             chartSessionId: chartSessionId ?? undefined,
             messages: history,
