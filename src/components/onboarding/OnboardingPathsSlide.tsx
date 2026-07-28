@@ -98,7 +98,8 @@ function PathRow({ item }: { item: PathCard }) {
   );
 }
 
-export function OnboardingPathsSlide() {
+/** `active` is false while the pager still has the poster on screen. */
+export function OnboardingPathsSlide({ active = true }: { active?: boolean }) {
   const { t } = useLanguage();
   const { colors } = useTheme();
 
@@ -109,7 +110,7 @@ export function OnboardingPathsSlide() {
       showsVerticalScrollIndicator={false}
       bounces={false}
     >
-      <Rise>
+      <Rise active={active}>
         <Text variant="eyebrow" color={colors.brassSoft}>
           {t("onboardingPathsEyebrow")}
         </Text>

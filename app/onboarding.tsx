@@ -239,7 +239,11 @@ export default function OnboardingScreen() {
             })}
             renderItem={({ item }) => (
               <View style={[styles.welcomeSlide, { width }]}>
-                {item === 0 ? <OnboardingHeroSlide /> : <OnboardingPathsSlide />}
+                {item === 0 ? (
+                  <OnboardingHeroSlide />
+                ) : (
+                  <OnboardingPathsSlide active={welcomeSub === 1} />
+                )}
               </View>
             )}
           />
