@@ -16,9 +16,14 @@ import { OnboardingHeroSlide } from "@/components/onboarding/OnboardingHeroSlide
 import { OnboardingPathsSlide } from "@/components/onboarding/OnboardingPathsSlide";
 import { OnboardingLanguageStep } from "@/components/onboarding/OnboardingLanguageStep";
 import { OnboardingAuthStep } from "@/components/onboarding/OnboardingAuthStep";
+import {
+  OnboardingBackdrop,
+  useReadingVeil,
+} from "@/components/onboarding/OnboardingBackdrop";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useOnboarding } from "@/context/OnboardingContext";
+import { useTheme } from "@/context/ThemeContext";
 import { spacing } from "@/theme/tokens";
 import type { AppLang } from "@/i18n/dictionary";
 
@@ -28,6 +33,7 @@ type MainStep = (typeof MAIN_STEPS)[number];
 export default function OnboardingScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const { colors } = useTheme();
   const { t, lang, setLang } = useLanguage();
   const { markComplete, complete } = useOnboarding();
   const {
@@ -50,6 +56,8 @@ export default function OnboardingScreen() {
   const welcomeRef = useRef<FlatList>(null);
 
   const mainIndex = MAIN_STEPS.indexOf(mainStep);
+  const onPoster = mainStep === "welcome" && welcomeSub === 0;
+  const reading = useReadingVeil(!onPoster);
 
   if (complete) {
     return <Redirect href="/(tabs)/home" />;
@@ -108,7 +116,14 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <Screen atmosphere="strong" padded={false} edges={["top", "left", "right", "bottom"]}>
+    <View style={[styles.root, { backgroundColor: colors.void }]}>
+      <OnboardingBackdrop reading={reading} />
+      <Screen
+        atmosphere="none"
+        padded={false}
+        style={styles.transparent}
+        edges={["top", "left", "right", "bottom"]}
+      >
       <View style={styles.header}>
         <OnboardingStepDots
           step={mainIndex}
@@ -187,11 +202,18 @@ export default function OnboardingScreen() {
           <Button label={t("onboardingContinue")} onPress={advanceLanguage} />
         </View>
       ) : null}
-    </Screen>
+      </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  transparent: {
+    backgroundColor: "transparent",
+  },
   header: {
     marginBottom: spacing.sm,
     paddingHorizontal: spacing.md,
@@ -202,9 +224,9 @@ const styles = StyleSheet.create({
   welcomePager: {
     flex: 1,
   },
+  /** No horizontal inset: the poster is edge-to-edge, slides pad their own copy. */
   welcomeSlide: {
     flex: 1,
-    paddingHorizontal: spacing.md,
   },
   scroll: {
     paddingHorizontal: spacing.md,
