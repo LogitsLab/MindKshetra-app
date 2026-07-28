@@ -9,7 +9,8 @@ import { radii, spacing, typeScale } from "@/theme/tokens";
 import type { AppLang } from "@/i18n/dictionary";
 
 type Props = {
-  draftLang: AppLang;
+  /** Reads the live app language, not a snapshot of it. */
+  selected: AppLang;
   onSelect: (lang: AppLang) => void;
 };
 
@@ -59,7 +60,7 @@ function SelectionRing({ selected }: { selected: boolean }) {
   );
 }
 
-export function OnboardingLanguageStep({ draftLang, onSelect }: Props) {
+export function OnboardingLanguageStep({ selected: current, onSelect }: Props) {
   const { colors } = useTheme();
   const { t } = useLanguage();
 
@@ -77,7 +78,7 @@ export function OnboardingLanguageStep({ draftLang, onSelect }: Props) {
 
       <View style={styles.row} accessibilityRole="radiogroup">
         {OPTIONS.map((opt) => {
-          const selected = draftLang === opt.code;
+          const selected = current === opt.code;
           const devanagari = opt.code === "hi";
           return (
             <Pressable

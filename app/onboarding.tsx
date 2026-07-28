@@ -31,7 +31,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useTheme } from "@/context/ThemeContext";
 import { spacing } from "@/theme/tokens";
-import type { AppLang } from "@/i18n/dictionary";
 
 const MAIN_STEPS = ["welcome", "language", "account"] as const;
 type MainStep = (typeof MAIN_STEPS)[number];
@@ -61,7 +60,6 @@ export default function OnboardingScreen() {
 
   const [mainStep, setMainStep] = useState<MainStep>("welcome");
   const [welcomeSub, setWelcomeSub] = useState(0);
-  const [draftLang, setDraftLang] = useState<AppLang>(lang);
   const [email, setEmail] = useState("");
   const [emailOpen, setEmailOpen] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
@@ -133,8 +131,11 @@ export default function OnboardingScreen() {
     setMainStep("language");
   }
 
+  /**
+   * The choice already applied on tap — the whole step is a live preview. There
+   * is nothing left to commit here, only somewhere to go next.
+   */
   function advanceLanguage() {
-    setLang(draftLang);
     setMainStep("account");
   }
 
@@ -258,13 +259,7 @@ export default function OnboardingScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {mainStep === "language" ? (
-            <OnboardingLanguageStep
-              draftLang={draftLang}
-              onSelect={(code) => {
-                setDraftLang(code);
-                setLang(code);
-              }}
-            />
+            <OnboardingLanguageStep selected={lang} onSelect={setLang} />
           ) : null}
 
           {mainStep === "account" ? (
