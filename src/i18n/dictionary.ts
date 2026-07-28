@@ -3,6 +3,7 @@ import * as gita from "@/i18n/namespaces/gita";
 import * as astrology from "@/i18n/namespaces/astrology";
 import * as account from "@/i18n/namespaces/account";
 import * as chat from "@/i18n/namespaces/chat";
+import * as onboarding from "@/i18n/namespaces/onboarding";
 
 export type AppLang = "en" | "hi";
 
@@ -13,6 +14,7 @@ export const dictionary = {
     ...astrology.en,
     ...account.en,
     ...chat.en,
+    ...onboarding.en,
     navHome: "Home",
   },
   hi: {
@@ -21,6 +23,7 @@ export const dictionary = {
     ...astrology.hi,
     ...account.hi,
     ...chat.hi,
+    ...onboarding.hi,
     navHome: "होम",
   },
 } as const;

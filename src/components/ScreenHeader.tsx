@@ -50,7 +50,7 @@ export function ProfileButton() {
 }
 
 /** Back chevron for nested screens without a Stack header. */
-export function BackButton({ fallback = "/(tabs)" }: { fallback?: string }) {
+export function BackButton({ fallback = "/(tabs)/home" }: { fallback?: string }) {
   const router = useRouter();
   const { colors } = useTheme();
 

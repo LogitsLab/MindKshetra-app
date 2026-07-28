@@ -23,6 +23,7 @@ export function MadhavFab() {
 
   const onTabs =
     pathname === "/" ||
+    pathname === "/home" ||
     pathname?.startsWith("/explore") ||
     pathname?.startsWith("/mood") ||
     (pathname?.startsWith("/astrology") &&

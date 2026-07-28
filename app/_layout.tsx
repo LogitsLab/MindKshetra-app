@@ -7,19 +7,38 @@ import { Sora_400Regular, Sora_600SemiBold } from "@expo-google-fonts/sora";
 import * as SplashScreen from "expo-splash-screen";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { OnboardingProvider } from "@/context/OnboardingContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { MadhavProvider } from "@/context/MadhavContext";
 import { MadhavFab } from "@/components/MadhavFab";
 import { ProfileButton } from "@/components/ScreenHeader";
+import { OnboardingGate } from "@/components/OnboardingGate";
+import { useOnboarding } from "@/context/OnboardingContext";
+import { useOnboardingRouting } from "@/hooks/useOnboardingRouting";
+import { useSegments } from "expo-router";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
+/** App always boots at app/index.tsx, which routes by onboarding status. */
+export const unstable_settings = {
+  initialRouteName: "index",
+};
+
 function RootNavigator() {
   const { mode, colors } = useTheme();
+  const { ready } = useOnboarding();
+  const segments = useSegments();
+  const onOnboarding = segments[0] === "onboarding";
+
+  useOnboardingRouting();
+
+  if (!ready) return null;
+
   return (
     <>
       <StatusBar style={mode === "dark" ? "light" : "dark"} />
       <Stack
+        initialRouteName="index"
         screenOptions={{
           headerStyle: { backgroundColor: colors.navBg },
           headerTintColor: colors.text,
@@ -30,6 +49,14 @@ function RootNavigator() {
           headerRight: () => <ProfileButton />,
         }}
       >
+        <Stack.Screen
+          name="index"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="onboarding"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
         <Stack.Screen
           name="(tabs)"
           options={{ headerShown: false, title: "Home" }}
@@ -63,7 +90,7 @@ function RootNavigator() {
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
         <Stack.Screen name="privacy" options={{ title: "Privacy" }} />
       </Stack>
-      <MadhavFab />
+      {!onOnboarding ? <MadhavFab /> : null}
     </>
   );
 }
@@ -86,11 +113,15 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <LanguageProvider>
-          <AuthProvider>
-            <MadhavProvider>
-              <RootNavigator />
-            </MadhavProvider>
-          </AuthProvider>
+          <OnboardingProvider>
+            <AuthProvider>
+              <MadhavProvider>
+                <OnboardingGate>
+                  <RootNavigator />
+                </OnboardingGate>
+              </MadhavProvider>
+            </AuthProvider>
+          </OnboardingProvider>
         </LanguageProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

@@ -1,7 +1,7 @@
 import React from "react";
-import { Platform, StyleSheet } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { BlurView } from "expo-blur";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import {
   TabAstrologyIcon,
   TabExploreIcon,
@@ -9,11 +9,25 @@ import {
   TabMoodIcon,
 } from "@/components/BrandMark";
 import { useLanguage } from "@/context/LanguageContext";
+import { useOnboarding } from "@/context/OnboardingContext";
 import { useTheme } from "@/context/ThemeContext";
 
 export default function TabsLayout() {
   const { colors, mode } = useTheme();
   const { t } = useLanguage();
+  const { ready, complete } = useOnboarding();
+
+  if (!ready) {
+    return (
+      <View style={[styles.block, { backgroundColor: colors.void }]}>
+        <ActivityIndicator color={colors.brass} />
+      </View>
+    );
+  }
+
+  if (!complete) {
+    return <Redirect href="/onboarding" />;
+  }
 
   return (
     <Tabs
@@ -51,7 +65,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: t("navHome"),
           tabBarIcon: ({ focused }) => <TabHomeIcon focused={focused} />,
@@ -83,3 +97,11 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  block: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

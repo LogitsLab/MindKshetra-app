@@ -17,6 +17,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { Rise } from "@/components/Rise";
 import { userApi, votdApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
+import { useOnboarding } from "@/context/OnboardingContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
@@ -38,6 +39,7 @@ export default function AccountScreen() {
     signOut,
     emailCooldownSec,
   } = useAuth();
+  const { resetComplete } = useOnboarding();
 
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
@@ -529,6 +531,19 @@ export default function AccountScreen() {
             {lang === "hi" ? "गोपनीयता नीति" : "Privacy policy"}
           </Text>
         </Pressable>
+
+        {__DEV__ ? (
+          <Pressable
+            onPress={() => {
+              void resetComplete().then(() => router.replace("/onboarding"));
+            }}
+            style={{ marginTop: spacing.md }}
+          >
+            <Text variant="muted" style={{ textAlign: "center", opacity: 0.7 }}>
+              Replay onboarding (dev)
+            </Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </Screen>
   );

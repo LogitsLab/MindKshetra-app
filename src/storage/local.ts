@@ -3,6 +3,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const KEYS = {
   theme: "mindkshetra-theme",
   lang: "mindkshetra-lang",
+  onboarding: "mindkshetra-onboarding-complete",
+  onboardingVersion: "mindkshetra-onboarding-version",
   chatSession: "mindkshetra-chat-session",
   guestProgress: "mindkshetra-guest-progress",
   verseCache: "mindkshetra-verse-cache",
@@ -24,6 +26,30 @@ export async function getStoredLang(): Promise<"en" | "hi" | null> {
 
 export async function setStoredLang(lang: "en" | "hi"): Promise<void> {
   await AsyncStorage.setItem(KEYS.lang, lang);
+}
+
+/** Bump when onboarding content/flow changes to re-show once for returning users. */
+const ONBOARDING_VERSION = 4;
+
+export async function getOnboardingComplete(): Promise<boolean> {
+  const storedVersion = await AsyncStorage.getItem(KEYS.onboardingVersion);
+  if (storedVersion !== String(ONBOARDING_VERSION)) {
+    await AsyncStorage.multiRemove([KEYS.onboarding, KEYS.onboardingVersion]);
+    return false;
+  }
+  const v = await AsyncStorage.getItem(KEYS.onboarding);
+  return v === "1";
+}
+
+export async function setOnboardingComplete(): Promise<void> {
+  await AsyncStorage.multiSet([
+    [KEYS.onboarding, "1"],
+    [KEYS.onboardingVersion, String(ONBOARDING_VERSION)],
+  ]);
+}
+
+export async function clearOnboardingComplete(): Promise<void> {
+  await AsyncStorage.multiRemove([KEYS.onboarding, KEYS.onboardingVersion]);
 }
 
 export async function getChatSessionId(): Promise<string | null> {
