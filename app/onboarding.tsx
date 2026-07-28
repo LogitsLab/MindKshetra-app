@@ -85,9 +85,16 @@ export default function OnboardingScreen() {
     router.replace("/(tabs)/home");
   }
 
+  /**
+   * Bound to onScroll as well as onMomentumScrollEnd. A slow drag released
+   * without flick produces no momentum event on iOS, so momentum alone left the
+   * pager on page two while the progress track still read page one.
+   */
   function onWelcomeScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    if (width <= 0) return;
     const index = Math.round(e.nativeEvent.contentOffset.x / width);
-    setWelcomeSub(index);
+    const clamped = Math.max(0, Math.min(1, index));
+    if (clamped !== welcomeSub) setWelcomeSub(clamped);
   }
 
   function goToWelcomePage(index: number) {
@@ -185,6 +192,8 @@ export default function OnboardingScreen() {
             data={[0, 1]}
             keyExtractor={(item) => String(item)}
             showsHorizontalScrollIndicator={false}
+            onScroll={onWelcomeScroll}
+            scrollEventThrottle={16}
             onMomentumScrollEnd={onWelcomeScroll}
             // Restores the page you were on when Back brings you here from
             // language; the pager unmounts while the later steps are on screen.
