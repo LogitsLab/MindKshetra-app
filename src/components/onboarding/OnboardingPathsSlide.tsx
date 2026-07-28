@@ -59,6 +59,10 @@ function PathRow({ item }: { item: PathCard }) {
 
   return (
     <View
+      // Grouped, so a screen reader announces the path as one item instead of
+      // reading an index number, a title and a blurb as three separate stops.
+      accessible
+      accessibilityLabel={`${t(item.titleKey)}. ${t(item.blurbKey)}`}
       style={[
         styles.row,
         { height: ROW_HEIGHT, borderColor: colors.line, backgroundColor: colors.surface },
@@ -114,7 +118,11 @@ export function OnboardingPathsSlide({ active = true }: { active?: boolean }) {
         <Text variant="eyebrow" color={colors.brassSoft}>
           {t("onboardingPathsEyebrow")}
         </Text>
-        <Text variant="display" style={styles.heading}>
+        <Text
+          variant="display"
+          accessibilityRole="header"
+          style={styles.heading}
+        >
           {t("onboardingPathsTitle")}
         </Text>
       </Rise>

@@ -77,7 +77,7 @@ export function OnboardingAuthStep({
         </Text>
       </View>
 
-      <Text variant="display" style={styles.title}>
+      <Text variant="display" accessibilityRole="header" style={styles.title}>
         {t("onboardingAuthTitle")}
       </Text>
       <Text variant="soft" style={styles.body}>

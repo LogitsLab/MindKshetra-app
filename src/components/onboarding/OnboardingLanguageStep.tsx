@@ -68,7 +68,7 @@ export function OnboardingLanguageStep({ draftLang, onSelect }: Props) {
       <Text variant="eyebrow" color={colors.brassSoft}>
         {t("onboardingLangEyebrow")}
       </Text>
-      <Text variant="display" style={styles.title}>
+      <Text variant="display" accessibilityRole="header" style={styles.title}>
         {t("onboardingLangTitle")}
       </Text>
       <Text variant="soft" style={styles.body}>
