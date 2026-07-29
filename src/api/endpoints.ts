@@ -1,16 +1,37 @@
 import { apiFetch } from "@/api/client";
 import type { AstrologyMember, JournalEntry, Sloka, Streak } from "@/types";
 
+function normalizeSlokaList(data: unknown): { slokas: Sloka[]; total: number } {
+  if (Array.isArray(data)) {
+    return { slokas: data as Sloka[], total: data.length };
+  }
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+    if (Array.isArray(obj.slokas)) {
+      return {
+        slokas: obj.slokas as Sloka[],
+        total: Number(obj.total ?? obj.slokas.length),
+      };
+    }
+    if (Array.isArray(obj.results)) {
+      return {
+        slokas: obj.results as Sloka[],
+        total: obj.results.length,
+      };
+    }
+  }
+  return { slokas: [], total: 0 };
+}
+
 export const contentApi = {
-  slokas: (params?: { q?: string; chapter?: number; limit?: number }) => {
+  slokas: async (params?: { q?: string; chapter?: number; limit?: number }) => {
     const sp = new URLSearchParams();
     if (params?.q) sp.set("q", params.q);
     if (params?.chapter != null) sp.set("chapter", String(params.chapter));
     if (params?.limit != null) sp.set("limit", String(params.limit));
     const q = sp.toString();
-    return apiFetch<{ slokas: Sloka[]; total: number }>(
-      `/api/slokas${q ? `?${q}` : ""}`
-    );
+    const data = await apiFetch<unknown>(`/api/slokas${q ? `?${q}` : ""}`);
+    return normalizeSlokaList(data);
   },
   sloka: (id: number) => apiFetch<Sloka>(`/api/slokas/${id}`),
   story: (id: number, lang: "en" | "hi") =>

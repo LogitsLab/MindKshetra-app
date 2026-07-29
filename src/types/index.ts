@@ -28,9 +28,9 @@ export type ChatMessage = {
 
 export type Citation = {
   id: number;
-  chapter: number;
-  verse_number: number;
-  snippet?: string;
+  ref: string;
+  english: string;
+  hindi?: string;
 };
 
 export type ChapterMeta = {

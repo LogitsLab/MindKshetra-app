@@ -279,13 +279,19 @@ export default function MadhavScreen() {
           <View style={[styles.cites, { borderTopColor: colors.hairline }]}>
             {item.citations.slice(0, 4).map((c) => (
               <Pressable
-                key={`${c.chapter}-${c.verse_number}-${c.id}`}
+                key={String(c.id)}
                 onPress={() => router.push(`/sloka/${c.id}`)}
                 style={[styles.citeRow, { borderBottomColor: colors.hairline }]}
               >
                 <Text variant="muted" style={{ color: colors.brassSoft }}>
-                  {c.chapter}.{c.verse_number}
-                  {c.snippet ? ` — ${c.snippet}` : ""}
+                  {c.ref}
+                </Text>
+                <Text
+                  variant="muted"
+                  style={{ marginTop: 2, color: colors.textSoft }}
+                  numberOfLines={2}
+                >
+                  {lang === "hi" && c.hindi ? c.hindi : c.english}
                 </Text>
               </Pressable>
             ))}
