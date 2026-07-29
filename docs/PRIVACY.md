@@ -1,24 +1,24 @@
-# Privacy Policy — MindKshetra Mobile
+# Privacy Policy — MindKshetra
 
-MindKshetra is a Gita reading companion. This summary is for App Store / Play Store listings.
+Applies to **web** (`https://mind.logitslab.com`) and **mobile** (iOS / Android).
 
-## Data we process
+**Canonical URL:** https://mind.logitslab.com/privacy
 
-- **Account:** email or OAuth identity via Supabase Auth (optional anonymous use)
-- **Reading:** favorites, journal reflections, streak, progress
-- **Chat:** Madhav messages you send (processed by our API / LLM provider)
-- **Astrology:** birth details you enter for chart computation (stored if you save a member)
+## Summary
 
-## How we use it
+- Account (email / Google / optional guest)
+- Reading data (favorites, journal, progress, streak)
+- Madhav chat messages (processed via API / LLM)
+- Astrology birth details you enter/save
+- Verse of the Day email preference
+- Essential cookies / sessions and server logs
 
-To provide reading, chat, and astrology features; to sync the same account across web and mobile.
-
-## Sharing
-
-We do not sell personal data. Service providers (Supabase, hosting, LLM) process data only to run the product.
+We do not sell personal data. Processors include Supabase, Vercel, Resend, and LLM providers.
 
 ## Contact
 
-privacy@mindkshetra.app (update before store submission)
+info@logitslab.com
 
-Full policy URL for store metadata: `https://mindkshetra.app/privacy` (publish on web before release).
+## Store metadata
+
+Use privacy policy URL: `https://mind.logitslab.com/privacy`

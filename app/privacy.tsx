@@ -6,29 +6,33 @@ import { Button } from "@/components/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { spacing } from "@/theme/tokens";
 
+const PRIVACY_URL = "https://mind.logitslab.com/privacy";
+
 export default function PrivacyScreen() {
   const { lang } = useLanguage();
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ paddingBottom: 80, paddingTop: spacing.md }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 80, paddingTop: spacing.md }}
+      >
         <Text variant="display">
           {lang === "hi" ? "गोपनीयता" : "Privacy"}
         </Text>
         <Text variant="soft" style={{ marginTop: spacing.md }}>
           {lang === "hi"
-            ? "MindKshetra आपके पठन, पसंदीदा, जर्नल, चैट और ज्योतिष विवरण को सेवा चलाने के लिए संसाधित करता है। हम व्यक्तिगत डेटा नहीं बेचते।"
-            : "MindKshetra processes your reading progress, favorites, journal, chat, and astrology details to run the product. We do not sell personal data."}
+            ? "MindKshetra आपके पठन, पसंदीदा, जर्नल, चैट और ज्योतिष विवरण को सेवा चलाने के लिए संसाधित करता है। हम व्यक्तिगत डेटा नहीं बेचते। वेब और मोबाइल एक ही खाते/बैकएंड का उपयोग करते हैं।"
+            : "MindKshetra processes your reading progress, favorites, journal, chat, and astrology details to run the product. We do not sell personal data. Web and mobile share the same account and backend."}
         </Text>
         <Text variant="soft" style={{ marginTop: spacing.md }}>
           {lang === "hi"
-            ? "पूर्ण नीति वेब पर उपलब्ध है।"
-            : "The full policy is published on the web."}
+            ? "पूर्ण नीति वेब पर उपलब्ध है — स्टोर सूची और कानूनी संदर्भ के लिए वही URL उपयोग करें।"
+            : "The full policy lives on the web — use that URL for store listings and legal reference."}
         </Text>
         <View style={{ marginTop: spacing.lg }}>
           <Button
-            label={lang === "hi" ? "वेब पर खोलें" : "Open on web"}
+            label={lang === "hi" ? "पूर्ण नीति खोलें" : "Open full policy"}
             variant="ghost"
-            onPress={() => Linking.openURL("https://mindkshetra.app/privacy")}
+            onPress={() => Linking.openURL(PRIVACY_URL)}
           />
         </View>
       </ScrollView>

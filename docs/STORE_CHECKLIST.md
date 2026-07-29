@@ -31,7 +31,7 @@ the original list assumed the app was correct and only needed configuration.
 - [ ] `EXPO_PUBLIC_*` env set for production API + Supabase
 - [ ] Supabase Auth: Google, Apple, email redirect `mindkshetra://auth/callback`
 - [ ] Apple Sign-In capability on iOS bundle `app.mindkshetra.mobile`
-- [ ] Privacy policy URL live; link from Account screen
+- [ ] Privacy policy URL live: `https://mind.logitslab.com/privacy`; link from Account screen
 - [ ] **Privacy nutrition label** declaring Supabase auth data collection. Required by
       App Store Connect and absent from the original list. — **[new]**
 - [ ] App icons / splash (void `#07090f`, brass mark)
