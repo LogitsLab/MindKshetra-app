@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "lint": "tsc --noEmit",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "brand:assets": "node scripts/render-brand-assets.mjs"
   },
   "jest": {
     "preset": "jest-expo",
