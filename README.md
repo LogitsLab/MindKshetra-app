@@ -17,7 +17,7 @@ Requires **Expo Go for SDK 54** (App Store / Play Store current build).
 ```bash
 cp .env.example .env
 # Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
-# Default API is production web: https://mindkshetra.app (see EXPO_PUBLIC_API_URL in .env)
+# Default API is production web: https://mind.logitslab.com (see EXPO_PUBLIC_API_URL in .env)
 # For local Next.js instead: http://localhost:3000 (simulator) or http://192.168.x.x:3000 (device)
 
 npm install --legacy-peer-deps

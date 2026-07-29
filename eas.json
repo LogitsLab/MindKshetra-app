@@ -12,7 +12,12 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://mind.logitslab.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://rqknmgzdzjpxepjmbzvb.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_jdUBIB53u9sw6TdKAPUfRQ__scR6eRU"
+      }
     }
   },
   "submit": {

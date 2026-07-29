@@ -1,7 +1,7 @@
 import { fetch as expoFetch } from "expo/fetch";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
 
-const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://mindkshetra.app").replace(
+const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://mind.logitslab.com").replace(
   /\/$/,
   ""
 );

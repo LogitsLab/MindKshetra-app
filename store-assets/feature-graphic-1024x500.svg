@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#07090f"/>
+      <stop offset="55%" stop-color="#0c1220"/>
+      <stop offset="100%" stop-color="#101820"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="78%" cy="40%" r="45%">
+      <stop offset="0%" stop-color="#1a3a3a" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#07090f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <rect width="1024" height="500" fill="url(#glow)"/>
+  <!-- soft brass arc -->
+  <circle cx="860" cy="120" r="220" fill="none" stroke="#c9a227" stroke-width="1" opacity="0.12"/>
+  <circle cx="860" cy="120" r="150" fill="none" stroke="#c9a227" stroke-width="0.75" opacity="0.08"/>
+
+  <!-- brand mark scaled -->
+  <g transform="translate(72,145) scale(3.3)">
+    <circle cx="32" cy="32" r="30" stroke="#c9a227" stroke-width="1" opacity="0.45" fill="none"/>
+    <circle cx="32" cy="32" r="22" stroke="#c9a227" stroke-width="0.75" opacity="0.3" fill="none"/>
+    <path d="M32 14c2.8 6.2 8.5 10.5 15.2 11.8C40.5 28.2 36 34.4 34.2 41.2 32.8 34.2 28.2 28.4 21.5 25.8 27.8 24.2 32.2 19.8 32 14z" fill="#c9a227" opacity="0.85"/>
+    <path d="M32 22c1.6 3.6 4.9 6.1 8.8 6.9-3.9 1.3-6.6 4.8-7.6 8.8-.8-4.1-3.5-7.5-7.4-9 3.8-1 6.9-3.5 6.2-6.7z" fill="#e2c45a" opacity="0.7"/>
+    <path d="M18 46h28" stroke="#c9a227" stroke-width="1" opacity="0.5" fill="none"/>
+    <path d="M22 50h20" stroke="#c9a227" stroke-width="0.75" opacity="0.35" fill="none"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="320" y="230" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="600" fill="#f2efe6">MindKshetra</text>
+  <text x="320" y="280" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#e2c45a">Clarity from the Gita, for the battlefield of the mind.</text>
+  <text x="320" y="330" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#a8a294" letter-spacing="2">EXPLORE  ·  MOOD  ·  MADHAV  ·  ASTROLOGY</text>
+</svg>
