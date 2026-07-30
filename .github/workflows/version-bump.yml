@@ -47,6 +47,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app.json package.json package-lock.json
+          node scripts/release-notes.mjs --ensure-file || true
+          git add app.json package.json package-lock.json store/release-notes/ || true
           git commit -m "chore: bump version to v${VERSION}"
           git push origin HEAD:main

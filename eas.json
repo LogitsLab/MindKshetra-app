@@ -22,9 +22,25 @@
   },
   "submit": {
     "production": {
+      "ios": {
+        "language": "en-US"
+      },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",
-        "track": "internal"
+        "track": "internal",
+        "releaseStatus": "completed",
+        "changesNotSentForReview": true
+      }
+    },
+    "production-play": {
+      "ios": {
+        "language": "en-US"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "production",
+        "releaseStatus": "draft",
+        "changesNotSentForReview": true
       }
     }
   }

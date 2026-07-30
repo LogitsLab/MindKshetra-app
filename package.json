@@ -10,7 +10,9 @@
     "lint": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "brand:assets": "node scripts/render-brand-assets.mjs"
+    "brand:assets": "node scripts/render-brand-assets.mjs",
+    "release:notes": "node scripts/release-notes.mjs",
+    "release:stores": "eas build --platform all --profile production --auto-submit --non-interactive"
   },
   "jest": {
     "preset": "jest-expo",

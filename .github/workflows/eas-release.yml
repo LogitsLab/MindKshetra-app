@@ -1,0 +1,191 @@
+name: EAS store release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - app.json
+      - package.json
+      - eas.json
+      - store/**
+      - app/**
+      - src/**
+      - assets/**
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: Platforms to build and submit
+        type: choice
+        options:
+          - all
+          - ios
+          - android
+        default: all
+      android_track:
+        description: Play track (internal = testers, production-play = draft production)
+        type: choice
+        options:
+          - internal
+          - production-play
+        default: internal
+      skip_submit:
+        description: Build only (skip store submit)
+        type: boolean
+        default: false
+
+concurrency:
+  group: eas-store-release
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      version: ${{ steps.notes.outputs.version }}
+      whats_new: ${{ steps.notes.outputs.whats_new }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Decide whether to release
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Auto-release when marketing version changed, or version-bump commit
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          OLD=$(git show "$BEFORE:app.json" 2>/dev/null | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8')).expo.version" || echo "")
+          NEW=$(node -pe "require('./app.json').expo.version")
+          MSG=$(git log -1 --pretty=%s)
+          if [ -n "$OLD" ] && [ "$OLD" != "$NEW" ]; then
+            echo "Version changed $OLD → $NEW"
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          elif echo "$MSG" | grep -qi 'chore: bump version'; then
+            echo "Version bump commit detected"
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No version change — skip store release"
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve release notes
+        if: steps.check.outputs.should_release == 'true'
+        id: notes
+        run: node scripts/release-notes.mjs --write-env
+
+  build-submit:
+    needs: detect
+    if: needs.detect.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Write Google Play service account
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::Missing GOOGLE_SERVICE_ACCOUNT_JSON secret (Play submit)."
+            exit 1
+          fi
+          printf '%s' "$GOOGLE_SERVICE_ACCOUNT_JSON" > google-service-account.json
+          node -e "JSON.parse(require('fs').readFileSync('google-service-account.json','utf8'))"
+
+      - name: Ensure release notes file for this version
+        run: node scripts/release-notes.mjs --ensure-file
+
+      - name: Resolve notes
+        id: notes
+        run: node scripts/release-notes.mjs --write-env
+
+      - name: Select platforms
+        id: plat
+        run: |
+          P="${{ github.event.inputs.platforms || 'all' }}"
+          echo "platform=$P" >> "$GITHUB_OUTPUT"
+          TRACK="${{ github.event.inputs.android_track || 'internal' }}"
+          if [ "$TRACK" = "production-play" ]; then
+            echo "submit_profile=production-play" >> "$GITHUB_OUTPUT"
+          else
+            echo "submit_profile=production" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: EAS build + submit
+        if: ${{ github.event.inputs.skip_submit != 'true' }}
+        env:
+          NOTES: ${{ steps.notes.outputs.whats_new }}
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPO_TOKEN:-}" ]; then
+            echo "::error::Missing EXPO_TOKEN secret. Create at https://expo.dev/settings/access-tokens"
+            exit 1
+          fi
+          PLATFORM="${{ steps.plat.outputs.platform }}"
+          PROFILE="${{ steps.plat.outputs.submit_profile }}"
+          VERSION="${{ steps.notes.outputs.version }}"
+          # Flatten notes for CLI (TestFlight "What to Test")
+          FLAT_NOTES=$(printf '%s' "$NOTES" | tr '\n' ' ' | sed 's/  */ /g')
+          echo "Building platform=$PLATFORM submit_profile=$PROFILE version=$VERSION"
+          eas build \
+            --platform "$PLATFORM" \
+            --profile production \
+            --non-interactive \
+            --no-wait \
+            --auto-submit \
+            --auto-submit-with-profile="$PROFILE" \
+            --what-to-test="$FLAT_NOTES" \
+            --message "v${VERSION} — store release"
+
+      - name: EAS build only
+        if: ${{ github.event.inputs.skip_submit == 'true' }}
+        run: |
+          eas build \
+            --platform "${{ steps.plat.outputs.platform }}" \
+            --profile production \
+            --non-interactive \
+            --no-wait \
+            --message "v${{ steps.notes.outputs.version }} — build only"
+
+      - name: Summary
+        run: |
+          {
+            echo "## EAS store release"
+            echo ""
+            echo "- **Version:** \`${{ steps.notes.outputs.version }}\`"
+            echo "- **Platforms:** \`${{ steps.plat.outputs.platform }}\`"
+            echo "- **Submit profile:** \`${{ steps.plat.outputs.submit_profile }}\`"
+            echo "- **Dashboard:** https://expo.dev/accounts/logitsllab/projects/mindkshetra"
+            echo ""
+            echo "### What's new"
+            echo ""
+            echo "${{ steps.notes.outputs.whats_new }}"
+          } >> "$GITHUB_STEP_SUMMARY"
