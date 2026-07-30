@@ -1,0 +1,32 @@
+name: Version bump reminder
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - ".github/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remind if app version unchanged
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          OLD=$(git show "$BASE:app.json" | node -pe "JSON.parse(require('fs').readFileSync(0)).expo.version")
+          NEW=$(git show "$HEAD:app.json" | node -pe "JSON.parse(require('fs').readFileSync(0)).expo.version")
+          if [ "$OLD" = "$NEW" ]; then
+            gh pr comment "${{ github.event.pull_request.number }}" --body "ℹ️ **Version unchanged** (\`$NEW\`). A patch bump to \`$(node -pe "const v='$NEW'.split('.'); v[2]++; v.join('.')")\` will be committed automatically on merge to \`main\` (if \`VERSION_BUMP_TOKEN\` is configured), or bump \`app.json\` / \`package.json\` in this PR for a manual release."
+          fi
