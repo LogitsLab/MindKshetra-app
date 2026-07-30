@@ -85,6 +85,11 @@ export const en = {
   noReflections: "No reflections yet.",
   streakLabel: "Day streak",
   streakDays: "days",
+  textSizeLabel: "Text size",
+  textSizeBlurb: "Applies across Madhav, verses, and reading screens.",
+  textSizeSmall: "Small",
+  textSizeMedium: "Medium",
+  textSizeLarge: "Large",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -167,4 +172,9 @@ export const hi: Record<keyof typeof en, string> = {
   noReflections: "अभी कोई चिंतन नहीं।",
   streakLabel: "दिन की लकीर",
   streakDays: "दिन",
+  textSizeLabel: "अक्षर आकार",
+  textSizeBlurb: "माधव, श्लोक और पढ़ने की स्क्रीन पर लागू होता है।",
+  textSizeSmall: "छोटा",
+  textSizeMedium: "मध्यम",
+  textSizeLarge: "बड़ा",
 };

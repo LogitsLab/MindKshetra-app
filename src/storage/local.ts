@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const KEYS = {
   theme: "mindkshetra-theme",
   lang: "mindkshetra-lang",
+  textScale: "mindkshetra-text-scale",
   onboarding: "mindkshetra-onboarding-complete",
   onboardingVersion: "mindkshetra-onboarding-version",
   chatSession: "mindkshetra-chat-session",
@@ -26,6 +27,15 @@ export async function getStoredLang(): Promise<"en" | "hi" | null> {
 
 export async function setStoredLang(lang: "en" | "hi"): Promise<void> {
   await AsyncStorage.setItem(KEYS.lang, lang);
+}
+
+export async function getStoredTextScale(): Promise<"sm" | "md" | "lg" | null> {
+  const v = await AsyncStorage.getItem(KEYS.textScale);
+  return v === "sm" || v === "md" || v === "lg" ? v : null;
+}
+
+export async function setStoredTextScale(scale: "sm" | "md" | "lg"): Promise<void> {
+  await AsyncStorage.setItem(KEYS.textScale, scale);
 }
 
 /** Bump when onboarding content/flow changes to re-show once for returning users. */

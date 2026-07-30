@@ -5,9 +5,10 @@ type MadhavContextValue = {
   contextLabel: string | null;
   memberId: string | null;
   chartSessionId: string | null;
+  birthPayload: Record<string, unknown> | null;
   slokaId: number | null;
   setVerseContext: (slokaId: number | null) => void;
-  setChartSession: (id: string | null) => void;
+  setChartSession: (id: string | null, birth?: Record<string, unknown> | null) => void;
   ask: (prompt: string) => void;
   askAboutVerse: (slokaId: number, prompt?: string) => void;
   askAboutChart: (memberId: string, prompt?: string) => void;
@@ -23,6 +24,9 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
   const [contextLabel, setContextLabel] = useState<string | null>(null);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [chartSessionId, setChartSessionId] = useState<string | null>(null);
+  const [birthPayload, setBirthPayload] = useState<Record<string, unknown> | null>(
+    null
+  );
   const [slokaId, setSlokaId] = useState<number | null>(null);
   const [streaming, setStreaming] = useState(false);
 
@@ -36,27 +40,40 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
     if (id != null) setContextLabel(`Verse ${id}`);
   }, []);
 
-  const setChartSession = useCallback((id: string | null) => {
-    setChartSessionId(id);
-  }, []);
+  const setChartSession = useCallback(
+    (id: string | null, birth?: Record<string, unknown> | null) => {
+      setChartSessionId(id);
+      setMemberId(null);
+      setSlokaId(null);
+      setBirthPayload(birth ?? null);
+      if (id) setContextLabel("Session chart");
+    },
+    []
+  );
 
   const ask = useCallback((prompt: string) => {
     setPendingPrompt(prompt);
-    setContextLabel(contextLabel ?? "Madhav");
-  }, [contextLabel]);
+    setContextLabel((prev) => prev ?? "Madhav");
+  }, []);
 
   const askAboutVerse = useCallback((id: number, prompt?: string) => {
     setSlokaId(id);
     setMemberId(null);
+    setChartSessionId(null);
+    setBirthPayload(null);
     setContextLabel(`Verse ${id}`);
     setPendingPrompt(prompt ?? `Please reflect on verse id ${id} from the Gita.`);
   }, []);
 
   const askAboutChart = useCallback((id: string, prompt?: string) => {
     setMemberId(id);
+    setChartSessionId(null);
+    setBirthPayload(null);
     setSlokaId(null);
     setContextLabel("Birth chart");
-    setPendingPrompt(prompt ?? "What does my chart suggest I should reflect on today?");
+    setPendingPrompt(
+      prompt ?? "What does my chart suggest I should reflect on today?"
+    );
   }, []);
 
   const value = useMemo(
@@ -65,6 +82,7 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
       contextLabel,
       memberId,
       chartSessionId,
+      birthPayload,
       slokaId,
       setVerseContext,
       setChartSession,
@@ -80,6 +98,7 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
       contextLabel,
       memberId,
       chartSessionId,
+      birthPayload,
       slokaId,
       setVerseContext,
       setChartSession,

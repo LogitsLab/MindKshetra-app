@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,12 +11,22 @@ import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/SlokaCard";
+import { ChartOverviewPanel } from "@/components/astrology/ChartOverviewPanel";
+import { DashaTimelinePanel } from "@/components/astrology/DashaTimelinePanel";
+import { PredictionsPanel } from "@/components/astrology/PredictionsPanel";
 import { astrologyApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 import type { AstrologyMember } from "@/types";
+import type {
+  ChartOverview,
+  ChartPlanet,
+  DashaPeriodNode,
+  LifeArea,
+  PredictionsText,
+} from "@/types/astrology";
 
 type Tab = "chart" | "dasha" | "predictions";
 
@@ -29,11 +39,12 @@ export default function AstrologyMemberDetailScreen() {
 
   const [member, setMember] = useState<AstrologyMember | null>(null);
   const [chart, setChart] = useState<Record<string, unknown> | null>(null);
-  const [predictions, setPredictions] = useState<unknown>(null);
+  const [predictions, setPredictions] = useState<PredictionsText | null>(null);
   const [tab, setTab] = useState<Tab>("chart");
   const [loading, setLoading] = useState(true);
   const [predBusy, setPredBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autoPred = useRef(false);
 
   useEffect(() => {
     let alive = true;
@@ -47,7 +58,10 @@ export default function AstrologyMemberDetailScreen() {
         ]);
         if (!alive) return;
         setMember(mRes.member);
-        setChart(cRes.chart ?? null);
+        const nextChart = cRes.chart ?? null;
+        setChart(nextChart);
+        const existing = nextChart?.predictionsText as PredictionsText | undefined;
+        if (existing?.portrait) setPredictions(existing);
       } catch (e) {
         if (alive) setError((e as Error).message);
       } finally {
@@ -59,11 +73,17 @@ export default function AstrologyMemberDetailScreen() {
     };
   }, [id]);
 
-  async function loadPredictions() {
+  async function loadPredictions(force = false) {
     setPredBusy(true);
+    setError(null);
     try {
-      const res = await astrologyApi.predictions({ memberId: id });
-      setPredictions(res.predictions);
+      const res = await astrologyApi.predictions({
+        memberId: id,
+        language: lang,
+        force,
+      });
+      if (res.chart) setChart(res.chart);
+      setPredictions(res.predictionsText);
       setTab("predictions");
     } catch (e) {
       setError((e as Error).message);
@@ -71,6 +91,15 @@ export default function AstrologyMemberDetailScreen() {
       setPredBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (tab !== "predictions" || predictions || predBusy || autoPred.current) {
+      return;
+    }
+    autoPred.current = true;
+    void loadPredictions(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, predictions, predBusy]);
 
   if (loading) {
     return (
@@ -88,16 +117,22 @@ export default function AstrologyMemberDetailScreen() {
     );
   }
 
-  const overview = (chart?.overview as Record<string, unknown> | undefined) ?? undefined;
-  const planets = (chart?.planets as unknown[] | undefined) ?? [];
-  const dasha =
-    (chart?.dasha as Record<string, unknown> | undefined) ??
-    (overview
-      ? {
-          currentMaha: overview.currentMaha,
-          currentAntar: overview.currentAntar,
-        }
-      : null);
+  const overview = (chart?.overview as ChartOverview | undefined) ?? undefined;
+  const planets = (chart?.planets as ChartPlanet[] | undefined) ?? [];
+  const dashaTree =
+    ((chart?.dasha as { tree?: DashaPeriodNode[] } | undefined)?.tree) ?? null;
+  const blended = (chart?.verdicts as { blended?: { theme?: string }[] } | undefined)
+    ?.blended;
+  const themeLine = blended?.[0]?.theme ?? null;
+
+  const areaLabel = (a: LifeArea) => {
+    const key = `astroArea_${a}` as const;
+    try {
+      return t(key as never);
+    } catch {
+      return a;
+    }
+  };
 
   return (
     <Screen>
@@ -120,13 +155,7 @@ export default function AstrologyMemberDetailScreen() {
           ).map(([key, label]) => (
             <Pressable
               key={key}
-              onPress={() => {
-                if (key === "predictions" && predictions == null) {
-                  void loadPredictions();
-                } else {
-                  setTab(key);
-                }
-              }}
+              onPress={() => setTab(key)}
               style={[
                 styles.tab,
                 {
@@ -158,68 +187,58 @@ export default function AstrologyMemberDetailScreen() {
           ]}
         >
           {tab === "chart" ? (
-            <>
-              {overview ? (
-                <View style={{ gap: 4 }}>
-                  <Text variant="soft">
-                    {t("astroAsc")}: {String(overview.ascendantSign ?? "—")}
-                  </Text>
-                  <Text variant="soft">
-                    {t("astroMoon")}: {String(overview.moonSign ?? "—")}
-                  </Text>
-                  <Text variant="soft">
-                    {t("astroSun")}: {String(overview.sunSign ?? "—")}
-                  </Text>
-                </View>
-              ) : null}
-              <Text variant="eyebrow" style={{ marginTop: spacing.md }}>
-                {t("astroPlanet")}
-              </Text>
-              {planets.length ? (
-                planets.slice(0, 14).map((p, i) => {
-                  const row = p as Record<string, unknown>;
-                  return (
-                    <Text key={i} variant="muted" style={{ marginTop: 4 }}>
-                      {String(row.id ?? row.name ?? "p")}:{" "}
-                      {String(row.sign ?? "—")}
-                      {row.house != null ? ` · H${row.house}` : ""}
-                      {row.nakshatra ? ` · ${String(row.nakshatra)}` : ""}
-                    </Text>
-                  );
-                })
-              ) : (
-                <Text variant="muted" style={{ marginTop: spacing.sm }}>
-                  {chart
-                    ? JSON.stringify(chart, null, 2).slice(0, 1200)
-                    : lang === "hi"
-                      ? "कुंडली उपलब्ध नहीं"
-                      : "No chart payload"}
-                </Text>
-              )}
-            </>
+            <ChartOverviewPanel
+              overview={overview}
+              planets={planets}
+              tobUnknown={Boolean(chart?.tobUnknown)}
+              themeLine={themeLine}
+              labels={{
+                asc: t("astroAsc"),
+                moon: t("astroMoon"),
+                sun: t("astroSun"),
+                dasha: t("astroCurrentDasha"),
+                planet: t("astroPlanet"),
+                tobUnknown: t("astroTobUnknown"),
+                atAGlance: t("astroAtAGlance"),
+              }}
+            />
           ) : null}
 
           {tab === "dasha" ? (
-            <Text variant="soft" style={{ fontFamily: "Sora_400Regular" }}>
-              {dasha
-                ? JSON.stringify(dasha, null, 2)
-                : lang === "hi"
-                  ? "दशा डेटा नहीं"
-                  : "No dasha data"}
-            </Text>
+            <DashaTimelinePanel
+              tree={dashaTree}
+              currentMaha={overview?.currentMaha}
+              currentAntar={overview?.currentAntar}
+              emptyLabel={lang === "hi" ? "दशा डेटा नहीं" : "No dasha data"}
+              currentLabel={t("astroCurrentDasha")}
+            />
           ) : null}
 
           {tab === "predictions" ? (
-            predBusy ? (
-              <ActivityIndicator color={colors.brass} />
+            predBusy && !predictions ? (
+              <View style={{ gap: spacing.sm, alignItems: "center", paddingVertical: spacing.lg }}>
+                <ActivityIndicator color={colors.brass} />
+                <Text variant="muted">{t("astroWorking")}</Text>
+              </View>
+            ) : predictions ? (
+              <PredictionsPanel
+                predictions={predictions}
+                detailed
+                labels={{
+                  portrait: t("astroPortrait"),
+                  rulesBanner: t("astroPredRulesBanner"),
+                  regenerateHint: t("astroPredRegenerateHint"),
+                  strengths: t("astroStrengths"),
+                  watchouts: t("astroWatchouts"),
+                  now: t("astroNowPeriod"),
+                  nearTerm: t("astroNearTerm"),
+                  guidance: t("astroPredTryThis"),
+                  featured: t("astroFeaturedArea"),
+                  area: areaLabel,
+                }}
+              />
             ) : (
-              <Text variant="soft">
-                {predictions
-                  ? typeof predictions === "string"
-                    ? predictions
-                    : JSON.stringify(predictions, null, 2).slice(0, 2000)
-                  : t("astroPredBlurb")}
-              </Text>
+              <Text variant="soft">{t("astroPredBlurb")}</Text>
             )
           ) : null}
         </View>
@@ -237,14 +256,14 @@ export default function AstrologyMemberDetailScreen() {
               router.push("/madhav");
             }}
           />
-          {tab !== "predictions" ? (
-            <Button
-              label={t("astroGeneratePred")}
-              variant="ghost"
-              loading={predBusy}
-              onPress={() => void loadPredictions()}
-            />
-          ) : null}
+          <Button
+            label={
+              predictions ? t("astroRegeneratePred") : t("astroGeneratePred")
+            }
+            variant="ghost"
+            loading={predBusy}
+            onPress={() => void loadPredictions(Boolean(predictions))}
+          />
         </View>
       </ScrollView>
     </Screen>

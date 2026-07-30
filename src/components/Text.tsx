@@ -4,6 +4,7 @@ import {
   type TextProps as RNTextProps,
   StyleSheet,
 } from "react-native";
+import { useTextScale } from "@/context/TextScaleContext";
 import { useTheme } from "@/context/ThemeContext";
 
 type Variant = "display" | "title" | "body" | "soft" | "muted" | "eyebrow" | "sanskrit";
@@ -15,7 +16,8 @@ type Props = RNTextProps & {
 
 export function Text({ variant = "body", color, style, ...rest }: Props) {
   const { colors } = useTheme();
-  const styles = variantStyles(colors);
+  const { multiplier } = useTextScale();
+  const styles = variantStyles(colors, multiplier);
   return (
     <RNText
       {...rest}
@@ -24,49 +26,56 @@ export function Text({ variant = "body", color, style, ...rest }: Props) {
   );
 }
 
-function variantStyles(colors: ReturnType<typeof useTheme>["colors"]) {
+function scale(n: number, m: number) {
+  return Math.round(n * m * 10) / 10;
+}
+
+function variantStyles(
+  colors: ReturnType<typeof useTheme>["colors"],
+  m: number
+) {
   return StyleSheet.create({
     base: { color: colors.text },
     display: {
       fontFamily: "Fraunces_600SemiBold",
-      fontSize: 28,
-      lineHeight: 34,
+      fontSize: scale(28, m),
+      lineHeight: scale(34, m),
       letterSpacing: -0.3,
     },
     title: {
       fontFamily: "Fraunces_600SemiBold",
-      fontSize: 22,
-      lineHeight: 28,
+      fontSize: scale(22, m),
+      lineHeight: scale(28, m),
     },
     body: {
       fontFamily: "Sora_400Regular",
-      fontSize: 16,
-      lineHeight: 24,
+      fontSize: scale(16, m),
+      lineHeight: scale(24, m),
     },
     soft: {
       fontFamily: "Sora_400Regular",
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: scale(15, m),
+      lineHeight: scale(22, m),
       color: colors.textSoft,
     },
     muted: {
       fontFamily: "Sora_400Regular",
-      fontSize: 13,
-      lineHeight: 18,
+      fontSize: scale(13, m),
+      lineHeight: scale(18, m),
       color: colors.textMuted,
     },
     eyebrow: {
       fontFamily: "Sora_600SemiBold",
-      fontSize: 11,
-      lineHeight: 14,
+      fontSize: scale(11, m),
+      lineHeight: scale(14, m),
       letterSpacing: 1.6,
       textTransform: "uppercase",
       color: colors.textMuted,
     },
     sanskrit: {
       fontFamily: "Fraunces_500Medium",
-      fontSize: 22,
-      lineHeight: 34,
+      fontSize: scale(22, m),
+      lineHeight: scale(34, m),
       color: colors.text,
     },
   });

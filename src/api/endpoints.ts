@@ -1,5 +1,9 @@
 import { apiFetch } from "@/api/client";
 import type { AstrologyMember, JournalEntry, Sloka, Streak } from "@/types";
+import {
+  extractPredictionsText,
+  type PredictionsText,
+} from "@/types/astrology";
 
 function normalizeSlokaList(data: unknown): { slokas: Sloka[]; total: number } {
   if (Array.isArray(data)) {
@@ -150,10 +154,23 @@ export const astrologyApi = {
       method: "POST",
       body: JSON.stringify({ query: q }),
     }),
-  predictions: (body: Record<string, unknown>) =>
-    apiFetch<{ predictions: unknown }>("/api/astrology/predictions", {
+  predictions: async (body: Record<string, unknown>) => {
+    const data = await apiFetch<{
+      chart?: { predictionsText?: unknown };
+      predictionsText?: unknown;
+      source?: "llm" | "rules";
+      cached?: boolean;
+    }>("/api/astrology/predictions", {
       method: "POST",
       body: JSON.stringify(body),
-    }),
+    });
+    const predictionsText = extractPredictionsText(data);
+    return {
+      chart: data.chart as Record<string, unknown> | undefined,
+      predictionsText: predictionsText as PredictionsText | null,
+      source: predictionsText?.source ?? data.source,
+      cached: data.cached,
+    };
+  },
   health: () => apiFetch<{ ok: boolean; ephemeris?: { mode: string } }>("/api/astrology/health"),
 };
