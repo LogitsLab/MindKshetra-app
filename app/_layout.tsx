@@ -7,6 +7,7 @@ import { Sora_400Regular, Sora_600SemiBold } from "@expo-google-fonts/sora";
 import * as SplashScreen from "expo-splash-screen";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { TextScaleProvider } from "@/context/TextScaleContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { MadhavProvider } from "@/context/MadhavContext";
@@ -77,6 +78,9 @@ function RootNavigator() {
           options={{
             title: "Profile",
             headerRight: () => null,
+            animation: "slide_from_right",
+            animationDuration: 280,
+            gestureEnabled: true,
           }}
         />
         <Stack.Screen
@@ -112,17 +116,19 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
-        <LanguageProvider>
-          <OnboardingProvider>
-            <AuthProvider>
-              <MadhavProvider>
-                <OnboardingGate>
-                  <RootNavigator />
-                </OnboardingGate>
-              </MadhavProvider>
-            </AuthProvider>
-          </OnboardingProvider>
-        </LanguageProvider>
+        <TextScaleProvider>
+          <LanguageProvider>
+            <OnboardingProvider>
+              <AuthProvider>
+                <MadhavProvider>
+                  <OnboardingGate>
+                    <RootNavigator />
+                  </OnboardingGate>
+                </MadhavProvider>
+              </AuthProvider>
+            </OnboardingProvider>
+          </LanguageProvider>
+        </TextScaleProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

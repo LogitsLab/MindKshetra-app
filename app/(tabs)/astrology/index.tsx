@@ -22,13 +22,17 @@ export default function AstrologyHub() {
   const { lang } = useLanguage();
   const { isSignedIn } = useAuth();
   const [members, setMembers] = useState<AstrologyMember[]>([]);
+  const [hubError, setHubError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSignedIn) return;
     astrologyApi
       .members()
-      .then((r) => setMembers(r.members ?? []))
-      .catch(() => undefined);
+      .then((r) => {
+        setMembers(r.members ?? []);
+        setHubError(null);
+      })
+      .catch((e) => setHubError((e as Error).message));
   }, [isSignedIn]);
 
   return (
@@ -71,6 +75,14 @@ export default function AstrologyHub() {
               : "Save members or start an incognito session."}
           </Text>
         </View>
+
+        {hubError ? (
+          <Panel style={{ marginTop: spacing.md }}>
+            <Text variant="soft" color={colors.danger}>
+              {hubError}
+            </Text>
+          </Panel>
+        ) : null}
 
         <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
           <Button

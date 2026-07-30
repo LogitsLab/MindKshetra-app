@@ -14,11 +14,11 @@ import { Text } from "@/components/Text";
 import { Button, Hairline } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { BrandMark } from "@/components/BrandMark";
-import { Rise } from "@/components/Rise";
 import { userApi, votdApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTextScale, type TextScaleId } from "@/context/TextScaleContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 
@@ -27,6 +27,7 @@ export default function AccountScreen() {
   const params = useLocalSearchParams<{ auth_error?: string }>();
   const { colors, mode, toggle } = useTheme();
   const { lang, setLang, t } = useLanguage();
+  const { scale, setScale } = useTextScale();
   const {
     user,
     loading,
@@ -178,28 +179,26 @@ export default function AccountScreen() {
         contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
         keyboardShouldPersistTaps="handled"
       >
-        <Rise>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: spacing.sm,
-            }}
-          >
-            <BrandMark size={28} />
-            <Text variant="eyebrow">{t("account")}</Text>
-          </View>
-          <Text variant="display" style={{ marginTop: spacing.sm }}>
-            {isSignedIn && !isAnonymous ? t("welcomeBack") : t("signInTitle")}
-          </Text>
-          <Text variant="soft" style={{ marginTop: spacing.sm }}>
-            {isAnonymous
-              ? t("upgradeAccountBlurb")
-              : isSignedIn
-                ? user?.email ?? t("libraryBlurb")
-                : t("accountSignInBlurb")}
-          </Text>
-        </Rise>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: spacing.sm,
+          }}
+        >
+          <BrandMark size={28} />
+          <Text variant="eyebrow">{t("account")}</Text>
+        </View>
+        <Text variant="display" style={{ marginTop: spacing.sm }}>
+          {isSignedIn && !isAnonymous ? t("welcomeBack") : t("signInTitle")}
+        </Text>
+        <Text variant="soft" style={{ marginTop: spacing.sm }}>
+          {isAnonymous
+            ? t("upgradeAccountBlurb")
+            : isSignedIn
+              ? user?.email ?? t("libraryBlurb")
+              : t("accountSignInBlurb")}
+        </Text>
 
         {!configured ? (
           <Text
@@ -348,15 +347,6 @@ export default function AccountScreen() {
             <Text variant="muted" style={{ marginTop: spacing.xs }}>
               {t("authPrivacyNote")}
             </Text>
-
-            {user ? (
-              <Button
-                label={t("signOut")}
-                variant="danger"
-                loading={busy}
-                onPress={() => void run(signOut)}
-              />
-            ) : null}
           </View>
         ) : (
           <View style={{ gap: spacing.sm }}>
@@ -521,6 +511,46 @@ export default function AccountScreen() {
               {lang === "en" ? "EN → हिं" : "हिं → EN"}
             </Text>
           </Pressable>
+        </View>
+
+        <Text variant="eyebrow" style={{ marginTop: spacing.lg }}>
+          {t("textSizeLabel")}
+        </Text>
+        <Text variant="muted" style={{ marginTop: spacing.xs }}>
+          {t("textSizeBlurb")}
+        </Text>
+        <View style={styles.row}>
+          {(
+            [
+              ["sm", t("textSizeSmall")],
+              ["md", t("textSizeMedium")],
+              ["lg", t("textSizeLarge")],
+            ] as [TextScaleId, string][]
+          ).map(([id, label]) => {
+            const active = scale === id;
+            return (
+              <Pressable
+                key={id}
+                onPress={() => setScale(id)}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: active ? colors.brass : colors.line,
+                    backgroundColor: active
+                      ? "rgba(201,162,39,0.18)"
+                      : colors.surface,
+                  },
+                ]}
+              >
+                <Text
+                  variant="muted"
+                  style={{ color: active ? colors.brassSoft : colors.textMuted }}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <Pressable

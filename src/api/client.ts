@@ -1,3 +1,4 @@
+import { AppState } from "react-native";
 import { fetch as expoFetch } from "expo/fetch";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
 
@@ -8,6 +9,14 @@ const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://mind.logitslab.com"
 
 export function getApiUrl(): string {
   return API_URL;
+}
+
+function isBackgroundNetworkKill(e: unknown): boolean {
+  if ((e as Error)?.name === "AbortError") return true;
+  const msg = (e as Error)?.message ?? "";
+  if (!/aborted|network connection was lost/i.test(msg)) return false;
+  // iOS tears down fetch when the app backgrounds — not a user-facing failure.
+  return AppState.currentState !== "active";
 }
 
 async function authHeaders(): Promise<Record<string, string>> {
@@ -123,6 +132,9 @@ function networkMessage(e: unknown): string {
   if (!msg || /network request failed/i.test(msg)) {
     return "Could not reach Madhav. Check your connection and try again.";
   }
+  if (/network connection was lost/i.test(msg)) {
+    return "The network connection was lost.";
+  }
   return msg;
 }
 
@@ -154,7 +166,7 @@ export async function streamChat(
       signal,
     });
   } catch (e) {
-    if ((e as Error)?.name === "AbortError") return;
+    if (isBackgroundNetworkKill(e)) return;
     handlers.onError?.(networkMessage(e));
     return;
   }
@@ -178,7 +190,7 @@ export async function streamChat(
       const text = await res.text();
       for (const block of text.split("\n\n")) dispatchSseBlock(block, handlers);
     } catch (e) {
-      if ((e as Error)?.name !== "AbortError") handlers.onError?.(networkMessage(e));
+      if (!isBackgroundNetworkKill(e)) handlers.onError?.(networkMessage(e));
     }
     return;
   }
@@ -205,7 +217,7 @@ export async function streamChat(
     buffer += decoder.decode();
     if (buffer.trim()) dispatchSseBlock(buffer, handlers);
   } catch (e) {
-    if ((e as Error)?.name === "AbortError") return;
+    if (isBackgroundNetworkKill(e)) return;
     handlers.onError?.(networkMessage(e));
   }
 }

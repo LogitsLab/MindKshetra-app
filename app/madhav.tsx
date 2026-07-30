@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
+  type AppStateStatus,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -10,13 +12,16 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { streamChat } from "@/api/client";
 import { chatApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
+import { useTextScale } from "@/context/TextScaleContext";
 import { useTheme } from "@/context/ThemeContext";
 import { detectUserCrisis, mentionsCrisisResource } from "@/safety/crisis";
 import {
@@ -29,14 +34,29 @@ import type { ChatMessage, Citation } from "@/types";
 
 type UiMessage = ChatMessage & { id: string };
 
+function isTransientNetworkError(message: string): boolean {
+  return /network connection was lost|network request failed|could not reach|timed out|The Internet connection appears to be offline/i.test(
+    message
+  );
+}
+
+function citationSnippet(c: Citation, lang: "en" | "hi"): string {
+  const text = (lang === "hi" && c.hindi ? c.hindi : c.english)?.trim() ?? "";
+  return text.replace(/\s+/g, " ");
+}
+
 export default function MadhavScreen() {
   const router = useRouter();
+  const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { multiplier } = useTextScale();
   const { lang, t } = useLanguage();
   const {
     pendingPrompt,
     memberId,
     chartSessionId,
+    birthPayload,
     clearPending,
     setStreaming,
   } = useMadhav();
@@ -54,8 +74,25 @@ export default function MadhavScreen() {
   const [error, setError] = useState<string | null>(null);
   const [crisisBanner, setCrisisBanner] = useState<string | null>(null);
   const listRef = useRef<FlatList<UiMessage>>(null);
-  const autoSent = useRef(false);
+  const autoSentPrompt = useRef<string | null>(null);
   const sending = useRef(false);
+  const appState = useRef<AppStateStatus>(AppState.currentState);
+  const abortRef = useRef<AbortController | null>(null);
+  const backgroundAbort = useRef(false);
+  const nearBottom = useRef(true);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (next) => {
+      const leaving =
+        appState.current === "active" && next.match(/inactive|background/);
+      appState.current = next;
+      if (leaving && abortRef.current && sending.current) {
+        backgroundAbort.current = true;
+        abortRef.current.abort();
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -65,7 +102,7 @@ export default function MadhavScreen() {
       setSessionId(id);
       try {
         const res = await chatApi.session(id);
-        if (!alive || autoSent.current || sending.current) return;
+        if (!alive || autoSentPrompt.current || sending.current) return;
         const prior = (res.messages ?? [])
           .filter((m) => m.role === "user" || m.role === "assistant")
           .map((m, i) => ({
@@ -93,12 +130,10 @@ export default function MadhavScreen() {
       const trimmed = raw.trim();
       if (!trimmed || sending.current) return;
       sending.current = true;
+      backgroundAbort.current = false;
       setError(null);
       setInput("");
 
-      // Check the PERSON, not the reply. This fires before the request goes out,
-      // so the helpline is on screen even if the network is slow, the API errors,
-      // or the model answers without naming a resource. See src/safety/crisis.ts.
       const userCrisis = detectUserCrisis(trimmed);
       setCrisisBanner(userCrisis ? t("crisisBody") : null);
 
@@ -121,6 +156,8 @@ export default function MadhavScreen() {
       let full = "";
       let citations: Citation[] = [];
       let epigraph = "";
+      const ac = new AbortController();
+      abortRef.current = ac;
 
       try {
         const history = [...base, userMsg].map((m) => ({
@@ -135,6 +172,7 @@ export default function MadhavScreen() {
             chatSessionId: sessionId ?? undefined,
             memberId: memberId ?? undefined,
             chartSessionId: chartSessionId ?? undefined,
+            birth: birthPayload ?? undefined,
             messages: history,
           },
           {
@@ -157,7 +195,12 @@ export default function MadhavScreen() {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId
-                    ? { ...m, content: snapshot, citations, chartEpigraph: epigraph || undefined }
+                    ? {
+                        ...m,
+                        content: snapshot,
+                        citations,
+                        chartEpigraph: epigraph || undefined,
+                      }
                     : m
                 )
               );
@@ -167,7 +210,12 @@ export default function MadhavScreen() {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId
-                    ? { ...m, content: full, citations, chartEpigraph: epigraph || undefined }
+                    ? {
+                        ...m,
+                        content: full,
+                        citations,
+                        chartEpigraph: epigraph || undefined,
+                      }
                     : m
                 )
               );
@@ -181,16 +229,29 @@ export default function MadhavScreen() {
               );
             },
             onError: (message) => {
+              if (backgroundAbort.current || appState.current !== "active") {
+                return;
+              }
+              if (isTransientNetworkError(message) && full.trim()) {
+                return;
+              }
               setError(message);
-              if (!userCrisis && mentionsCrisisResource(message)) setCrisisBanner(message);
+              if (!userCrisis && mentionsCrisisResource(message)) {
+                setCrisisBanner(message);
+              }
             },
             onDone: () => {
-              if (!userCrisis && mentionsCrisisResource(full)) setCrisisBanner(full);
+              if (!userCrisis && mentionsCrisisResource(full)) {
+                setCrisisBanner(full);
+              }
             },
-          }
+          },
+          ac.signal
         );
 
-        if (!full.trim()) {
+        if (backgroundAbort.current) {
+          // Keep whatever streamed before backgrounding; no error banner.
+        } else if (!full.trim()) {
           const fallback =
             lang === "hi"
               ? "अभी उत्तर नहीं बन सका। थोड़ी देर बाद फिर प्रयास करें।"
@@ -205,29 +266,50 @@ export default function MadhavScreen() {
         }
       } catch (e) {
         const message = (e as Error).message ?? "Chat failed";
-        setError(message);
-        if (!userCrisis && mentionsCrisisResource(message)) setCrisisBanner(message);
+        if (
+          !backgroundAbort.current &&
+          appState.current === "active" &&
+          !(isTransientNetworkError(message) && full.trim())
+        ) {
+          setError(message);
+          if (!userCrisis && mentionsCrisisResource(message)) {
+            setCrisisBanner(message);
+          }
+        }
         setMessages((prev) => {
           const current = prev.find((m) => m.id === assistantId);
           if (current?.content?.trim()) return prev;
           return prev.filter((m) => m.id !== assistantId);
         });
       } finally {
+        if (abortRef.current === ac) abortRef.current = null;
         setLoading(false);
         setStreaming(false);
         sending.current = false;
-        requestAnimationFrame(() =>
-          listRef.current?.scrollToEnd({ animated: true })
-        );
+        backgroundAbort.current = false;
+        requestAnimationFrame(() => {
+          if (nearBottom.current) {
+            listRef.current?.scrollToEnd({ animated: true });
+          }
+        });
       }
     },
-    [messages, lang, sessionId, memberId, chartSessionId, setStreaming, t]
+    [
+      messages,
+      lang,
+      sessionId,
+      memberId,
+      chartSessionId,
+      birthPayload,
+      setStreaming,
+      t,
+    ]
   );
 
   useEffect(() => {
-    if (!pendingPrompt?.trim() || autoSent.current) return;
-    autoSent.current = true;
-    const prompt = pendingPrompt;
+    const prompt = pendingPrompt?.trim();
+    if (!prompt || autoSentPrompt.current === prompt) return;
+    autoSentPrompt.current = prompt;
     clearPending();
     void sendMessage(prompt);
   }, [pendingPrompt, clearPending, sendMessage]);
@@ -256,8 +338,8 @@ export default function MadhavScreen() {
             style={{
               marginTop: spacing.sm,
               fontFamily: "Fraunces_500Medium",
-              fontSize: 16,
-              lineHeight: 24,
+              fontSize: 16 * multiplier,
+              lineHeight: 24 * multiplier,
               borderLeftWidth: 2,
               borderLeftColor: colors.line,
               paddingLeft: spacing.sm,
@@ -277,36 +359,57 @@ export default function MadhavScreen() {
         </Text>
         {item.citations && item.citations.length > 0 ? (
           <View style={[styles.cites, { borderTopColor: colors.hairline }]}>
-            {item.citations.slice(0, 4).map((c) => (
-              <Pressable
-                key={String(c.id)}
-                onPress={() => router.push(`/sloka/${c.id}`)}
-                style={[styles.citeRow, { borderBottomColor: colors.hairline }]}
-              >
-                <Text variant="muted" style={{ color: colors.brassSoft }}>
-                  {c.ref}
-                </Text>
-                <Text
-                  variant="muted"
-                  style={{ marginTop: 2, color: colors.textSoft }}
-                  numberOfLines={2}
+            {item.citations.slice(0, 4).map((c) => {
+              const snippet = citationSnippet(c, lang);
+              return (
+                <Pressable
+                  key={String(c.id)}
+                  onPress={() => router.push(`/sloka/${c.id}`)}
+                  style={[styles.citeRow, { borderBottomColor: colors.hairline }]}
                 >
-                  {lang === "hi" && c.hindi ? c.hindi : c.english}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text
+                    variant="muted"
+                    style={{
+                      color: colors.brassSoft,
+                      fontFamily: "Sora_600SemiBold",
+                      fontSize: 12 * multiplier,
+                      lineHeight: 16 * multiplier,
+                    }}
+                  >
+                    {c.ref || `Verse ${c.id}`}
+                  </Text>
+                  {snippet ? (
+                    <Text
+                      variant="muted"
+                      style={{
+                        marginTop: 4,
+                        color: colors.textSoft,
+                        fontSize: 13 * multiplier,
+                        lineHeight: 18 * multiplier,
+                      }}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                    >
+                      {snippet}
+                    </Text>
+                  ) : null}
+                </Pressable>
+              );
+            })}
           </View>
         ) : null}
       </View>
     );
   };
 
+  const composerPad = Math.max(insets.bottom, spacing.sm);
+
   return (
-    <Screen padded={false} edges={["left", "right", "bottom"]} atmosphere="soft">
+    <Screen padded={false} edges={["left", "right"]} atmosphere="soft">
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={88}
+        keyboardVerticalOffset={headerHeight}
       >
         <View
           style={[
@@ -323,7 +426,7 @@ export default function MadhavScreen() {
             <Text variant="eyebrow" color={colors.brassSoft}>
               Madhav
             </Text>
-            <Text variant="title" style={{ fontSize: 18, marginTop: 2 }}>
+            <Text variant="title" style={{ fontSize: 18 * multiplier, marginTop: 2 }}>
               {lang === "hi" ? "माधव से पूछें" : "Ask Madhav"}
             </Text>
           </View>
@@ -347,18 +450,32 @@ export default function MadhavScreen() {
 
         <FlatList
           ref={listRef}
+          style={{ flex: 1 }}
           data={messages}
           keyExtractor={(m) => m.id}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           contentContainerStyle={{
             paddingHorizontal: spacing.md,
             paddingTop: spacing.md,
             paddingBottom: spacing.lg,
             gap: spacing.sm,
+            flexGrow: 1,
           }}
           renderItem={renderMessage}
-          onContentSizeChange={() =>
-            listRef.current?.scrollToEnd({ animated: true })
-          }
+          onScroll={(e) => {
+            const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+            const pad = 80;
+            nearBottom.current =
+              contentOffset.y + layoutMeasurement.height >=
+              contentSize.height - pad;
+          }}
+          scrollEventThrottle={100}
+          onContentSizeChange={() => {
+            if (nearBottom.current) {
+              listRef.current?.scrollToEnd({ animated: true });
+            }
+          }}
           ListFooterComponent={
             loading ? (
               <View style={{ paddingVertical: spacing.sm }}>
@@ -390,6 +507,7 @@ export default function MadhavScreen() {
             {
               borderTopColor: colors.hairline,
               backgroundColor: colors.navBg,
+              paddingBottom: composerPad,
             },
           ]}
         >
@@ -405,6 +523,7 @@ export default function MadhavScreen() {
                 color: colors.text,
                 borderColor: colors.line,
                 backgroundColor: colors.inputBg,
+                fontSize: 15 * multiplier,
               },
             ]}
           />
@@ -455,10 +574,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth * 2,
     paddingTop: spacing.sm,
+    gap: 2,
   },
   citeRow: {
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    minHeight: 52,
   },
   crisis: {
     marginHorizontal: spacing.md,
@@ -472,22 +593,22 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth * 2,
+    flexShrink: 0,
   },
   input: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 48,
     maxHeight: 120,
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     fontFamily: "Sora_400Regular",
-    fontSize: 15,
   },
   send: {
-    minHeight: 44,
+    minHeight: 48,
     paddingHorizontal: spacing.md,
     borderRadius: radii.md,
     alignItems: "center",
