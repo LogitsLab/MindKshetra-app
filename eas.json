@@ -23,6 +23,7 @@
   "submit": {
     "production": {
       "ios": {
+        "ascAppId": "6795863564",
         "language": "en-US"
       },
       "android": {
@@ -34,6 +35,7 @@
     },
     "production-play": {
       "ios": {
+        "ascAppId": "6795863564",
         "language": "en-US"
       },
       "android": {
