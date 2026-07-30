@@ -160,7 +160,6 @@ jobs:
             --profile production \
             --non-interactive \
             --no-wait \
-            --auto-submit \
             --auto-submit-with-profile="$PROFILE" \
             --what-to-test="$FLAT_NOTES" \
             --message "v${VERSION} — store release"
