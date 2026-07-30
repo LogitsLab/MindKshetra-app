@@ -39,6 +39,11 @@ This is an **open repository**. We welcome:
 Please read **[CONTRIBUTING.md](CONTRIBUTING.md)** before opening a PR.  
 Not ready to code? Open an issue with your idea and as much detail as you can — that helps maintainers prioritize.
 
+## Architecture
+
+- Mobile structure & API usage: **[ARCHITECTURE.md](ARCHITECTURE.md)**  
+- Full product / backend: [MindKshetra ARCHITECTURE.md](https://github.com/LogitsLab/MindKshetra/blob/main/ARCHITECTURE.md)
+
 ## Design & navigation
 
 - Design notes: [`docs/design/VISUAL_SYSTEM.md`](docs/design/VISUAL_SYSTEM.md)
