@@ -152,16 +152,16 @@ jobs:
           PLATFORM="${{ steps.plat.outputs.platform }}"
           PROFILE="${{ steps.plat.outputs.submit_profile }}"
           VERSION="${{ steps.notes.outputs.version }}"
-          # Flatten notes for CLI (TestFlight "What to Test")
-          FLAT_NOTES=$(printf '%s' "$NOTES" | tr '\n' ' ' | sed 's/  */ /g')
           echo "Building platform=$PLATFORM submit_profile=$PROFILE version=$VERSION"
+          echo "What's new (for GitHub summary / store listing):"
+          echo "$NOTES"
+          # Note: --what-to-test / changelog requires Expo Enterprise; omit on Hobby/Production.
           eas build \
             --platform "$PLATFORM" \
             --profile production \
             --non-interactive \
             --no-wait \
             --auto-submit-with-profile="$PROFILE" \
-            --what-to-test="$FLAT_NOTES" \
             --message "v${VERSION} — store release"
 
       - name: EAS build only
