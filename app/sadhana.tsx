@@ -49,6 +49,18 @@ export default function SadhanaScreen() {
   const { t, lang } = useLanguage();
   const { session, isSignedIn } = useAuth();
 
+  // Fraunces has no Devanagari coverage (docs/design/VISUAL_SYSTEM.md) and a
+  // letter-spaced eyebrow breaks matra shaping — Hindi headings get the real
+  // serif and zero tracking.
+  const hiDisplay =
+    lang === "hi"
+      ? { fontFamily: "NotoSerifDevanagari_600SemiBold" as const }
+      : null;
+  const hiEyebrow =
+    lang === "hi"
+      ? { letterSpacing: 0, textTransform: "none" as const }
+      : null;
+
   const sadhanaMoods = previewMoodIds
     .map((id) => moods.find((m) => m.id === id))
     .filter((m): m is Mood => Boolean(m));
@@ -185,10 +197,10 @@ export default function SadhanaScreen() {
       >
         {/* (a) Name the mind */}
         <Rise>
-          <Text variant="eyebrow" color={colors.brassSoft}>
+          <Text variant="eyebrow" color={colors.brassSoft} style={hiEyebrow}>
             {t("homeSadhanaEyebrow")}
           </Text>
-          <Text variant="display" style={{ marginTop: spacing.sm }}>
+          <Text variant="display" style={[{ marginTop: spacing.sm }, hiDisplay]}>
             {t("sadhanaMoodTitle")}
           </Text>
           <View style={styles.moodWrap}>
@@ -224,7 +236,7 @@ export default function SadhanaScreen() {
         {/* (b) A verse that meets it */}
         {moodId ? (
           <View style={{ marginTop: spacing.xl }}>
-            <Text variant="eyebrow" color={colors.brassSoft}>
+            <Text variant="eyebrow" color={colors.brassSoft} style={hiEyebrow}>
               {t("sadhanaVerseEyebrow")}
             </Text>
             {verseLoading ? (
@@ -269,7 +281,7 @@ export default function SadhanaScreen() {
         {/* (c) The sit */}
         {verse ? (
           <View style={{ marginTop: spacing.xl }}>
-            <Text variant="eyebrow" color={colors.brassSoft}>
+            <Text variant="eyebrow" color={colors.brassSoft} style={hiEyebrow}>
               {t("sadhanaSitEyebrow")}
             </Text>
             {!sitDone ? (
@@ -337,7 +349,7 @@ export default function SadhanaScreen() {
         {/* (d) One line */}
         {sitDone ? (
           <View style={{ marginTop: spacing.xl }}>
-            <Text variant="eyebrow" color={colors.brassSoft}>
+            <Text variant="eyebrow" color={colors.brassSoft} style={hiEyebrow}>
               {t("sadhanaReflectEyebrow")}
             </Text>
             {isSignedIn ? (
@@ -380,7 +392,7 @@ export default function SadhanaScreen() {
         {streakRes ? (
           <Rise style={{ marginTop: spacing.xl }}>
             <Panel>
-              <Text variant="title" style={{ fontSize: 20 }}>
+              <Text variant="title" style={[{ fontSize: 20 }, hiDisplay]}>
                 {t("sadhanaStreakLine").replace(
                   "{n}",
                   String(streakRes.current)

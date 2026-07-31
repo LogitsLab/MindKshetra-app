@@ -103,6 +103,12 @@ export default function JapaScreen() {
   useEffect(() => () => logSession(), [logSession]);
 
   const meaning = lang === "hi" ? mantra.meaning_hi : mantra.meaning_en;
+  // A letter-spaced eyebrow breaks Devanagari matra shaping — zero tracking
+  // for the Hindi picker title (docs/design/VISUAL_SYSTEM.md).
+  const hiEyebrow =
+    lang === "hi"
+      ? { letterSpacing: 0, textTransform: "none" as const }
+      : null;
 
   return (
     <Screen>
@@ -193,11 +199,14 @@ export default function JapaScreen() {
               <Text
                 variant="eyebrow"
                 color={colors.brassSoft}
-                style={{
-                  paddingHorizontal: spacing.md,
-                  paddingTop: spacing.md,
-                  paddingBottom: spacing.sm,
-                }}
+                style={[
+                  {
+                    paddingHorizontal: spacing.md,
+                    paddingTop: spacing.md,
+                    paddingBottom: spacing.sm,
+                  },
+                  hiEyebrow,
+                ]}
               >
                 {t("japaPickTitle")}
               </Text>

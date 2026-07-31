@@ -296,7 +296,16 @@ export default function HomeScreen() {
             <Panel>
               <View style={styles.sadhanaRow}>
                 <View style={{ flex: 1 }}>
-                  <Text variant="eyebrow" color={colors.brassSoft}>
+                  <Text
+                    variant="eyebrow"
+                    color={colors.brassSoft}
+                    // Letter-spaced Devanagari breaks matra shaping.
+                    style={
+                      lang === "hi"
+                        ? { letterSpacing: 0, textTransform: "none" as const }
+                        : undefined
+                    }
+                  >
                     {t("homeSadhanaEyebrow")}
                   </Text>
                   <Text

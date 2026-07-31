@@ -73,6 +73,18 @@ export default function PanchangScreen() {
   const { panchang, loading, error } = usePanchang();
   const locale = lang === "hi" ? "hi-IN" : "en-IN";
 
+  // Fraunces has no Devanagari coverage (docs/design/VISUAL_SYSTEM.md) and a
+  // letter-spaced eyebrow breaks matra shaping — the hi-IN date header gets
+  // the real serif and zero tracking.
+  const hiDisplay =
+    lang === "hi"
+      ? { fontFamily: "NotoSerifDevanagari_600SemiBold" as const }
+      : null;
+  const hiEyebrow =
+    lang === "hi"
+      ? { letterSpacing: 0, textTransform: "none" as const }
+      : null;
+
   if (loading) {
     return (
       <Screen atmosphere="soft">
@@ -110,10 +122,10 @@ export default function PanchangScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Rise>
-          <Text variant="eyebrow" color={colors.brassSoft}>
+          <Text variant="eyebrow" color={colors.brassSoft} style={hiEyebrow}>
             {t("panchangTitle")}
           </Text>
-          <Text variant="display" style={{ marginTop: spacing.sm }}>
+          <Text variant="display" style={[{ marginTop: spacing.sm }, hiDisplay]}>
             {formatDay(panchang.date, locale)}
           </Text>
           <Text variant="soft" color={colors.brassSoft} style={{ marginTop: spacing.xs }}>

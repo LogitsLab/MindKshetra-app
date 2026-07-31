@@ -81,9 +81,21 @@ function Chip({
 export default function MilanScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { isSignedIn, loading: authLoading } = useAuth();
   const { ask } = useMadhav();
+
+  // Fraunces has no Devanagari coverage (docs/design/VISUAL_SYSTEM.md) and a
+  // letter-spaced eyebrow breaks matra shaping — Hindi headings get the real
+  // serif and zero tracking.
+  const hiDisplay =
+    lang === "hi"
+      ? { fontFamily: "NotoSerifDevanagari_600SemiBold" as const }
+      : null;
+  const hiEyebrow =
+    lang === "hi"
+      ? { letterSpacing: 0, textTransform: "none" as const }
+      : null;
 
   const [members, setMembers] = useState<AstrologyMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
@@ -173,7 +185,7 @@ export default function MilanScreen() {
   if (!authLoading && !isSignedIn) {
     return (
       <Screen>
-        <Text variant="display" style={{ marginTop: spacing.md }}>
+        <Text variant="display" style={[{ marginTop: spacing.md }, hiDisplay]}>
           {t("milanTitle")}
         </Text>
         <EmptyState title={t("signIn")} body={t("astroSignInPrompt")} />
@@ -194,7 +206,7 @@ export default function MilanScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Rise>
-          <Text variant="display" style={{ marginTop: spacing.sm }}>
+          <Text variant="display" style={[{ marginTop: spacing.sm }, hiDisplay]}>
             {t("milanTitle")}
           </Text>
           <Text variant="soft" style={{ marginTop: spacing.xs }}>
@@ -220,7 +232,7 @@ export default function MilanScreen() {
         ) : (
           <>
             <View style={{ marginTop: spacing.lg }}>
-              <Text variant="eyebrow" color={colors.brassSoft}>
+              <Text variant="eyebrow" color={colors.brassSoft} style={hiEyebrow}>
                 {t("milanFirst")}
               </Text>
               <View style={styles.chips}>
@@ -236,7 +248,7 @@ export default function MilanScreen() {
               <Text
                 variant="eyebrow"
                 color={colors.brassSoft}
-                style={{ marginTop: spacing.lg }}
+                style={[{ marginTop: spacing.lg }, hiEyebrow]}
               >
                 {t("milanSecond")}
               </Text>
@@ -270,7 +282,10 @@ export default function MilanScreen() {
               <Rise style={{ marginTop: spacing.xl }}>
                 <Text
                   variant="display"
-                  style={{ fontSize: 24, lineHeight: 32 }}
+                  style={[
+                    { fontSize: 24, lineHeight: lang === "hi" ? 38 : 32 },
+                    hiDisplay,
+                  ]}
                 >
                   {t(BAND_KEY[result.band])}
                 </Text>
