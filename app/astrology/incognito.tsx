@@ -19,12 +19,13 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
-import type {
-  ChartOverview,
-  ChartPlanet,
-  DashaPeriodNode,
-  LifeArea,
-  PredictionsText,
+import {
+  featuredAreaFromChart,
+  type ChartOverview,
+  type ChartPlanet,
+  type DashaPeriodNode,
+  type LifeArea,
+  type PredictionsText,
 } from "@/types/astrology";
 
 type GeoResult = { label: string; lat: number; lng: number; ianaTz: string };
@@ -298,6 +299,7 @@ export default function IncognitoChartScreen() {
                 ) : predictions ? (
                   <PredictionsPanel
                     predictions={predictions}
+                    featuredArea={featuredAreaFromChart(chart)}
                     detailed
                     labels={{
                       portrait: t("astroPortrait"),

@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
@@ -15,8 +16,16 @@ import { router } from "expo-router";
 import { Platform } from "react-native";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
 import { getAuthCallbackRedirect } from "@/auth/redirect";
-import { chatApi, progressApi } from "@/api/endpoints";
-import { getChatSessionId, getGuestProgress } from "@/storage/local";
+import { shouldMerge } from "@/auth/should-merge";
+import { chatApi, progressApi, userApi } from "@/api/endpoints";
+import {
+  getChatSessionId,
+  getGuestProgress,
+  getJournalDrafts,
+  getTimezoneSynced,
+  removeJournalDrafts,
+  setTimezoneSynced,
+} from "@/storage/local";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -110,6 +119,21 @@ async function mergeOnUpgrade() {
   } catch {
     /* ignore */
   }
+  // Reflections written while signed out wait as local drafts; failed sends
+  // stay queued for the next upgrade.
+  try {
+    const drafts = await getJournalDrafts();
+    for (const draft of drafts) {
+      try {
+        await userApi.addJournal(draft.slokaId, draft.text);
+        await removeJournalDrafts((d) => d.at === draft.at);
+      } catch {
+        /* leave this draft in place */
+      }
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -118,6 +142,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [emailCooldownUntil, setEmailCooldownUntil] = useState(0);
   const [emailCooldownSec, setEmailCooldownSec] = useState(0);
+  // The auth listener lives in a []-dep effect, so it must read the previous
+  // user from a ref — the closure's `user` is frozen at its initial null.
+  const prevUserRef = useRef<User | null>(null);
+  const mergedForUserIdRef = useRef<string | null>(null);
+
+  const mergeForUser = useCallback(async (userId: string) => {
+    if (mergedForUserIdRef.current === userId) return;
+    mergedForUserIdRef.current = userId;
+    await mergeOnUpgrade();
+  }, []);
 
   useEffect(() => {
     if (!emailCooldownUntil) {
@@ -154,20 +188,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     supabase.auth.getSession().then(({ data }) => {
+      prevUserRef.current = data.session?.user ?? null;
+      // A session restored at launch is not an upgrade; never re-merge it.
+      if (data.session?.user && !data.session.user.is_anonymous) {
+        mergedForUserIdRef.current = data.session.user.id;
+      }
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, next) => {
-      const prevAnon = user?.is_anonymous;
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, next) => {
+      const prevUser = prevUserRef.current;
+      prevUserRef.current = next?.user ?? null;
       setSession(next);
       setUser(next?.user ?? null);
-      if (prevAnon && next?.user && !next.user.is_anonymous) {
-        await mergeOnUpgrade();
+      if (
+        (event === "SIGNED_IN" || event === "USER_UPDATED") &&
+        next?.user &&
+        shouldMerge(prevUser, next.user)
+      ) {
+        await mergeForUser(next.user.id);
       }
     });
     return () => sub.subscription.unsubscribe();
-  }, []);
+  }, [mergeForUser]);
+
+  // Keep the server's stored timezone in step with the device so streak day
+  // boundaries (and later, notification send windows) are local. One PATCH
+  // per user+zone, stamped in AsyncStorage.
+  useEffect(() => {
+    if (!user) return;
+    let tz: string | undefined;
+    try {
+      tz = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+    } catch {
+      return;
+    }
+    if (!tz) return;
+    const stamp = `${user.id}:${tz}`;
+    void (async () => {
+      try {
+        if ((await getTimezoneSynced()) === stamp) return;
+        await userApi.updatePreferences({ timezone: tz });
+        await setTimezoneSynced(stamp);
+      } catch {
+        // Offline — retried on the next auth state change or launch.
+      }
+    })();
+  }, [user]);
 
   const signInAnonymously = useCallback(async () => {
     if (!supabaseConfigured) return;
@@ -221,9 +289,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       throw new Error("Google sign-in did not return a session.");
     }
-    await mergeOnUpgrade();
+    // The SIGNED_IN listener also merges; mergeForUser dedupes by user id.
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData.session?.user) {
+      await mergeForUser(sessionData.session.user.id);
+    }
     return true;
-  }, []);
+  }, [mergeForUser]);
 
   /** Resolves false when the person backed out, true when a session started. */
   const signInWithApple = useCallback(async () => {
@@ -248,9 +320,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token: credential.identityToken,
     });
     if (error) throw error;
-    await mergeOnUpgrade();
+    // The SIGNED_IN listener also merges; mergeForUser dedupes by user id.
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData.session?.user) {
+      await mergeForUser(sessionData.session.user.id);
+    }
     return true;
-  }, []);
+  }, [mergeForUser]);
 
   const signInWithEmail = useCallback(async (email: string) => {
     if (!supabaseConfigured) return;

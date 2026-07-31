@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -13,43 +13,16 @@ import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { Rise } from "@/components/Rise";
 import { EmptyState } from "@/components/SlokaCard";
-import { contentApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useVotd } from "@/hooks/useVotd";
 import { spacing } from "@/theme/tokens";
-import type { Sloka } from "@/types";
 
 export default function VerseOfTheDayScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { lang } = useLanguage();
-  const [sloka, setSloka] = useState<Sloka | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const id = (Math.floor(Date.now() / 86400000) % 701) + 1;
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const data = await contentApi.sloka(id);
-        if (alive) setSloka(data);
-      } catch (e) {
-        try {
-          const list = await contentApi.slokas({ limit: 1 });
-          if (alive) setSloka(list.slokas?.[0] ?? null);
-        } catch {
-          if (alive) setError((e as Error).message);
-        }
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [id]);
+  const { votd: sloka, loading, error } = useVotd();
 
   if (loading) {
     return (

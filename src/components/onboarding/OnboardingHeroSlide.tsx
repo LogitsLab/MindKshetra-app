@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Text } from "@/components/Text";
 import { BrandMark } from "@/components/BrandMark";
+import { BRAND_NAME } from "@/components/BrandWordmark";
 import { Rise } from "@/components/Rise";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -40,7 +41,7 @@ export function OnboardingHeroSlide() {
         <View
           accessible
           accessibilityRole="header"
-          accessibilityLabel="MindKshetra"
+          accessibilityLabel={BRAND_NAME}
         >
           <Text
             style={[styles.titleLine, { color: colors.onMedia }]}

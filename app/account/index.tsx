@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -8,19 +9,23 @@ import {
   View,
   ActivityIndicator,
 } from "react-native";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button, Hairline } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { BrandMark } from "@/components/BrandMark";
+import { BRAND_NAME } from "@/components/BrandWordmark";
 import { userApi, votdApi } from "@/api/endpoints";
+import { clearUserLocalState } from "@/storage/local";
 import { useAuth } from "@/context/AuthContext";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTextScale, type TextScaleId } from "@/context/TextScaleContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
+import { getAppVersionLabel } from "@/utils/appVersion";
 
 export default function AccountScreen() {
   const router = useRouter();
@@ -35,6 +40,7 @@ export default function AccountScreen() {
     isAnonymous,
     isSignedIn,
     signInAnonymously,
+    signInWithApple,
     signInWithEmail,
     signInWithGoogle,
     signOut,
@@ -48,6 +54,18 @@ export default function AccountScreen() {
   const [linkSent, setLinkSent] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  const [deleteStage, setDeleteStage] = useState<
+    "idle" | "confirming" | "deleting"
+  >("idle");
+
+  // App Store 4.8: anywhere Google sign-in is offered, Apple must be too.
+  useEffect(() => {
+    if (Platform.OS !== "ios") return;
+    AppleAuthentication.isAvailableAsync()
+      .then(setAppleAvailable)
+      .catch(() => setAppleAvailable(false));
+  }, []);
 
   const [votdConfigured, setVotdConfigured] = useState(false);
   const [votdTestingMode, setVotdTestingMode] = useState(false);
@@ -222,9 +240,17 @@ export default function AccountScreen() {
 
         {showAuth ? (
           <View style={{ gap: spacing.sm }}>
+            {appleAvailable ? (
+              <Button
+                label={t("signInApple")}
+                variant="primary"
+                loading={busy}
+                onPress={() => void run(signInWithApple)}
+              />
+            ) : null}
             <Button
               label={t("signInGoogle")}
-              variant="primary"
+              variant={appleAvailable ? "ghost" : "primary"}
               loading={busy}
               onPress={() => void run(signInWithGoogle)}
             />
@@ -380,6 +406,56 @@ export default function AccountScreen() {
               loading={busy}
               onPress={() => void run(signOut)}
             />
+
+            {deleteStage === "idle" ? (
+              <Pressable
+                onPress={() => setDeleteStage("confirming")}
+                style={{ paddingVertical: spacing.xs }}
+              >
+                <Text
+                  variant="muted"
+                  style={{ textAlign: "center", fontSize: 12 }}
+                >
+                  {t("deleteAccount")}
+                </Text>
+              </Pressable>
+            ) : (
+              <Panel
+                style={{
+                  borderColor: colors.danger,
+                  borderWidth: StyleSheet.hairlineWidth * 2,
+                }}
+              >
+                <Text variant="soft">{t("deleteAccountBlurb")}</Text>
+                <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
+                  <Button
+                    label={t("deleteAccountConfirm")}
+                    variant="danger"
+                    loading={deleteStage === "deleting"}
+                    onPress={() =>
+                      void (async () => {
+                        setDeleteStage("deleting");
+                        try {
+                          await userApi.deleteAccount();
+                          await signOut();
+                          await clearUserLocalState();
+                          router.replace("/");
+                        } catch {
+                          setMessage(t("deleteAccountFailed"));
+                          setDeleteStage("idle");
+                        }
+                      })()
+                    }
+                  />
+                  <Button
+                    label={t("deleteAccountCancel")}
+                    variant="ghost"
+                    disabled={deleteStage === "deleting"}
+                    onPress={() => setDeleteStage("idle")}
+                  />
+                </View>
+              </Panel>
+            )}
           </View>
         )}
 
@@ -561,6 +637,21 @@ export default function AccountScreen() {
             {lang === "hi" ? "गोपनीयता नीति" : "Privacy policy"}
           </Text>
         </Pressable>
+
+        <Text
+          variant="muted"
+          style={{
+            marginTop: spacing.md,
+            textAlign: "center",
+            fontSize: 12,
+            lineHeight: 18,
+            opacity: 0.75,
+          }}
+        >
+          {BRAND_NAME}
+          {"\n"}
+          {getAppVersionLabel()}
+        </Text>
 
         {__DEV__ ? (
           <Pressable

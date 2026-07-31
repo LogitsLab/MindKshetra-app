@@ -3,6 +3,10 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFonts, Fraunces_500Medium, Fraunces_600SemiBold } from "@expo-google-fonts/fraunces";
+import {
+  NotoSerifDevanagari_500Medium,
+  NotoSerifDevanagari_600SemiBold,
+} from "@expo-google-fonts/noto-serif-devanagari";
 import { Sora_400Regular, Sora_600SemiBold } from "@expo-google-fonts/sora";
 import * as SplashScreen from "expo-splash-screen";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
@@ -15,6 +19,7 @@ import { MadhavFab } from "@/components/MadhavFab";
 import { ProfileButton } from "@/components/ScreenHeader";
 import { OnboardingGate } from "@/components/OnboardingGate";
 import { useOnboarding } from "@/context/OnboardingContext";
+import { useDailyVisit } from "@/hooks/useDailyVisit";
 import { useOnboardingRouting } from "@/hooks/useOnboardingRouting";
 import { useSegments } from "expo-router";
 
@@ -32,6 +37,7 @@ function RootNavigator() {
   const onOnboarding = segments[0] === "onboarding";
 
   useOnboardingRouting();
+  useDailyVisit();
 
   if (!ready) return null;
 
@@ -103,6 +109,11 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     Fraunces_500Medium,
     Fraunces_600SemiBold,
+    // Fraunces has no Devanagari coverage (see docs/design/VISUAL_SYSTEM.md);
+    // Sanskrit/Hindi display text gets a real serif instead of a silent
+    // system-font fallback.
+    NotoSerifDevanagari_500Medium,
+    NotoSerifDevanagari_600SemiBold,
     Sora_400Regular,
     Sora_600SemiBold,
   });

@@ -11,6 +11,8 @@ import {
 
 type Props = {
   predictions: PredictionsText;
+  /** Highest-confidence area from the chart verdicts (featuredAreaFromChart). */
+  featuredArea?: LifeArea | null;
   detailed?: boolean;
   labels: {
     portrait: string;
@@ -26,17 +28,23 @@ type Props = {
   };
 };
 
-export function PredictionsPanel({ predictions, detailed = true, labels }: Props) {
+export function PredictionsPanel({
+  predictions,
+  featuredArea,
+  detailed = true,
+  labels,
+}: Props) {
   const { colors } = useTheme();
   const [open, setOpen] = useState<LifeArea | "portrait" | null>("portrait");
 
   const featured = useMemo(() => {
+    if (featuredArea && predictions.areas[featuredArea]) return featuredArea;
     const entries = LIFE_AREAS.map((a) => ({
       area: a,
       row: predictions.areas[a],
     })).filter((x) => x.row);
     return entries[0]?.area ?? "career";
-  }, [predictions.areas]);
+  }, [featuredArea, predictions.areas]);
 
   const areas = LIFE_AREAS.filter((a) => predictions.areas[a]);
 
