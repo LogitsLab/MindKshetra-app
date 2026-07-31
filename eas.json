@@ -11,6 +11,12 @@
     "preview": {
       "distribution": "internal"
     },
+    "dev-backend": {
+      "extends": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://dev-mind.logitslab.com"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "env": {
