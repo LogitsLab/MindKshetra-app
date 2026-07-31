@@ -13,6 +13,7 @@ import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { BrandMark } from "@/components/BrandMark";
+import { BrandHeroTitle, BrandNavLabel } from "@/components/BrandWordmark";
 import { Panel } from "@/components/Panel";
 import { PathTile } from "@/components/SlokaCard";
 import { Rise } from "@/components/Rise";
@@ -134,23 +135,23 @@ export default function HomeScreen() {
             <Rise>
               <View style={styles.brandRow}>
                 <BrandMark size={28} />
-                <Text
-                  variant="muted"
-                  style={{ marginLeft: spacing.sm }}
-                  color={colors.textSoft}
-                >
-                  MindKshetra
-                </Text>
-                {streak > 0 ? (
-                  <>
-                    <View
-                      style={[styles.brandDot, { backgroundColor: colors.brass }]}
-                    />
-                    <Text variant="muted" color={colors.brassSoft}>
-                      {streak} {t("homeStreakLabel")}
-                    </Text>
-                  </>
-                ) : null}
+                <BrandNavLabel
+                  trailing={
+                    streak > 0 ? (
+                      <>
+                        <View
+                          style={[
+                            styles.brandDot,
+                            { backgroundColor: colors.brass },
+                          ]}
+                        />
+                        <Text variant="muted" color={colors.brassSoft}>
+                          {streak} {t("homeStreakLabel")}
+                        </Text>
+                      </>
+                    ) : null
+                  }
+                />
               </View>
             </Rise>
           }
@@ -164,12 +165,7 @@ export default function HomeScreen() {
           >
             मनः
           </Text>
-          <Text
-            variant="display"
-            style={{ fontSize: 40, lineHeight: 44 }}
-          >
-            MindKshetra
-          </Text>
+          <BrandHeroTitle fontSize={40} />
           <Text
             variant="title"
             color={colors.brassSoft}

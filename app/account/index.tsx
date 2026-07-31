@@ -14,6 +14,7 @@ import { Text } from "@/components/Text";
 import { Button, Hairline } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { BrandMark } from "@/components/BrandMark";
+import { BRAND_NAME } from "@/components/BrandWordmark";
 import { userApi, votdApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useOnboarding } from "@/context/OnboardingContext";
@@ -21,6 +22,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTextScale, type TextScaleId } from "@/context/TextScaleContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
+import { getAppVersionLabel } from "@/utils/appVersion";
 
 export default function AccountScreen() {
   const router = useRouter();
@@ -561,6 +563,21 @@ export default function AccountScreen() {
             {lang === "hi" ? "गोपनीयता नीति" : "Privacy policy"}
           </Text>
         </Pressable>
+
+        <Text
+          variant="muted"
+          style={{
+            marginTop: spacing.md,
+            textAlign: "center",
+            fontSize: 12,
+            lineHeight: 18,
+            opacity: 0.75,
+          }}
+        >
+          {BRAND_NAME}
+          {"\n"}
+          {getAppVersionLabel()}
+        </Text>
 
         {__DEV__ ? (
           <Pressable
