@@ -72,3 +72,29 @@ export type Streak = {
   longest: number;
   last_active_date?: string | null;
 };
+
+export type SadhanaPractice = "flow" | "japa" | "sit" | "pranayama";
+
+/** One device-local practice session awaiting a signed-in merge. */
+export type SadhanaLogEntry = {
+  practice: SadhanaPractice;
+  /** Device-local calendar day, YYYY-MM-DD. */
+  occurredOn: string;
+  durationSec?: number;
+  count?: number;
+  /** uuid v4 — the server-side dedupe key; required for merge. */
+  clientRef: string;
+};
+
+export type PracticeStreak = {
+  practice: SadhanaPractice;
+  current: number;
+  longest: number;
+  lastDay?: string | null;
+};
+
+export type SadhanaStreak = {
+  current: number;
+  longest: number;
+  graceUsedToday?: boolean;
+};

@@ -251,8 +251,31 @@ export default function HomeScreen() {
           </Pressable>
         </Rise>
 
+        {/* Practice entries — small cards beside the day's verse */}
+        <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.md }}>
+          <View style={styles.practiceRow}>
+            <Pressable
+              style={styles.practicePress}
+              onPress={() => router.push("/japa")}
+            >
+              <Panel style={styles.practiceCard}>
+                <Text variant="title" style={{ fontSize: 18 }}>
+                  {t("homeJapaTitle")}
+                </Text>
+                <Text
+                  variant="muted"
+                  style={{ marginTop: spacing.xs }}
+                  numberOfLines={2}
+                >
+                  {t("homeJapaBody")}
+                </Text>
+              </Panel>
+            </Pressable>
+          </View>
+        </Rise>
+
         {/* Equal path grid */}
-        <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.xl }}>
+        <Rise delay={motion.staggerMs * 4} style={{ marginTop: spacing.xl }}>
           <Text variant="eyebrow" color={colors.brassSoft}>
             {t("homePaths")}
           </Text>
@@ -297,7 +320,7 @@ export default function HomeScreen() {
         </Rise>
 
         {/* Mood chips — arrive by feeling */}
-        <Rise delay={motion.staggerMs * 4} style={{ marginTop: spacing.xl }}>
+        <Rise delay={motion.staggerMs * 5} style={{ marginTop: spacing.xl }}>
           <View style={styles.moodHead}>
             <View style={{ flex: 1 }}>
               <Text variant="eyebrow" color={colors.brassSoft}>
@@ -348,7 +371,7 @@ export default function HomeScreen() {
         </Rise>
 
         {/* Closing Madhav band */}
-        <Rise delay={motion.staggerMs * 5} style={{ marginTop: spacing.xl }}>
+        <Rise delay={motion.staggerMs * 6} style={{ marginTop: spacing.xl }}>
           <Pressable
             onPress={() => router.push("/madhav")}
             style={({ pressed }) => [
@@ -435,6 +458,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  practiceRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  practicePress: {
+    flex: 1,
+  },
+  practiceCard: {
+    flex: 1,
   },
   pathGrid: {
     marginTop: spacing.md,

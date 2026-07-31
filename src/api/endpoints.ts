@@ -1,5 +1,14 @@
 import { apiFetch } from "@/api/client";
-import type { AstrologyMember, JournalEntry, Sloka, Streak } from "@/types";
+import type {
+  AstrologyMember,
+  JournalEntry,
+  PracticeStreak,
+  SadhanaLogEntry,
+  SadhanaPractice,
+  SadhanaStreak,
+  Sloka,
+  Streak,
+} from "@/types";
 import {
   extractPredictionsText,
   type PredictionsText,
@@ -137,6 +146,36 @@ export const progressApi = {
       method: "POST",
       body: JSON.stringify({ completed }),
     }),
+};
+
+export const sadhanaApi = {
+  /** Guests get an empty summary (not a 401); safe to call sessionless. */
+  summary: (tz?: string) =>
+    apiFetch<{
+      today: string | null;
+      doneToday: SadhanaPractice[];
+      streaks: PracticeStreak[];
+    }>(`/api/sadhana${tz ? `?tz=${encodeURIComponent(tz)}` : ""}`),
+  /** Requires a Supabase session — anonymous sessions persist too. */
+  log: (body: {
+    practice: SadhanaPractice;
+    occurredOn?: string;
+    durationSec?: number;
+    count?: number;
+    details?: Record<string, unknown>;
+    clientRef?: string;
+    timezone?: string;
+  }) =>
+    apiFetch<{ ok: boolean; occurredOn: string; streak: SadhanaStreak }>(
+      "/api/sadhana",
+      { method: "POST", body: JSON.stringify(body) }
+    ),
+  /** Replay of the device-local log; requires non-anonymous sign-in. */
+  merge: (body: { sessions: SadhanaLogEntry[]; timezone?: string }) =>
+    apiFetch<{ merged: number; streaks: PracticeStreak[] }>(
+      "/api/sadhana/merge",
+      { method: "POST", body: JSON.stringify(body) }
+    ),
 };
 
 export const chatApi = {

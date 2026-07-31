@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { SadhanaLogEntry } from "@/types";
 
 const KEYS = {
   theme: "mindkshetra-theme",
@@ -13,6 +14,7 @@ const KEYS = {
   votdToday: "mindkshetra-votd-today",
   journalDrafts: "mindkshetra-journal-drafts",
   timezoneSynced: "mindkshetra-tz-synced",
+  sadhanaLog: "mindkshetra-sadhana-log",
 } as const;
 
 export async function getStoredTheme(): Promise<"dark" | "light" | null> {
@@ -122,6 +124,7 @@ export async function clearUserLocalState(): Promise<void> {
     KEYS.visitDay,
     KEYS.journalDrafts,
     KEYS.timezoneSynced,
+    KEYS.sadhanaLog,
   ]);
 }
 
@@ -165,6 +168,28 @@ export async function getStoredVotd(): Promise<StoredVotd | null> {
 
 export async function setStoredVotd(votd: StoredVotd): Promise<void> {
   await AsyncStorage.setItem(KEYS.votdToday, JSON.stringify(votd));
+}
+
+/** Practice sessions logged with no Supabase session; replayed on upgrade. */
+export async function getSadhanaLog(): Promise<SadhanaLogEntry[]> {
+  const raw = await AsyncStorage.getItem(KEYS.sadhanaLog);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as SadhanaLogEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function appendSadhanaLog(entry: SadhanaLogEntry): Promise<void> {
+  const log = await getSadhanaLog();
+  log.push(entry);
+  await AsyncStorage.setItem(KEYS.sadhanaLog, JSON.stringify(log));
+}
+
+export async function clearSadhanaLog(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.sadhanaLog);
 }
 
 export type JournalDraft = { slokaId: number; text: string; at: number };

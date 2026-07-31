@@ -17,11 +17,13 @@ import { Platform } from "react-native";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
 import { getAuthCallbackRedirect } from "@/auth/redirect";
 import { shouldMerge } from "@/auth/should-merge";
-import { chatApi, progressApi, userApi } from "@/api/endpoints";
+import { chatApi, progressApi, sadhanaApi, userApi } from "@/api/endpoints";
 import {
+  clearSadhanaLog,
   getChatSessionId,
   getGuestProgress,
   getJournalDrafts,
+  getSadhanaLog,
   getTimezoneSynced,
   removeJournalDrafts,
   setTimezoneSynced,
@@ -118,6 +120,24 @@ async function mergeOnUpgrade() {
     if (guest.completed.length) await progressApi.merge(guest.completed);
   } catch {
     /* ignore */
+  }
+  // Practice sessions logged with no session replay through the idempotent
+  // merge endpoint (clientRef dedupes), then the local log clears. A failed
+  // merge keeps the log for the next upgrade.
+  try {
+    const sessions = await getSadhanaLog();
+    if (sessions.length) {
+      let timezone: string | undefined;
+      try {
+        timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+      } catch {
+        timezone = undefined;
+      }
+      await sadhanaApi.merge({ sessions, timezone });
+      await clearSadhanaLog();
+    }
+  } catch {
+    /* keep the log */
   }
   // Reflections written while signed out wait as local drafts; failed sends
   // stay queued for the next upgrade.

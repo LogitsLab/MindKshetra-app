@@ -4,6 +4,7 @@ import * as astrology from "@/i18n/namespaces/astrology";
 import * as account from "@/i18n/namespaces/account";
 import * as chat from "@/i18n/namespaces/chat";
 import * as onboarding from "@/i18n/namespaces/onboarding";
+import * as sadhana from "@/i18n/namespaces/sadhana";
 
 export type AppLang = "en" | "hi";
 
@@ -15,6 +16,7 @@ export const dictionary = {
     ...account.en,
     ...chat.en,
     ...onboarding.en,
+    ...sadhana.en,
     navHome: "Home",
   },
   hi: {
@@ -24,6 +26,7 @@ export const dictionary = {
     ...account.hi,
     ...chat.hi,
     ...onboarding.hi,
+    ...sadhana.hi,
     navHome: "होम",
   },
 } as const;

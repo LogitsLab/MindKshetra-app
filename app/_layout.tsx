@@ -78,6 +78,7 @@ function RootNavigator() {
         />
         <Stack.Screen name="sloka/[id]" options={{ title: "Verse" }} />
         <Stack.Screen name="verse-of-the-day" options={{ title: "Verse of the Day" }} />
+        <Stack.Screen name="japa" options={{ title: "Japa" }} />
         <Stack.Screen name="favorites" options={{ title: "Favorites" }} />
         <Stack.Screen
           name="account/index"
