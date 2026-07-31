@@ -18,14 +18,14 @@ import { Panel } from "@/components/Panel";
 import { PathTile } from "@/components/SlokaCard";
 import { Rise } from "@/components/Rise";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { contentApi, userApi } from "@/api/endpoints";
+import { userApi } from "@/api/endpoints";
 import { moods } from "@/data/moods";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useVotd } from "@/hooks/useVotd";
 import { images, moodAccent } from "@/theme/assets";
 import { motion, radii, spacing } from "@/theme/tokens";
-import type { Sloka } from "@/types";
 
 const PREVIEW_MOOD_IDS = [
   "anxious",
@@ -43,10 +43,9 @@ export default function HomeScreen() {
   const { t, lang } = useLanguage();
   const { isSignedIn } = useAuth();
   const [streak, setStreak] = useState(0);
-  const [votd, setVotd] = useState<Sloka | null>(null);
+  const { votd } = useVotd();
 
   const day = Math.floor(Date.now() / 86400000);
-  const votdId = (day % 701) + 1;
 
   const previewMoods = useMemo(() => {
     return PREVIEW_MOOD_IDS.map((id, i) => {
@@ -54,13 +53,6 @@ export default function HomeScreen() {
       return found ?? moods[(day + i) % moods.length];
     }).filter(Boolean);
   }, [day]);
-
-  useEffect(() => {
-    contentApi
-      .sloka(votdId)
-      .then(setVotd)
-      .catch(() => undefined);
-  }, [votdId]);
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -425,9 +417,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: -16,
     top: -28,
-    fontFamily: "Fraunces_600SemiBold",
+    // Devanagari glyphs — Fraunces has no coverage here (VISUAL_SYSTEM.md).
+    fontFamily: "NotoSerifDevanagari_600SemiBold",
     fontSize: 120,
-    lineHeight: 120,
+    lineHeight: 150,
     opacity: 0.05,
   },
   ctaRow: {

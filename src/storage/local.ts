@@ -9,6 +9,10 @@ const KEYS = {
   chatSession: "mindkshetra-chat-session",
   guestProgress: "mindkshetra-guest-progress",
   verseCache: "mindkshetra-verse-cache",
+  visitDay: "mindkshetra-visit-day",
+  votdToday: "mindkshetra-votd-today",
+  journalDrafts: "mindkshetra-journal-drafts",
+  timezoneSynced: "mindkshetra-tz-synced",
 } as const;
 
 export async function getStoredTheme(): Promise<"dark" | "light" | null> {
@@ -104,6 +108,93 @@ export async function setGuestCursor(
   const p = await getGuestProgress();
   p.cursor = { chapter, verse };
   await setGuestProgress(p);
+}
+
+/**
+ * Wipes account-scoped local state after account deletion. Preferences
+ * (theme, language, text scale, onboarding) survive — they belong to the
+ * device, not the account.
+ */
+export async function clearUserLocalState(): Promise<void> {
+  await AsyncStorage.multiRemove([
+    KEYS.chatSession,
+    KEYS.guestProgress,
+    KEYS.visitDay,
+    KEYS.journalDrafts,
+    KEYS.timezoneSynced,
+  ]);
+}
+
+/** Local calendar date (device zone) as YYYY-MM-DD. */
+export function localDayStamp(now = new Date()): string {
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+/** Returns the stored day stamp for the last recorded visit (or null). */
+export async function getVisitDay(): Promise<string | null> {
+  return AsyncStorage.getItem(KEYS.visitDay);
+}
+
+export async function setVisitDay(day: string): Promise<void> {
+  await AsyncStorage.setItem(KEYS.visitDay, day);
+}
+
+/** `${userId}:${tz}` stamp of the last timezone written to preferences. */
+export async function getTimezoneSynced(): Promise<string | null> {
+  return AsyncStorage.getItem(KEYS.timezoneSynced);
+}
+
+export async function setTimezoneSynced(stamp: string): Promise<void> {
+  await AsyncStorage.setItem(KEYS.timezoneSynced, stamp);
+}
+
+export type StoredVotd = { id: number; ref: string; date: string };
+
+/** Day-scoped cache of the server verse of the day (offline fallback). */
+export async function getStoredVotd(): Promise<StoredVotd | null> {
+  const raw = await AsyncStorage.getItem(KEYS.votdToday);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as StoredVotd;
+  } catch {
+    return null;
+  }
+}
+
+export async function setStoredVotd(votd: StoredVotd): Promise<void> {
+  await AsyncStorage.setItem(KEYS.votdToday, JSON.stringify(votd));
+}
+
+export type JournalDraft = { slokaId: number; text: string; at: number };
+
+export async function getJournalDrafts(): Promise<JournalDraft[]> {
+  const raw = await AsyncStorage.getItem(KEYS.journalDrafts);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as JournalDraft[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function addJournalDraft(
+  slokaId: number,
+  text: string
+): Promise<void> {
+  const drafts = await getJournalDrafts();
+  drafts.push({ slokaId, text, at: Date.now() });
+  await AsyncStorage.setItem(KEYS.journalDrafts, JSON.stringify(drafts));
+}
+
+export async function removeJournalDrafts(
+  predicate: (draft: JournalDraft) => boolean
+): Promise<void> {
+  const drafts = await getJournalDrafts();
+  const remaining = drafts.filter((d) => !predicate(d));
+  await AsyncStorage.setItem(KEYS.journalDrafts, JSON.stringify(remaining));
 }
 
 export async function cacheVerse(id: number, payload: unknown): Promise<void> {

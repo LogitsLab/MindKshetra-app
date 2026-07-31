@@ -73,9 +73,11 @@ function variantStyles(
       color: colors.textMuted,
     },
     sanskrit: {
-      fontFamily: "Fraunces_500Medium",
+      // Fraunces has no Devanagari glyphs — it silently fell back to the
+      // system font here. Noto Serif Devanagari is the intended serif voice.
+      fontFamily: "NotoSerifDevanagari_500Medium",
       fontSize: scale(22, m),
-      lineHeight: scale(34, m),
+      lineHeight: scale(36, m),
       color: colors.text,
     },
   });

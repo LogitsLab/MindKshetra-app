@@ -25,6 +25,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
+  addJournalDraft,
   cacheVerse,
   getCachedVerse,
   markGuestComplete,
@@ -49,11 +50,31 @@ export default function SlokaScreen() {
   const [favorited, setFavorited] = useState(false);
   const [journal, setJournal] = useState("");
   const [showJournal, setShowJournal] = useState(false);
+  const [journalNotice, setJournalNotice] = useState<string | null>(null);
 
   useEffect(() => {
     setVerseContext(slokaId);
     return () => setVerseContext(null);
   }, [slokaId, setVerseContext]);
+
+  // The star used to start empty forever — state was never hydrated, so a
+  // saved verse looked unsaved and tapping it re-added the favorite.
+  useEffect(() => {
+    if (!isSignedIn) {
+      setFavorited(false);
+      return;
+    }
+    let alive = true;
+    userApi
+      .favoriteStatus(slokaId)
+      .then((r) => {
+        if (alive) setFavorited(Boolean(r.saved));
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [slokaId, isSignedIn]);
 
   useEffect(() => {
     let alive = true;
@@ -78,12 +99,18 @@ export default function SlokaScreen() {
 
   useEffect(() => {
     if (!sloka) return;
+    // Guest cursor always (offline resilience); the server cursor too when
+    // signed in — "Continue reading" reads the server for members and was
+    // permanently stale without this.
     void setGuestCursor(sloka.chapter, sloka.verse_number);
+    if (isSignedIn) {
+      progressApi.setCursor(sloka.id).catch(() => undefined);
+    }
     contentApi
       .story(sloka.id, lang)
       .then((r) => setStory(r.story))
       .catch(() => undefined);
-  }, [sloka, lang]);
+  }, [sloka, lang, isSignedIn]);
 
   if (loading && !sloka) {
     return (
@@ -118,14 +145,15 @@ export default function SlokaScreen() {
             router.push("/account");
             return;
           }
-          if (favorited) {
-            await userApi.removeFavorite(sloka.id);
-            setFavorited(false);
-          } else {
-            await userApi.addFavorite(sloka.id);
-            setFavorited(true);
-          }
+          const next = !favorited;
+          setFavorited(next);
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          try {
+            if (next) await userApi.addFavorite(sloka.id);
+            else await userApi.removeFavorite(sloka.id);
+          } catch {
+            setFavorited(!next);
+          }
         }}
       />
       <Tool
@@ -242,18 +270,43 @@ export default function SlokaScreen() {
             <Button
               label={lang === "hi" ? "सहेजें" : "Save reflection"}
               onPress={async () => {
-                if (!journal.trim()) return;
+                const text = journal.trim();
+                if (!text) return;
                 if (isSignedIn) {
-                  await userApi.addJournal(sloka.id, journal.trim());
+                  await userApi.addJournal(sloka.id, text);
+                  setJournalNotice(null);
+                  void Haptics.notificationAsync(
+                    Haptics.NotificationFeedbackType.Success
+                  );
+                } else {
+                  // Guests used to lose the text silently — the input cleared
+                  // with a success haptic and nothing was stored anywhere.
+                  await addJournalDraft(sloka.id, text);
+                  setJournalNotice(
+                    lang === "hi"
+                      ? "इस डिवाइस पर सहेजा गया — खाते में रखने के लिए साइन इन करें।"
+                      : "Saved on this device — sign in to keep it in your account."
+                  );
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }
                 setJournal("");
                 setShowJournal(false);
-                void Haptics.notificationAsync(
-                  Haptics.NotificationFeedbackType.Success
-                );
               }}
             />
           </View>
+        ) : null}
+
+        {journalNotice ? (
+          <Pressable
+            onPress={() => router.push("/account")}
+            style={{ marginTop: spacing.md }}
+          >
+            <Panel>
+              <Text variant="soft" color={colors.brassSoft}>
+                {journalNotice}
+              </Text>
+            </Panel>
+          </Pressable>
         ) : null}
       </ScrollView>
 

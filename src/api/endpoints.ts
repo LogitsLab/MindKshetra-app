@@ -49,6 +49,8 @@ export const contentApi = {
 
 export const userApi = {
   favorites: () => apiFetch<{ slokas: Sloka[] }>("/api/favorites"),
+  favoriteStatus: (slokaId: number) =>
+    apiFetch<{ saved: boolean }>(`/api/favorites?slokaId=${slokaId}`),
   addFavorite: (slokaId: number) =>
     apiFetch<{ ok: boolean }>("/api/favorites", {
       method: "POST",
@@ -65,6 +67,11 @@ export const userApi = {
       body: JSON.stringify({ slokaId, reflection }),
     }),
   streak: () => apiFetch<Streak>("/api/account/streak"),
+  recordVisit: (timezone?: string) =>
+    apiFetch<Streak>("/api/account/streak", {
+      method: "POST",
+      body: JSON.stringify(timezone ? { timezone } : {}),
+    }),
   preferences: () =>
     apiFetch<{
       votdEmailEnabled?: boolean;
@@ -81,6 +88,8 @@ export const userApi = {
       body: JSON.stringify(body),
     }),
   exportData: () => apiFetch<Record<string, unknown>>("/api/account/export"),
+  deleteAccount: () =>
+    apiFetch<{ ok: boolean }>("/api/account/delete", { method: "POST" }),
 };
 
 export const votdApi = {
@@ -94,6 +103,18 @@ export const votdApi = {
     apiFetch<{ ok: boolean; ref?: string; to?: string }>("/api/votd/email", {
       method: "POST",
     }),
+  /** Server-authoritative verse of the day — never derive it from the clock. */
+  today: () =>
+    apiFetch<{ id: number; ref: string; date: string }>("/api/votd/today"),
+};
+
+export const eventsApi = {
+  /** Fire-and-forget; callers must never await this on a user-facing path. */
+  send: (name: string, props?: Record<string, unknown>) =>
+    apiFetch<{ ok: boolean }>("/api/events", {
+      method: "POST",
+      body: JSON.stringify(props ? { name, props } : { name }),
+    }).catch(() => ({ ok: false })),
 };
 
 export const progressApi = {
@@ -104,6 +125,11 @@ export const progressApi = {
   complete: (slokaId: number) =>
     apiFetch<{ ok: boolean }>("/api/progress/complete", {
       method: "POST",
+      body: JSON.stringify({ slokaId }),
+    }),
+  setCursor: (slokaId: number) =>
+    apiFetch<{ ok: boolean }>("/api/progress/cursor", {
+      method: "PUT",
       body: JSON.stringify({ slokaId }),
     }),
   merge: (completed: number[]) =>

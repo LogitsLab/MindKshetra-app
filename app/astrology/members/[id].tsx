@@ -20,12 +20,13 @@ import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 import type { AstrologyMember } from "@/types";
-import type {
-  ChartOverview,
-  ChartPlanet,
-  DashaPeriodNode,
-  LifeArea,
-  PredictionsText,
+import {
+  featuredAreaFromChart,
+  type ChartOverview,
+  type ChartPlanet,
+  type DashaPeriodNode,
+  type LifeArea,
+  type PredictionsText,
 } from "@/types/astrology";
 
 type Tab = "chart" | "dasha" | "predictions";
@@ -223,6 +224,7 @@ export default function AstrologyMemberDetailScreen() {
             ) : predictions ? (
               <PredictionsPanel
                 predictions={predictions}
+                featuredArea={featuredAreaFromChart(chart)}
                 detailed
                 labels={{
                   portrait: t("astroPortrait"),

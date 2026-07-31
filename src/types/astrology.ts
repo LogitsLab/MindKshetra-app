@@ -76,6 +76,28 @@ export function extractPredictionsText(data: unknown): PredictionsText | null {
   };
 }
 
+const CONF_RANK: Record<string, number> = { high: 3, medium: 2, low: 1 };
+
+/**
+ * Mirrors web ChartHub's topBlended: the featured life area is the
+ * highest-confidence blended verdict, so both clients lead with the same
+ * area instead of mobile hardcoding "career".
+ */
+export function featuredAreaFromChart(chart: unknown): LifeArea | null {
+  if (!chart || typeof chart !== "object") return null;
+  const verdicts = (chart as { verdicts?: { blended?: unknown } }).verdicts;
+  const blended = verdicts?.blended;
+  if (!Array.isArray(blended) || blended.length === 0) return null;
+  const top = [...blended].sort(
+    (a, b) =>
+      (CONF_RANK[(b as { confidence?: string }).confidence ?? ""] ?? 0) -
+      (CONF_RANK[(a as { confidence?: string }).confidence ?? ""] ?? 0)
+  )[0] as { lifeArea?: string };
+  return LIFE_AREAS.includes(top?.lifeArea as LifeArea)
+    ? (top.lifeArea as LifeArea)
+    : null;
+}
+
 export function formatDashaLord(
   period: { lord?: string; start?: string; end?: string } | null | undefined
 ): string {
