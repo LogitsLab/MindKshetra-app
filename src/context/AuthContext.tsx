@@ -122,8 +122,10 @@ async function mergeOnUpgrade() {
     /* ignore */
   }
   // Practice sessions logged with no session replay through the idempotent
-  // merge endpoint (clientRef dedupes), then the local log clears. A failed
-  // merge keeps the log for the next upgrade.
+  // merge endpoint (clientRef dedupes). The server caps one request at 200
+  // sessions, so replay in chunks and clear only after every chunk landed —
+  // a failed chunk keeps the whole log for the next upgrade rather than
+  // clearing history the server never received.
   try {
     const sessions = await getSadhanaLog();
     if (sessions.length) {
@@ -133,7 +135,13 @@ async function mergeOnUpgrade() {
       } catch {
         timezone = undefined;
       }
-      await sadhanaApi.merge({ sessions, timezone });
+      const CHUNK = 200;
+      for (let i = 0; i < sessions.length; i += CHUNK) {
+        await sadhanaApi.merge({
+          sessions: sessions.slice(i, i + CHUNK),
+          timezone,
+        });
+      }
       await clearSadhanaLog();
     }
   } catch {
