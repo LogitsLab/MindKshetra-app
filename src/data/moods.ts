@@ -24,3 +24,13 @@ export const moods: Mood[] = [
 export function getMoodById(id: string): Mood | undefined {
   return moods.find((m) => m.id === id);
 }
+
+/** The six chips Home previews; the daily sadhana flow reuses the same set. */
+export const previewMoodIds = [
+  "anxious",
+  "hopeful",
+  "confused",
+  "grateful",
+  "lonely",
+  "purpose",
+] as const;

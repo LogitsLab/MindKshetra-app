@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
   Pressable,
@@ -6,7 +6,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/Screen";
@@ -18,8 +18,9 @@ import { Panel } from "@/components/Panel";
 import { PathTile } from "@/components/SlokaCard";
 import { Rise } from "@/components/Rise";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { userApi } from "@/api/endpoints";
-import { moods } from "@/data/moods";
+import { sadhanaApi, userApi } from "@/api/endpoints";
+import { moods, previewMoodIds } from "@/data/moods";
+import { getSadhanaLog, localDayStamp } from "@/storage/local";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -28,33 +29,64 @@ import { usePanchang } from "@/hooks/usePanchang";
 import { images, moodAccent } from "@/theme/assets";
 import { motion, radii, spacing } from "@/theme/tokens";
 
-const PREVIEW_MOOD_IDS = [
-  "anxious",
-  "hopeful",
-  "confused",
-  "grateful",
-  "lonely",
-  "purpose",
-] as const;
-
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, session } = useAuth();
   const [streak, setStreak] = useState(0);
+  const [sadhanaDone, setSadhanaDone] = useState(false);
   const { votd } = useVotd();
   const { panchang, loading: panchangLoading } = usePanchang();
 
   const day = Math.floor(Date.now() / 86400000);
 
   const previewMoods = useMemo(() => {
-    return PREVIEW_MOOD_IDS.map((id, i) => {
+    return previewMoodIds.map((id, i) => {
       const found = moods.find((m) => m.id === id);
       return found ?? moods[(day + i) % moods.length];
     }).filter(Boolean);
   }, [day]);
+
+  // Refreshes on focus so finishing the flow shows the check on return.
+  const sessionUserId = session?.user.id ?? null;
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      const checkLocal = async () => {
+        const log = await getSadhanaLog();
+        const today = localDayStamp();
+        return log.some((e) => e.practice === "flow" && e.occurredOn === today);
+      };
+      (async () => {
+        try {
+          if (sessionUserId) {
+            let tz: string | undefined;
+            try {
+              tz = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+            } catch {
+              tz = undefined;
+            }
+            const s = await sadhanaApi.summary(tz);
+            if (alive) setSadhanaDone(s.doneToday.includes("flow"));
+          } else if (alive) {
+            setSadhanaDone(await checkLocal());
+          }
+        } catch {
+          // Offline — the device log still knows about today.
+          try {
+            if (alive) setSadhanaDone(await checkLocal());
+          } catch {
+            /* leave as-is; never an error on home */
+          }
+        }
+      })();
+      return () => {
+        alive = false;
+      };
+    }, [sessionUserId])
+  );
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -253,8 +285,49 @@ export default function HomeScreen() {
           </Pressable>
         </Rise>
 
-        {/* Practice entries — small cards beside the day's verse */}
+        {/* Today's composed practice — one card, prominent but calm */}
         <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.md }}>
+          <Pressable onPress={() => router.push("/sadhana")}>
+            <Panel>
+              <View style={styles.sadhanaRow}>
+                <View style={{ flex: 1 }}>
+                  <Text variant="eyebrow" color={colors.brassSoft}>
+                    {t("homeSadhanaEyebrow")}
+                  </Text>
+                  <Text
+                    variant="title"
+                    style={{ marginTop: spacing.xs, fontSize: 20 }}
+                  >
+                    {t("homeSadhanaTitle")}
+                  </Text>
+                  <Text
+                    variant="muted"
+                    color={sadhanaDone ? colors.brassSoft : undefined}
+                    style={{ marginTop: spacing.xs }}
+                  >
+                    {sadhanaDone ? t("homeSadhanaDone") : t("homeSadhanaBody")}
+                  </Text>
+                </View>
+                {sadhanaDone ? (
+                  <View style={[styles.sadhanaCheck, { borderColor: colors.line }]}>
+                    <Text
+                      color={colors.brassSoft}
+                      style={{
+                        fontFamily: "Fraunces_600SemiBold",
+                        fontSize: 16,
+                      }}
+                    >
+                      ✓
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </Panel>
+          </Pressable>
+        </Rise>
+
+        {/* Practice entries — small cards beside the day's verse */}
+        <Rise delay={motion.staggerMs * 4} style={{ marginTop: spacing.md }}>
           <View style={styles.practiceRow}>
             <Pressable
               style={styles.practicePress}
@@ -297,7 +370,7 @@ export default function HomeScreen() {
         </Rise>
 
         {/* Equal path grid */}
-        <Rise delay={motion.staggerMs * 4} style={{ marginTop: spacing.xl }}>
+        <Rise delay={motion.staggerMs * 5} style={{ marginTop: spacing.xl }}>
           <Text variant="eyebrow" color={colors.brassSoft}>
             {t("homePaths")}
           </Text>
@@ -342,7 +415,7 @@ export default function HomeScreen() {
         </Rise>
 
         {/* Mood chips — arrive by feeling */}
-        <Rise delay={motion.staggerMs * 5} style={{ marginTop: spacing.xl }}>
+        <Rise delay={motion.staggerMs * 6} style={{ marginTop: spacing.xl }}>
           <View style={styles.moodHead}>
             <View style={{ flex: 1 }}>
               <Text variant="eyebrow" color={colors.brassSoft}>
@@ -393,7 +466,7 @@ export default function HomeScreen() {
         </Rise>
 
         {/* Closing Madhav band */}
-        <Rise delay={motion.staggerMs * 6} style={{ marginTop: spacing.xl }}>
+        <Rise delay={motion.staggerMs * 7} style={{ marginTop: spacing.xl }}>
           <Pressable
             onPress={() => router.push("/madhav")}
             style={({ pressed }) => [
@@ -480,6 +553,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  sadhanaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  sadhanaCheck: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
   practiceRow: {
     flexDirection: "row",
