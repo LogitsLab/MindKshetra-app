@@ -19,7 +19,7 @@ import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { Rise } from "@/components/Rise";
 import { EmptyState } from "@/components/SlokaCard";
-import { contentApi, progressApi, userApi } from "@/api/endpoints";
+import { contentApi, eventsApi, progressApi, userApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
@@ -168,9 +168,18 @@ export default function SlokaScreen() {
         glyph="↗"
         label={lang === "hi" ? "साझा" : "Share"}
         onPress={() => {
-          Share.share({
+          void Share.share({
             message: `${sloka.chapter}.${sloka.verse_number}\n${sloka.sanskrit_devanagari}\n${translation}\n${getApiUrl()}/sloka/${sloka.id}`,
-          });
+          })
+            .then((result) => {
+              if (result.action === Share.sharedAction) {
+                void eventsApi.send("share_card", {
+                  method: "sheet",
+                  slokaId: sloka.id,
+                });
+              }
+            })
+            .catch(() => {});
         }}
       />
       <Tool

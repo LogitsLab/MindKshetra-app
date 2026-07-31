@@ -25,6 +25,11 @@ export default function PrivacyScreen() {
         </Text>
         <Text variant="soft" style={{ marginTop: spacing.md }}>
           {lang === "hi"
+            ? "हम कुछ सीमित प्रथम-पक्ष उत्पाद इवेंट (जैसे श्लोक पूर्ण, स्ट्रीक दर्ज) भी रिकॉर्ड करते हैं — बिना IP पते या यूज़र एजेंट के — केवल अभ्यास सुविधाओं को समझने और बेहतर बनाने के लिए। कोई तृतीय-पक्ष एनालिटिक्स नहीं, कोई विज्ञापन उपयोग नहीं।"
+            : "We also record a small, fixed set of first-party product events (like verse completed or streak recorded) without IP address or user agent, only to understand and improve the practice features. No third-party analytics, no advertising use."}
+        </Text>
+        <Text variant="soft" style={{ marginTop: spacing.md }}>
+          {lang === "hi"
             ? "पूर्ण नीति वेब पर उपलब्ध है — स्टोर सूची और कानूनी संदर्भ के लिए वही URL उपयोग करें।"
             : "The full policy lives on the web — use that URL for store listings and legal reference."}
         </Text>
