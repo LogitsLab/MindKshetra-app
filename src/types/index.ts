@@ -99,6 +99,29 @@ export type SadhanaStreak = {
   graceUsedToday?: boolean;
 };
 
+export type Koota = {
+  name: string;
+  score: number;
+  max: number;
+  note: string;
+};
+
+export type CompatibilityBand =
+  | "excellent"
+  | "good"
+  | "acceptable"
+  | "needs-discussion";
+
+export type CompatibilityResult = {
+  kootas: Koota[];
+  total: number;
+  max: number;
+  band: CompatibilityBand;
+  /** Always present — the count is a starting point, not a verdict. */
+  caveat: string;
+  nadiDosha: boolean;
+};
+
 /** Server daily panchang, computed at local sunrise for its location. */
 export type PanchangDay = {
   tithi: string;

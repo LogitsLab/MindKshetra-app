@@ -1,6 +1,7 @@
 import { apiFetch } from "@/api/client";
 import type {
   AstrologyMember,
+  CompatibilityResult,
   JournalEntry,
   PanchangDay,
   PracticeStreak,
@@ -224,6 +225,15 @@ export const astrologyApi = {
     }>("/api/astrology/geocode", {
       method: "POST",
       body: JSON.stringify({ query: q }),
+    }),
+  /**
+   * Ashtakoota between two SAVED members (never raw birth payloads).
+   * 422 means a missing birth time — render the message, never a zero score.
+   */
+  compatibility: (memberA: string, memberB: string) =>
+    apiFetch<{ result: CompatibilityResult }>("/api/astrology/compatibility", {
+      method: "POST",
+      body: JSON.stringify({ memberA, memberB }),
     }),
   predictions: async (body: Record<string, unknown>) => {
     const data = await apiFetch<{
