@@ -206,6 +206,14 @@ export const en = {
   astroRemediesDisclaimer: "These notes are cultural and educational only. They are not medical, legal, or financial advice — and they do not replace professional care.",
   astroPlaceConfirm: "Using this place",
   astroConfirmPlaceCast: "Confirm place & cast",
+  panchangTitle: "Panchang",
+  panchangPada: "Pada",
+  panchangUntil: "until {time}",
+  panchangSun: "Sunrise · Sunset",
+  panchangEkadashi: "Today is {tithi}.",
+  panchangFootnote: "Computed at local sunrise, Lahiri ayanamsa.",
+  panchangUnavailable: "Panchang unavailable",
+  panchangUnavailableBody: "It will return with the network.",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -409,4 +417,12 @@ export const hi: Record<keyof typeof en, string> = {
   astroRemediesDisclaimer: "ये नोट सांस्कृतिक और शैक्षिक हैं। चिकित्सकीय, कानूनी या वित्तीय सलाह नहीं — और पेशेवर देखभाल का विकल्प नहीं।",
   astroPlaceConfirm: "यह स्थान उपयोग होगा",
   astroConfirmPlaceCast: "स्थान पुष्टि कर कुंडली बनाएँ",
+  panchangTitle: "पंचांग",
+  panchangPada: "पाद",
+  panchangUntil: "{time} तक",
+  panchangSun: "सूर्योदय · सूर्यास्त",
+  panchangEkadashi: "आज {tithi} है।",
+  panchangFootnote: "स्थानीय सूर्योदय पर गणना — लाहिरि अयनांश।",
+  panchangUnavailable: "पंचांग उपलब्ध नहीं",
+  panchangUnavailableBody: "नेटवर्क लौटते ही यह फिर दिखेगा।",
 };

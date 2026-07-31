@@ -24,6 +24,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useVotd } from "@/hooks/useVotd";
+import { usePanchang } from "@/hooks/usePanchang";
 import { images, moodAccent } from "@/theme/assets";
 import { motion, radii, spacing } from "@/theme/tokens";
 
@@ -44,6 +45,7 @@ export default function HomeScreen() {
   const { isSignedIn } = useAuth();
   const [streak, setStreak] = useState(0);
   const { votd } = useVotd();
+  const { panchang, loading: panchangLoading } = usePanchang();
 
   const day = Math.floor(Date.now() / 86400000);
 
@@ -271,6 +273,26 @@ export default function HomeScreen() {
                 </Text>
               </Panel>
             </Pressable>
+            {/* Quietly absent when the sky can't be read — never an error. */}
+            {panchang || panchangLoading ? (
+              <Pressable
+                style={styles.practicePress}
+                onPress={() => router.push("/panchang")}
+              >
+                <Panel style={styles.practiceCard}>
+                  <Text variant="title" style={{ fontSize: 18 }}>
+                    {t("panchangTitle")}
+                  </Text>
+                  <Text
+                    variant="muted"
+                    style={{ marginTop: spacing.xs }}
+                    numberOfLines={2}
+                  >
+                    {panchang ? panchang.tithi : t("loading")}
+                  </Text>
+                </Panel>
+              </Pressable>
+            ) : null}
           </View>
         </Rise>
 

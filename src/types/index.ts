@@ -98,3 +98,23 @@ export type SadhanaStreak = {
   longest: number;
   graceUsedToday?: boolean;
 };
+
+/** Server daily panchang, computed at local sunrise for its location. */
+export type PanchangDay = {
+  tithi: string;
+  tithiIndex: number;
+  nakshatra: string;
+  pada: number;
+  yoga: string;
+  karana: string;
+  vaar: string;
+  date: string;
+  ianaTz: string;
+  sunrise: string | null;
+  sunset: string | null;
+  tithiEndsAt: string | null;
+  nakshatraEndsAt: string | null;
+  isEkadashi: boolean;
+  isPurnima: boolean;
+  isAmavasya: boolean;
+};

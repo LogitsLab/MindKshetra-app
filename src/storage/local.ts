@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { SadhanaLogEntry } from "@/types";
+import type { PanchangDay, SadhanaLogEntry } from "@/types";
 
 const KEYS = {
   theme: "mindkshetra-theme",
@@ -15,6 +15,7 @@ const KEYS = {
   journalDrafts: "mindkshetra-journal-drafts",
   timezoneSynced: "mindkshetra-tz-synced",
   sadhanaLog: "mindkshetra-sadhana-log",
+  panchangToday: "mindkshetra-panchang-today",
 } as const;
 
 export async function getStoredTheme(): Promise<"dark" | "light" | null> {
@@ -190,6 +191,23 @@ export async function appendSadhanaLog(entry: SadhanaLogEntry): Promise<void> {
 
 export async function clearSadhanaLog(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.sadhanaLog);
+}
+
+export type StoredPanchang = { date: string; payload: PanchangDay };
+
+/** Day-scoped cache of the daily panchang (offline fallback, like votdToday). */
+export async function getStoredPanchang(): Promise<StoredPanchang | null> {
+  const raw = await AsyncStorage.getItem(KEYS.panchangToday);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as StoredPanchang;
+  } catch {
+    return null;
+  }
+}
+
+export async function setStoredPanchang(entry: StoredPanchang): Promise<void> {
+  await AsyncStorage.setItem(KEYS.panchangToday, JSON.stringify(entry));
 }
 
 export type JournalDraft = { slokaId: number; text: string; at: number };

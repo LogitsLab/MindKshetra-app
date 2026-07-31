@@ -2,6 +2,7 @@ import { apiFetch } from "@/api/client";
 import type {
   AstrologyMember,
   JournalEntry,
+  PanchangDay,
   PracticeStreak,
   SadhanaLogEntry,
   SadhanaPractice,
@@ -146,6 +147,11 @@ export const progressApi = {
       method: "POST",
       body: JSON.stringify({ completed }),
     }),
+};
+
+export const panchangApi = {
+  /** No args in v1 — the server defaults to the shared New Delhi reference sky. */
+  today: () => apiFetch<PanchangDay>("/api/panchang"),
 };
 
 export const sadhanaApi = {
