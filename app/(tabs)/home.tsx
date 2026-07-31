@@ -37,7 +37,7 @@ export default function HomeScreen() {
   const { isSignedIn, session } = useAuth();
   const [streak, setStreak] = useState(0);
   const [sadhanaDone, setSadhanaDone] = useState(false);
-  const { votd } = useVotd();
+  const { votd, nakshatra: votdNakshatra } = useVotd();
   const { panchang, loading: panchangLoading } = usePanchang();
 
   const day = Math.floor(Date.now() / 86400000);
@@ -282,6 +282,11 @@ export default function HomeScreen() {
                 {t("homeFeaturedCta")} →
               </Text>
             </Panel>
+            {votd && votdNakshatra ? (
+              <Text variant="muted" style={{ marginTop: spacing.sm }}>
+                {t("votdNakshatraLine").replace("{nakshatra}", votdNakshatra)}
+              </Text>
+            ) : null}
           </Pressable>
         </Rise>
 

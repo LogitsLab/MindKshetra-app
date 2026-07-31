@@ -114,9 +114,15 @@ export const votdApi = {
     apiFetch<{ ok: boolean; ref?: string; to?: string }>("/api/votd/email", {
       method: "POST",
     }),
-  /** Server-authoritative verse of the day — never derive it from the clock. */
+  /**
+   * Server-authoritative verse of the day — never derive it from the clock.
+   * `nakshatra` is present when the day's pick was moon-driven (provenance
+   * context, not causation).
+   */
   today: () =>
-    apiFetch<{ id: number; ref: string; date: string }>("/api/votd/today"),
+    apiFetch<{ id: number; ref: string; date: string; nakshatra?: string }>(
+      "/api/votd/today"
+    ),
 };
 
 export const eventsApi = {

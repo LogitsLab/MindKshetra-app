@@ -154,7 +154,13 @@ export async function setTimezoneSynced(stamp: string): Promise<void> {
   await AsyncStorage.setItem(KEYS.timezoneSynced, stamp);
 }
 
-export type StoredVotd = { id: number; ref: string; date: string };
+export type StoredVotd = {
+  id: number;
+  ref: string;
+  date: string;
+  /** Present when the day's verse was moon-driven. */
+  nakshatra?: string;
+};
 
 /** Day-scoped cache of the server verse of the day (offline fallback). */
 export async function getStoredVotd(): Promise<StoredVotd | null> {
