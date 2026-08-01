@@ -3,9 +3,9 @@ export const images = {
   /** Exact copies of MindKshetra/public/images/paths/* */
   pathExplore: require("../../assets/paths/path-explore.jpg"),
   pathMood: require("../../assets/paths/path-mood.jpg"),
+  pathMeditation: require("../../assets/paths/path-meditation.jpg"),
   pathMadhav: require("../../assets/paths/path-madhav.jpg"),
-  /** Web placeholder: astrology reuses explore photo */
-  pathAstrology: require("../../assets/paths/path-explore.jpg"),
+  pathAstrology: require("../../assets/paths/path-astrology.jpg"),
   madhavPortrait: require("../../assets/brand/madhav.jpg"),
   madhavMark: require("../../assets/paths/path-madhav-mark.jpg"),
 };

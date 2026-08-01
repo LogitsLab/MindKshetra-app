@@ -38,7 +38,7 @@ export default function HomeScreen() {
   const [streak, setStreak] = useState(0);
   const [sadhanaDone, setSadhanaDone] = useState(false);
   const { votd, nakshatra: votdNakshatra } = useVotd();
-  const { panchang, loading: panchangLoading } = usePanchang();
+  const { panchang } = usePanchang();
 
   const day = Math.floor(Date.now() / 86400000);
 
@@ -122,6 +122,14 @@ export default function HomeScreen() {
     },
     {
       index: "03",
+      title: t("homeMeditationTitle"),
+      body: lang === "hi" ? "सात दिन का पाठ्यक्रम" : "7-day course",
+      image: images.pathMeditation,
+      mark: "meditation" as const,
+      href: "/meditation" as const,
+    },
+    {
+      index: "04",
       title: t("homeMadhavTitle"),
       body: lang === "hi" ? "पूछें और सुनें" : "Ask & listen",
       image: images.pathMadhav,
@@ -129,11 +137,10 @@ export default function HomeScreen() {
       href: "/madhav" as const,
     },
     {
-      index: "04",
+      index: "05",
       title: t("homeAstroTitle"),
       body: lang === "hi" ? "आपकी कुंडली" : "Your chart",
-      // Same as web: astrology reuses explore path photo until a dedicated asset exists
-      image: images.pathExplore,
+      image: images.pathAstrology,
       mark: "astrology" as const,
       href: "/(tabs)/astrology" as const,
     },
@@ -340,8 +347,17 @@ export default function HomeScreen() {
           </Pressable>
         </Rise>
 
-        {/* Practice entries — small cards beside the day's verse */}
+        {/* Practice entries — lifestyle grid */}
         <Rise delay={motion.staggerMs * 4} style={{ marginTop: spacing.md }}>
+          <Text variant="eyebrow" color={colors.brassSoft}>
+            {t("homeLifestyleEyebrow")}
+          </Text>
+          <Text
+            variant="title"
+            style={{ marginTop: spacing.xs, fontSize: 20, marginBottom: spacing.sm }}
+          >
+            {t("homeLifestyleTitle")}
+          </Text>
           <View style={styles.practiceRow}>
             <Pressable
               style={styles.practicePress}
@@ -360,27 +376,74 @@ export default function HomeScreen() {
                 </Text>
               </Panel>
             </Pressable>
-            {/* Quietly absent when the sky can't be read — never an error. */}
-            {panchang || panchangLoading ? (
-              <Pressable
-                style={styles.practicePress}
-                onPress={() => router.push("/panchang")}
-              >
-                <Panel style={styles.practiceCard}>
-                  <Text variant="title" style={{ fontSize: 18 }}>
-                    {t("panchangTitle")}
-                  </Text>
-                  <Text
-                    variant="muted"
-                    style={{ marginTop: spacing.xs }}
-                    numberOfLines={2}
-                  >
-                    {panchang ? panchang.tithi : t("loading")}
-                  </Text>
-                </Panel>
-              </Pressable>
-            ) : null}
+            <Pressable
+              style={styles.practicePress}
+              onPress={() => router.push("/panchang")}
+            >
+              <Panel style={styles.practiceCard}>
+                <Text variant="title" style={{ fontSize: 18 }}>
+                  {t("homeBlockPanchangTitle")}
+                </Text>
+                <Text
+                  variant="muted"
+                  style={{ marginTop: spacing.xs }}
+                  numberOfLines={2}
+                >
+                  {panchang ? panchang.tithi : t("homeBlockPanchangBody")}
+                </Text>
+              </Panel>
+            </Pressable>
           </View>
+          <View style={[styles.practiceRow, { marginTop: spacing.sm }]}>
+            <Pressable
+              style={styles.practicePress}
+              onPress={() => router.push("/paths")}
+            >
+              <Panel style={styles.practiceCard}>
+                <Text variant="title" style={{ fontSize: 18 }}>
+                  {t("homeBlockPathsTitle")}
+                </Text>
+                <Text
+                  variant="muted"
+                  style={{ marginTop: spacing.xs }}
+                  numberOfLines={2}
+                >
+                  {t("homeBlockPathsBody")}
+                </Text>
+              </Panel>
+            </Pressable>
+            <Pressable
+              style={styles.practicePress}
+              onPress={() => router.push("/community")}
+            >
+              <Panel style={styles.practiceCard}>
+                <Text variant="title" style={{ fontSize: 18 }}>
+                  {t("homeBlockSanghaTitle")}
+                </Text>
+                <Text
+                  variant="muted"
+                  style={{ marginTop: spacing.xs }}
+                  numberOfLines={2}
+                >
+                  {t("homeBlockSanghaBody")}
+                </Text>
+              </Panel>
+            </Pressable>
+          </View>
+        </Rise>
+
+        {/* Reminders callout */}
+        <Rise delay={motion.staggerMs * 4.5} style={{ marginTop: spacing.md }}>
+          <Pressable onPress={() => router.push("/account")}>
+            <Panel>
+              <Text variant="eyebrow" color={colors.brassSoft}>
+                {t("homeBlockNotifTitle")}
+              </Text>
+              <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                {t("homeBlockNotifBody")}
+              </Text>
+            </Panel>
+          </Pressable>
         </Rise>
 
         {/* Equal path grid */}
@@ -423,6 +486,17 @@ export default function HomeScreen() {
                 image={paths[3].image}
                 mark={paths[3].mark}
                 onPress={() => router.push(paths[3].href)}
+              />
+            </View>
+            <View style={styles.pathRow}>
+              <PathTile
+                index={paths[4].index}
+                title={paths[4].title}
+                body={paths[4].body}
+                image={paths[4].image}
+                mark={paths[4].mark}
+                onPress={() => router.push(paths[4].href)}
+                style={{ maxWidth: "48.5%" }}
               />
             </View>
           </View>

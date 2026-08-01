@@ -52,7 +52,7 @@ export default function AstrologyHub() {
 
         <View style={styles.hero}>
           <Image
-            source={images.pathExplore}
+            source={images.pathAstrology}
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
           />

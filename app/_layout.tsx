@@ -10,7 +10,7 @@ import {
 import { Sora_400Regular, Sora_600SemiBold } from "@expo-google-fonts/sora";
 import * as SplashScreen from "expo-splash-screen";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
-import { LanguageProvider } from "@/context/LanguageContext";
+import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
 import { TextScaleProvider } from "@/context/TextScaleContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -32,6 +32,7 @@ export const unstable_settings = {
 
 function RootNavigator() {
   const { mode, colors } = useTheme();
+  const { t } = useLanguage();
   const { ready } = useOnboarding();
   const segments = useSegments();
   const onOnboarding = segments[0] === "onboarding";
@@ -81,6 +82,12 @@ function RootNavigator() {
         <Stack.Screen name="japa" options={{ title: "Japa" }} />
         <Stack.Screen name="panchang" options={{ title: "Panchang" }} />
         <Stack.Screen name="sadhana" options={{ title: "Sādhana" }} />
+        <Stack.Screen
+          name="community"
+          options={{ title: t("homeBlockSanghaTitle") }}
+        />
+        <Stack.Screen name="paths/index" options={{ title: "Paths" }} />
+        <Stack.Screen name="paths/[id]" options={{ title: "Path" }} />
         <Stack.Screen name="favorites" options={{ title: "Favorites" }} />
         <Stack.Screen
           name="account/index"
