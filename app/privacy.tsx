@@ -3,10 +3,11 @@ import { ScrollView, Linking, View } from "react-native";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
+import { siteUrl } from "@/api/client";
 import { useLanguage } from "@/context/LanguageContext";
 import { spacing } from "@/theme/tokens";
 
-const PRIVACY_URL = "https://mind.logitslab.com/privacy";
+const PRIVACY_URL = siteUrl("/privacy");
 
 export default function PrivacyScreen() {
   const { lang } = useLanguage();

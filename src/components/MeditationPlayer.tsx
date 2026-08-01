@@ -15,6 +15,7 @@ import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
 import { Button } from "@/components/Button";
+import { siteUrl } from "@/api/client";
 import { meditationApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -27,7 +28,7 @@ import {
 import { uuidv4 } from "@/utils/uuid";
 import { radii, spacing } from "@/theme/tokens";
 
-const SUPPORT_URL = "https://mind.logitslab.com/support";
+const SUPPORT_URL = siteUrl("/support");
 
 type Stage = "moodBefore" | "play" | "moodAfter" | "done";
 

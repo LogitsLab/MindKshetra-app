@@ -11,6 +11,23 @@ export function getApiUrl(): string {
   return API_URL;
 }
 
+/**
+ * An absolute link to a web page of the same deployment — /support, /care and
+ * the other surfaces mobile hands off to rather than reimplementing.
+ *
+ * These were three hardcoded https://mind.logitslab.com/support constants, so
+ * a build pointed at the dev backend still sent people to production. The API
+ * and the site are one origin; both follow EXPO_PUBLIC_API_URL.
+ */
+export function siteUrl(path: string): string {
+  return `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+/** The same link without its scheme, for showing rather than opening. */
+export function siteLabel(path: string): string {
+  return siteUrl(path).replace(/^https?:\/\//, "");
+}
+
 function isBackgroundNetworkKill(e: unknown): boolean {
   if ((e as Error)?.name === "AbortError") return true;
   const msg = (e as Error)?.message ?? "";

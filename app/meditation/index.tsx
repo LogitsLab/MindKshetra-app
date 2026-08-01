@@ -7,6 +7,7 @@ import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
+import { siteUrl } from "@/api/client";
 import { meditationApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -24,7 +25,7 @@ import { images } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const SUPPORT_URL = "https://mind.logitslab.com/support";
+const SUPPORT_URL = siteUrl("/support");
 
 function fill(template: string, vars: Record<string, string | number>) {
   return Object.entries(vars).reduce(

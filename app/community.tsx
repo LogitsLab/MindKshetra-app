@@ -7,6 +7,7 @@ import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
+import { siteLabel, siteUrl } from "@/api/client";
 import { eventsApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -15,8 +16,8 @@ import { spacing } from "@/theme/tokens";
 
 const WHATSAPP = process.env.EXPO_PUBLIC_WHATSAPP_CHANNEL_URL;
 const TELEGRAM = process.env.EXPO_PUBLIC_TELEGRAM_URL;
-const CARE_WEB = "https://mind.logitslab.com/care";
-const SUPPORT_WEB = "https://mind.logitslab.com/support";
+const CARE_WEB = siteUrl("/care");
+const SUPPORT_WEB = siteUrl("/support");
 
 export default function CommunityScreen() {
   const router = useRouter();
@@ -121,7 +122,7 @@ export default function CommunityScreen() {
                 color={colors.brassSoft}
                 style={{ marginTop: spacing.sm }}
               >
-                mind.logitslab.com/support →
+                {siteLabel("/support")} →
               </Text>
             </Panel>
           </Pressable>
