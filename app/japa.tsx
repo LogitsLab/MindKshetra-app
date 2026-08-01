@@ -8,11 +8,13 @@ import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { Rise } from "@/components/Rise";
+import { MilestoneLine, takeNewMilestone } from "@/components/PracticeMarks";
 import { sadhanaApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { mantras, type Mantra } from "@/data/mantras";
+import type { Milestone } from "@/data/milestones";
 import { appendSadhanaLog, localDayStamp } from "@/storage/local";
 import { uuidv4 } from "@/utils/uuid";
 import { spacing } from "@/theme/tokens";
@@ -29,6 +31,7 @@ export default function JapaScreen() {
   const [mantra, setMantra] = useState<Mantra>(mantras[0]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [total, setTotal] = useState(0);
+  const [milestone, setMilestone] = useState<Milestone | null>(null);
 
   // Everything the leave-time log needs lives in refs so the unmount effect
   // never re-runs — a re-run's cleanup would log mid-practice.
@@ -53,6 +56,10 @@ export default function JapaScreen() {
     if (next % BEADS_PER_MALA === 0) {
       // One full mala — a heavier tick, then the bead count starts over.
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // The mala-completion moment: at most one newly-crossed mark. This is
+      // where japa gets its quiet line — the screen has no done stage, it
+      // returns straight to where it came from.
+      void takeNewMilestone().then(setMilestone);
     } else {
       void Haptics.selectionAsync();
     }
@@ -163,6 +170,7 @@ export default function JapaScreen() {
                 : t("japaMalaMany").replace("{n}", String(malas))}
             </Text>
           ) : null}
+          {milestone ? <MilestoneLine milestone={milestone} /> : null}
         </View>
 
         <View style={styles.footer}>

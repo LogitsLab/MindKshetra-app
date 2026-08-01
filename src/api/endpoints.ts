@@ -1,4 +1,5 @@
 import { apiFetch } from "@/api/client";
+import type { Milestone } from "@/data/milestones";
 import type {
   AstrologyMember,
   CompatibilityResult,
@@ -107,6 +108,26 @@ export const userApi = {
   exportData: () => apiFetch<Record<string, unknown>>("/api/account/export"),
   deleteAccount: () =>
     apiFetch<{ ok: boolean }>("/api/account/delete", { method: "POST" }),
+};
+
+export const accountApi = {
+  /**
+   * Quiet milestones, private to their own user. Signed-out callers get
+   * `{ guest: true }` rather than a 401, and compute the same shape locally.
+   */
+  milestones: () =>
+    apiFetch<{
+      guest: boolean;
+      milestones?: Milestone[];
+      next?: Milestone | null;
+      summary?: {
+        visitCurrent: number;
+        visitLongest: number;
+        versesRead: number;
+        totalVerses: number;
+        japaLifetimeCount: number;
+      };
+    }>("/api/account/milestones"),
 };
 
 export const votdApi = {

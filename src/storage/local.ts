@@ -25,6 +25,7 @@ const KEYS = {
   sadhanaLog: "mindkshetra-sadhana-log",
   panchangToday: "mindkshetra-panchang-today",
   pushToken: "mindkshetra-push-token",
+  milestonesSeen: "mindkshetra-milestones-seen",
 } as const;
 
 export async function getStoredTheme(): Promise<"dark" | "light" | null> {
@@ -305,6 +306,31 @@ export async function clearAllGuestJourneys(): Promise<void> {
   const keys = await AsyncStorage.getAllKeys();
   const mine = keys.filter((k) => k.startsWith(JOURNEY_KEY_PREFIX));
   if (mine.length) await AsyncStorage.multiRemove(mine);
+}
+
+/**
+ * Milestone keys this device has already shown. `null` means the ledger has
+ * never been written — a first read backfills silently rather than announcing
+ * a long history all at once.
+ */
+export async function getMilestonesSeen(): Promise<string[] | null> {
+  const raw = await AsyncStorage.getItem(KEYS.milestonesSeen);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((k): k is string => typeof k === "string")
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setMilestonesSeen(keys: string[]): Promise<void> {
+  await AsyncStorage.setItem(
+    KEYS.milestonesSeen,
+    JSON.stringify(Array.from(new Set(keys)))
+  );
 }
 
 export type StoredPanchang = { date: string; payload: PanchangDay };

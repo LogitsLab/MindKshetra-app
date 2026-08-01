@@ -15,6 +15,7 @@ import { Button, Hairline } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { BrandMark } from "@/components/BrandMark";
 import { BRAND_NAME } from "@/components/BrandWordmark";
+import { PracticeMarks } from "@/components/PracticeMarks";
 import { userApi, votdApi } from "@/api/endpoints";
 import { clearUserLocalState } from "@/storage/local";
 import { useAuth } from "@/context/AuthContext";
@@ -717,6 +718,8 @@ export default function AccountScreen() {
             </Panel>
           </>
         ) : null}
+
+        <PracticeMarks />
 
         <Hairline style={{ marginVertical: spacing.lg }} />
 

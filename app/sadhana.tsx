@@ -15,6 +15,7 @@ import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
+import { MilestoneLine, takeNewMilestone } from "@/components/PracticeMarks";
 import { Rise } from "@/components/Rise";
 import {
   astrologyApi,
@@ -28,6 +29,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { moods, previewMoodIds } from "@/data/moods";
 import { nextDayFrom } from "@/data/journeys";
+import type { Milestone } from "@/data/milestones";
 import {
   addJournalDraft,
   appendSadhanaLog,
@@ -113,6 +115,8 @@ export default function SadhanaScreen() {
   // The day the path resumes on, once this one is marked. Null while unknown —
   // without a total there is no honest clamp, so the line simply stays away.
   const [tomorrowDay, setTomorrowDay] = useState<number | null>(null);
+  // At most one newly-crossed quiet milestone for the done screen.
+  const [milestone, setMilestone] = useState<Milestone | null>(null);
   const [chartOffer, setChartOffer] = useState<{
     verseId: number;
     ref: string;
@@ -384,6 +388,8 @@ export default function SadhanaScreen() {
       setGuestSaved(true);
     }
     doneLoggedRef.current = true;
+    // At most one newly-crossed mark, and never at the cost of the sit.
+    setMilestone(await takeNewMilestone());
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSaving(false);
   };
@@ -629,6 +635,7 @@ export default function SadhanaScreen() {
                   {t("sadhanaGrace")}
                 </Text>
               ) : null}
+              {milestone ? <MilestoneLine milestone={milestone} /> : null}
             </Panel>
           </Rise>
         ) : null}
