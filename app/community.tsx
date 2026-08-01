@@ -5,10 +5,12 @@ import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
+import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
 import { eventsApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { images } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 
 const WHATSAPP = process.env.EXPO_PUBLIC_WHATSAPP_CHANNEL_URL;
@@ -37,15 +39,12 @@ export default function CommunityScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Rise>
-          <Text variant="eyebrow" color={colors.brassSoft}>
-            {t("homeBlockSanghaTitle")}
-          </Text>
-          <Text variant="title" style={{ marginTop: spacing.sm, fontSize: 28 }}>
-            {t("homeTogetherTitle")}
-          </Text>
-          <Text variant="soft" style={{ marginTop: spacing.sm }}>
-            {t("homeTogetherBlurb")}
-          </Text>
+          <PageHero
+            image={images.pathCommunity}
+            eyebrow={t("homeBlockSanghaTitle")}
+            title={t("homeTogetherTitle")}
+            body={t("homeTogetherBlurb")}
+          />
         </Rise>
 
         <Rise delay={40} style={{ marginTop: spacing.xl }}>

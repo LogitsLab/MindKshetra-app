@@ -5,6 +5,7 @@ import * as Linking from "expo-linking";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
+import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
 import { meditationApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
@@ -16,6 +17,7 @@ import {
   foundationProgram,
   isDayUnlocked,
 } from "@/data/meditation";
+import { images } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -96,15 +98,12 @@ export default function MeditationHubScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Rise>
-          <Text variant="eyebrow" color={colors.brassSoft}>
-            {t("medEyebrow")}
-          </Text>
-          <Text variant="title" style={{ marginTop: spacing.sm, fontSize: 28 }}>
-            {lang === "hi" ? program.title_hi : program.title_en}
-          </Text>
-          <Text variant="soft" style={{ marginTop: spacing.sm }}>
-            {lang === "hi" ? program.intro_hi : program.intro_en}
-          </Text>
+          <PageHero
+            image={images.pathMeditation}
+            eyebrow={t("medEyebrow")}
+            title={lang === "hi" ? program.title_hi : program.title_en}
+            body={lang === "hi" ? program.intro_hi : program.intro_en}
+          />
           <Text
             variant="muted"
             color={colors.brassSoft}

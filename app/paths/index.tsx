@@ -4,10 +4,12 @@ import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
+import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
 import { PRACTICE_PATHS } from "@/data/paths";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { images } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 
 export default function PathsScreen() {
@@ -22,15 +24,12 @@ export default function PathsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Rise>
-          <Text variant="eyebrow" color={colors.brassSoft}>
-            {t("homeLifestyleEyebrow")}
-          </Text>
-          <Text variant="title" style={{ marginTop: spacing.sm, fontSize: 28 }}>
-            {t("homeBlockPathsTitle")}
-          </Text>
-          <Text variant="soft" style={{ marginTop: spacing.sm }}>
-            {t("homeLifestyleBlurb")}
-          </Text>
+          <PageHero
+            image={images.pathPaths}
+            eyebrow={t("homeLifestyleEyebrow")}
+            title={t("homeBlockPathsTitle")}
+            body={t("homeLifestyleBlurb")}
+          />
         </Rise>
 
         <View style={{ marginTop: spacing.xl, gap: spacing.md }}>

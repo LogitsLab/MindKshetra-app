@@ -3,11 +3,13 @@ import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
+import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
 import { EmptyState } from "@/components/SlokaCard";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { usePanchang } from "@/hooks/usePanchang";
+import { images } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 
 /**
@@ -78,17 +80,8 @@ export default function PanchangScreen() {
   const { panchang, loading, error } = usePanchang();
   const locale = lang === "hi" ? "hi-IN" : "en-IN";
 
-  // Fraunces has no Devanagari coverage (docs/design/VISUAL_SYSTEM.md) and a
-  // letter-spaced eyebrow breaks matra shaping — the hi-IN date header gets
-  // the real serif and zero tracking.
-  const hiDisplay =
-    lang === "hi"
-      ? { fontFamily: "NotoSerifDevanagari_600SemiBold" as const }
-      : null;
-  const hiEyebrow =
-    lang === "hi"
-      ? { letterSpacing: 0, textTransform: "none" as const }
-      : null;
+  // The Devanagari serif and the untracked eyebrow now live in PageHero,
+  // which owns this header (docs/design/VISUAL_SYSTEM.md).
 
   if (loading) {
     return (
@@ -127,16 +120,13 @@ export default function PanchangScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Rise>
-          <Text variant="eyebrow" color={colors.brassSoft} style={hiEyebrow}>
-            {t("panchangTitle")}
-          </Text>
-          <Text variant="display" style={[{ marginTop: spacing.sm }, hiDisplay]}>
-            {formatDay(panchang.date, locale)}
-          </Text>
-          <Text variant="soft" color={colors.brassSoft} style={{ marginTop: spacing.xs }}>
-            {panchang.vaar}
-          </Text>
-          <Text variant="muted" style={{ marginTop: spacing.xs }}>
+          <PageHero
+            image={images.pathPanchangRing}
+            eyebrow={t("panchangTitle")}
+            title={formatDay(panchang.date, locale)}
+            body={panchang.vaar}
+          />
+          <Text variant="muted" style={{ marginTop: spacing.sm }}>
             {t("panchangLocationLine")}
           </Text>
         </Rise>

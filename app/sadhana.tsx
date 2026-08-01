@@ -14,6 +14,7 @@ import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
+import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
 import {
   astrologyApi,
@@ -31,7 +32,7 @@ import {
   appendSadhanaLog,
   localDayStamp,
 } from "@/storage/local";
-import { moodAccent } from "@/theme/assets";
+import { images, moodAccent } from "@/theme/assets";
 import { uuidv4 } from "@/utils/uuid";
 import { radii, spacing } from "@/theme/tokens";
 import type { Mood, SadhanaStreak, Sloka } from "@/types";
@@ -340,12 +341,11 @@ export default function SadhanaScreen() {
       >
         {/* (a) Name the mind */}
         <Rise>
-          <Text variant="eyebrow" color={colors.brassSoft} style={hiEyebrow}>
-            {t("homeSadhanaEyebrow")}
-          </Text>
-          <Text variant="display" style={[{ marginTop: spacing.sm }, hiDisplay]}>
-            {t("sadhanaMoodTitle")}
-          </Text>
+          <PageHero
+            image={images.pathSadhana}
+            eyebrow={t("homeSadhanaEyebrow")}
+            title={t("sadhanaMoodTitle")}
+          />
           {pathContext ? (
             <Text variant="muted" color={colors.brassSoft} style={{ marginTop: spacing.sm }}>
               {t("sadhanaPathDayHint")}

@@ -1,11 +1,27 @@
 export const images = {
   hero: require("../../assets/backgrounds/hero.jpg"),
-  /** Exact copies of MindKshetra/public/images/paths/* */
+  /**
+   * Paintings from MindKshetra/public/images/paths/, renamed with a `path-`
+   * prefix. Most are byte-identical copies; two are not, and the difference
+   * matters:
+   *
+   * - `pathMadhavMark` is a mobile-only crop of the Madhav portrait, with no
+   *   web peer.
+   * - `pathAstrology` shipped for one release as a copy of the web's
+   *   panchang-ring.jpg, so every astrology surface showed the brass almanac
+   *   diagram instead of the night sky. Both files are now present under
+   *   their own names — verify with `md5` against the web repo before
+   *   replacing either.
+   */
   pathExplore: require("../../assets/paths/path-explore.jpg"),
   pathMood: require("../../assets/paths/path-mood.jpg"),
   pathMeditation: require("../../assets/paths/path-meditation.jpg"),
   pathMadhav: require("../../assets/paths/path-madhav.jpg"),
   pathAstrology: require("../../assets/paths/path-astrology.jpg"),
+  pathCommunity: require("../../assets/paths/path-community.jpg"),
+  pathSadhana: require("../../assets/paths/path-sadhana.jpg"),
+  pathPaths: require("../../assets/paths/path-paths.jpg"),
+  pathPanchangRing: require("../../assets/paths/path-panchang-ring.jpg"),
   madhavPortrait: require("../../assets/brand/madhav.jpg"),
   madhavMark: require("../../assets/paths/path-madhav-mark.jpg"),
 };
