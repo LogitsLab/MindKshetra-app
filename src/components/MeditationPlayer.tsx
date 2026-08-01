@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Pressable,
   ScrollView,
+  StyleSheet,
   View,
   ActivityIndicator,
 } from "react-native";
@@ -18,17 +19,15 @@ import { meditationApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { sessionTranscript, type MeditationSession } from "@/data/meditation";
 import {
-  FOUNDATION_PROGRAM_ID,
-  sessionTranscript,
-  type MeditationSession,
-} from "@/data/meditation";
+  GUEST_QUEUE_KEY,
+  GUEST_RUN_KEY,
+} from "@/hooks/useMeditationProgress";
 import { uuidv4 } from "@/utils/uuid";
-import { spacing } from "@/theme/tokens";
+import { radii, spacing } from "@/theme/tokens";
 
 const SUPPORT_URL = "https://mind.logitslab.com/support";
-const GUEST_RUN_KEY = `mindkshetra-meditation-run-${FOUNDATION_PROGRAM_ID}`;
-const GUEST_QUEUE_KEY = "mindkshetra-meditation-queue";
 
 type Stage = "moodBefore" | "play" | "moodAfter" | "done";
 
@@ -73,6 +72,11 @@ export function MeditationPlayer({ session }: { session: MeditationSession }) {
   const [showTranscript, setShowTranscript] = useState(false);
   const [saving, setSaving] = useState(false);
   const [guestSaved, setGuestSaved] = useState(false);
+  // Matches the web player's three speeds. A guided sit read at one fixed rate
+  // is too fast for some and too slow for others, and the phase auto-advances
+  // when the voice ends — so the rate sets the pace of the whole sit.
+  const [rate, setRate] = useState(1);
+  const [speaking, setSpeaking] = useState(false);
   const satSecRef = useRef(0);
   const autoAdvance = useRef(true);
   const phaseIdxRef = useRef(0);
@@ -123,15 +127,49 @@ export function MeditationPlayer({ session }: { session: MeditationSession }) {
     const text = lang === "hi" ? current.text_hi : current.text_en;
     Speech.speak(text, {
       language: lang === "hi" ? "hi-IN" : "en-IN",
+      rate,
+      onStart: () => setSpeaking(true),
       onDone: () => {
+        setSpeaking(false);
         if (autoAdvance.current) advancePhase();
       },
+      onStopped: () => setSpeaking(false),
+      onError: () => setSpeaking(false),
     });
     return () => {
       autoAdvance.current = false;
+      setSpeaking(false);
       Speech.stop();
     };
-  }, [stage, phaseIdx, lang, session.phases]);
+    // Changing the rate restarts the current phase at the new speed, which is
+    // the only way expo-speech can apply it.
+  }, [stage, phaseIdx, lang, rate, session.phases]);
+
+  /** Re-read the current phase without advancing — the web's "Read aloud". */
+  const readAloud = () => {
+    const current = session.phases[phaseIdxRef.current];
+    if (!current || current.type !== "speak") return;
+    autoAdvance.current = true;
+    Speech.stop();
+    Speech.speak(lang === "hi" ? current.text_hi : current.text_en, {
+      language: lang === "hi" ? "hi-IN" : "en-IN",
+      rate,
+      onStart: () => setSpeaking(true),
+      onDone: () => {
+        setSpeaking(false);
+        if (autoAdvance.current) advancePhase();
+      },
+      onStopped: () => setSpeaking(false),
+      onError: () => setSpeaking(false),
+    });
+  };
+
+  /** Silence the voice but hold the phase — reading the transcript instead. */
+  const stopVoice = () => {
+    autoAdvance.current = false;
+    Speech.stop();
+    setSpeaking(false);
+  };
 
   const finish = async () => {
     setSaving(true);
@@ -214,21 +252,28 @@ export function MeditationPlayer({ session }: { session: MeditationSession }) {
               }}
             >
               {[1, 2, 3, 4, 5].map((n) => (
-                <Pressable
-                  key={n}
-                  onPress={() => {
-                    setMoodBefore(n);
-                    satSecRef.current = 0;
-                    phaseIdxRef.current = 0;
-                    setPhaseIdx(0);
-                    setStage("play");
-                  }}
-                >
+                <Pressable key={n} onPress={() => setMoodBefore(n)}>
                   <Panel>
-                    <Text>{n}</Text>
+                    <Text color={moodBefore === n ? colors.brassSoft : undefined}>
+                      {n}
+                    </Text>
                   </Panel>
                 </Pressable>
               ))}
+            </View>
+            {/* The check-in used to start the sit on tap, so a mis-tap began a
+                guided session with no way back to correct it. */}
+            <View style={{ marginTop: spacing.lg }}>
+              <Button
+                label={t("medBeginSit")}
+                disabled={moodBefore == null}
+                onPress={() => {
+                  satSecRef.current = 0;
+                  phaseIdxRef.current = 0;
+                  setPhaseIdx(0);
+                  setStage("play");
+                }}
+              />
             </View>
           </View>
         ) : null}
@@ -241,18 +286,58 @@ export function MeditationPlayer({ session }: { session: MeditationSession }) {
                 : t("medPhaseSilence")}{" "}
               · {phaseIdx + 1}/{session.phases.length}
             </Text>
+            <View style={styles.rateRow}>
+              <Text variant="muted">{t("medRateLabel")}</Text>
+              {(
+                [
+                  [0.85, t("medRateSlow")],
+                  [1, t("medRateNormal")],
+                  [1.15, t("medRateFast")],
+                ] as const
+              ).map(([value, label]) => {
+                const active = rate === value;
+                return (
+                  <Pressable
+                    key={String(value)}
+                    onPress={() => setRate(value)}
+                    style={[
+                      styles.rateChip,
+                      {
+                        borderColor: active ? colors.brass : colors.line,
+                        backgroundColor: active ? colors.surface : "transparent",
+                      },
+                    ]}
+                  >
+                    <Text
+                      variant="muted"
+                      color={active ? colors.brassSoft : colors.textMuted}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
             {phase.type === "speak" ? (
               <Panel style={{ marginTop: spacing.md }}>
                 <Text variant="soft">
                   {lang === "hi" ? phase.text_hi : phase.text_en}
                 </Text>
                 <Pressable
+                  onPress={speaking ? stopVoice : readAloud}
+                  style={{ marginTop: spacing.md }}
+                >
+                  <Text color={colors.brassSoft}>
+                    {speaking ? t("medStopVoice") : t("medReadAloud")}
+                  </Text>
+                </Pressable>
+                <Pressable
                   onPress={() => {
                     autoAdvance.current = false;
                     Speech.stop();
                     advancePhase();
                   }}
-                  style={{ marginTop: spacing.md }}
+                  style={{ marginTop: spacing.sm }}
                 >
                   <Text color={colors.brassSoft}>{t("medSkipSpeak")} →</Text>
                 </Pressable>
@@ -366,3 +451,19 @@ export function MeditationPlayer({ session }: { session: MeditationSession }) {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  rateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  rateChip: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radii.sm,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+});

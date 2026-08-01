@@ -88,6 +88,17 @@ function RootNavigator() {
         />
         <Stack.Screen name="paths/index" options={{ title: "Paths" }} />
         <Stack.Screen name="paths/[id]" options={{ title: "Path" }} />
+        {/* Unregistered until now, so all three fell back to expo-router's
+            default header instead of the app's. */}
+        <Stack.Screen
+          name="meditation/index"
+          options={{ title: t("medEyebrow") }}
+        />
+        <Stack.Screen name="meditation/[day]" options={{ title: "Day" }} />
+        <Stack.Screen
+          name="meditation/daily/[id]"
+          options={{ title: t("medDailiesTitle") }}
+        />
         <Stack.Screen name="favorites" options={{ title: "Favorites" }} />
         <Stack.Screen
           name="account/index"

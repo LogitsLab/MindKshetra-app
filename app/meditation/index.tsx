@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
@@ -12,18 +12,19 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
-  FOUNDATION_PROGRAM_ID,
   dailySitsCatalog,
   foundationProgram,
   isDayUnlocked,
 } from "@/data/meditation";
+import {
+  GUEST_QUEUE_KEY,
+  useMeditationProgress,
+} from "@/hooks/useMeditationProgress";
 import { images } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SUPPORT_URL = "https://mind.logitslab.com/support";
-const GUEST_RUN_KEY = `mindkshetra-meditation-run-${FOUNDATION_PROGRAM_ID}`;
-const GUEST_QUEUE_KEY = "mindkshetra-meditation-queue";
 
 function fill(template: string, vars: Record<string, string | number>) {
   return Object.entries(vars).reduce(
@@ -37,36 +38,7 @@ export default function MeditationHubScreen() {
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const { isSignedIn } = useAuth();
-  const [completedDays, setCompletedDays] = useState<number[]>([]);
-  const [streak, setStreak] = useState(0);
-
-  const load = useCallback(async () => {
-    try {
-      const data = await meditationApi.progress(FOUNDATION_PROGRAM_ID);
-      if (data.guest) {
-        const raw = await AsyncStorage.getItem(GUEST_RUN_KEY);
-        const parsed = raw ? JSON.parse(raw) : {};
-        const days = Array.isArray(parsed.completedDays)
-          ? parsed.completedDays
-          : [];
-        setCompletedDays(days);
-        setStreak(0);
-        return;
-      }
-      setCompletedDays(data.completedDays ?? []);
-      setStreak(data.streak?.current ?? 0);
-    } catch {
-      const raw = await AsyncStorage.getItem(GUEST_RUN_KEY);
-      const parsed = raw ? JSON.parse(raw) : {};
-      setCompletedDays(
-        Array.isArray(parsed.completedDays) ? parsed.completedDays : []
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load, isSignedIn]);
+  const { completedDays, currentDay, streak, reload } = useMeditationProgress();
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -78,18 +50,17 @@ export default function MeditationHubScreen() {
         if (!Array.isArray(completions) || !completions.length) return;
         await meditationApi.merge(completions);
         await AsyncStorage.removeItem(GUEST_QUEUE_KEY);
-        void load();
+        reload();
       } catch {
         /* keep queue */
       }
     })();
-  }, [isSignedIn, load]);
+  }, [isSignedIn, reload]);
 
   const program = foundationProgram;
-  const continueDay = Math.min(
-    program.days_count,
-    Math.max(1, (completedDays[completedDays.length - 1] ?? 0) + 1)
-  );
+  // The server's cursor, not `last completed + 1` — the two disagree whenever
+  // days were completed out of order or a merge grew the past.
+  const continueDay = currentDay;
 
   return (
     <Screen atmosphere="soft" padded>
