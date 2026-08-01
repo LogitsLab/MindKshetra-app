@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/SlokaCard";
 import { astrologyApi } from "@/api/endpoints";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
+import type { DictKey } from "@/i18n/dictionary";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -33,6 +34,23 @@ const BAND_KEY = {
   acceptable: "milanBandAcceptable",
   "needs-discussion": "milanBandNeedsDiscussion",
 } as const;
+
+/**
+ * Koota explanation notes come from i18n, keyed by the server's koota name —
+ * same rule as the web's MilanClient. Nadi at score 0 gets the "same nadi"
+ * note; an unrecognised name falls back to the server's own note string,
+ * never another koota's note.
+ */
+const NOTE_KEY: Record<string, DictKey> = {
+  Varna: "milanNoteVarna",
+  Vashya: "milanNoteVashya",
+  Tara: "milanNoteTara",
+  Yoni: "milanNoteYoni",
+  "Graha Maitri": "milanNoteGrahaMaitri",
+  Gana: "milanNoteGana",
+  Bhakoot: "milanNoteBhakoot",
+  Nadi: "milanNoteNadi",
+};
 
 function Chip({
   label,
@@ -328,7 +346,11 @@ export default function MilanScreen() {
                             lineHeight: 18,
                           }}
                         >
-                          {k.note}
+                          {k.name === "Nadi" && k.score === 0
+                            ? t("milanNoteNadiSame")
+                            : NOTE_KEY[k.name]
+                              ? t(NOTE_KEY[k.name])
+                              : k.note}
                         </Text>
                       </View>
                     ))}
