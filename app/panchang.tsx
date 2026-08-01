@@ -10,12 +10,17 @@ import { useTheme } from "@/context/ThemeContext";
 import { usePanchang } from "@/hooks/usePanchang";
 import { spacing } from "@/theme/tokens";
 
-function formatTime(iso: string | null, locale: string): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  // The ISO string carries its own offset; rendering converts to device time.
-  return d.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
+/**
+ * "2026-07-31T18:42:10+05:30" → "18:42" — same rule as the web's PanchangView.
+ *
+ * The panchang is computed for New Delhi and the API's ISO strings already
+ * carry IST wall time before the offset, so the clock is read straight off the
+ * string. `new Date(iso).toLocaleTimeString()` would convert to the device
+ * zone and show a London user sunrise at 01:27.
+ */
+function formatTime(iso: string | null): string | null {
+  const m = iso?.match(/T(\d{2}):(\d{2})/);
+  return m ? `${m[1]}:${m[2]}` : null;
 }
 
 function formatDay(day: string, locale: string): string {
@@ -106,10 +111,10 @@ export default function PanchangScreen() {
 
   const until = (time: string | null) =>
     time ? t("panchangUntil").replace("{time}", time) : null;
-  const tithiUntil = until(formatTime(panchang.tithiEndsAt, locale));
-  const nakUntil = until(formatTime(panchang.nakshatraEndsAt, locale));
-  const sunrise = formatTime(panchang.sunrise, locale);
-  const sunset = formatTime(panchang.sunset, locale);
+  const tithiUntil = until(formatTime(panchang.tithiEndsAt));
+  const nakUntil = until(formatTime(panchang.nakshatraEndsAt));
+  const sunrise = formatTime(panchang.sunrise);
+  const sunset = formatTime(panchang.sunset);
 
   const nakSub = [`${t("panchangPada")} ${panchang.pada}`, nakUntil]
     .filter(Boolean)
@@ -130,6 +135,9 @@ export default function PanchangScreen() {
           </Text>
           <Text variant="soft" color={colors.brassSoft} style={{ marginTop: spacing.xs }}>
             {panchang.vaar}
+          </Text>
+          <Text variant="muted" style={{ marginTop: spacing.xs }}>
+            {t("panchangLocationLine")}
           </Text>
         </Rise>
 
