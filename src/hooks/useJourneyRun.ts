@@ -142,8 +142,7 @@ export type JourneyRunLine = { currentDay: number; completedCount: number };
  * than guessing at "day 1 of 7" for someone who never started.
  */
 export function useJourneyRuns(
-  journeys: Array<{ id: string; days_count: number }>,
-  unlock: JourneyUnlock = "open"
+  journeys: Array<{ id: string; days_count: number; unlock?: JourneyUnlock }>
 ): Record<string, JourneyRunLine> {
   const { isSignedIn } = useAuth();
   const [runs, setRuns] = useState<Record<string, JourneyRunLine>>({});
@@ -157,7 +156,7 @@ export function useJourneyRuns(
       const next: Record<string, JourneyRunLine> = {};
       await Promise.all(
         journeys.map(async (j) => {
-          const run = await loadRun(j.id, j.days_count, unlock);
+          const run = await loadRun(j.id, j.days_count, j.unlock ?? "open");
           if (run.completedDays.length > 0) {
             next[j.id] = {
               currentDay: run.currentDay,
@@ -172,7 +171,7 @@ export function useJourneyRuns(
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, unlock, isSignedIn]);
+  }, [key, isSignedIn]);
 
   return runs;
 }

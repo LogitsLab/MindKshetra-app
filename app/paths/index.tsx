@@ -24,9 +24,9 @@ export default function PathsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
-  // The 7-day themed paths are "open" journeys — every day is reachable, and
-  // people use them as a menu rather than a chain.
-  const runs = useJourneyRuns(PRACTICE_PATHS, "open");
+  // The list only needs a count, and every journey's run reads the same way;
+  // the per-journey unlock matters on the detail screen, not here.
+  const runs = useJourneyRuns(PRACTICE_PATHS);
 
   return (
     <Screen atmosphere="soft" padded>

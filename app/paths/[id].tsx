@@ -31,8 +31,8 @@ export default function PathDetailScreen() {
     [id]
   );
 
-  // Themed paths are "open" journeys: every day stays reachable.
-  const run = useJourneyRun(path?.id, path?.days_count ?? 0, "open");
+  // Per journey: the themed weeks stay open, the 21-day arc chains.
+  const run = useJourneyRun(path?.id, path?.days_count ?? 0, path?.unlock ?? "open");
   const refs = useMemo(() => path?.days.map((d) => d.ref) ?? [], [path]);
   const slokaIds = useSlokaRefs(refs);
 
@@ -92,10 +92,11 @@ export default function PathDetailScreen() {
             const dayTitle = lang === "hi" ? day.title_hi : day.title_en;
             const prompt = lang === "hi" ? day.prompt_hi : day.prompt_en;
             const marked = run.completedDays.includes(day.day);
+            const unlocked = marked || run.canMark(day.day);
             const slokaId = slokaIds[refKey(day.ref)];
             return (
               <Rise key={day.day} delay={40 * (i + 1)}>
-                <Panel>
+                <Panel style={{ opacity: unlocked ? 1 : 0.55 }}>
                   <Text variant="eyebrow" color={colors.brassSoft}>
                     {lang === "hi" ? `दिन ${day.day}` : `Day ${day.day}`} ·{" "}
                     {day.practice} · {day.minutes} {t("sadhanaMin")}
@@ -120,6 +121,7 @@ export default function PathDetailScreen() {
                     </Text>
                   </Pressable>
                   <Pressable
+                    disabled={!unlocked}
                     onPress={() =>
                       router.push({
                         pathname: "/sadhana",
@@ -141,22 +143,31 @@ export default function PathDetailScreen() {
                     }
                     style={{ marginTop: spacing.sm }}
                   >
-                    <Text color={colors.brassSoft}>
+                    <Text
+                      color={unlocked ? colors.brassSoft : colors.textMuted}
+                    >
                       {t("pathBeginPractice")} →
                     </Text>
                   </Pressable>
                   {/* Marking straight from the list is the escape hatch for a
-                      day practised away from the phone. */}
+                      day practised away from the phone. A chained journey
+                      refuses a locked day here too — the server answers 409. */}
                   <Pressable
-                    disabled={marked}
+                    disabled={marked || !unlocked}
                     onPress={() => void run.markDay(day.day)}
                     style={{ marginTop: spacing.sm }}
                   >
                     <Text
                       variant="muted"
-                      color={marked ? colors.textMuted : colors.brassSoft}
+                      color={
+                        marked || !unlocked ? colors.textMuted : colors.brassSoft
+                      }
                     >
-                      {marked ? t("pathMarked") : t("pathMarkDone")}
+                      {marked
+                        ? t("pathMarked")
+                        : unlocked
+                          ? t("pathMarkDone")
+                          : t("pathDayLocked")}
                     </Text>
                   </Pressable>
                 </Panel>
