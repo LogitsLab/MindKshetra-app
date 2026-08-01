@@ -19,7 +19,7 @@ import { Rise } from "@/components/Rise";
 import {
   astrologyApi,
   contentApi,
-  pathsApi,
+  journeysApi,
   sadhanaApi,
   userApi,
 } from "@/api/endpoints";
@@ -27,10 +27,12 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { moods, previewMoodIds } from "@/data/moods";
+import { nextDayFrom } from "@/data/journeys";
 import {
   addJournalDraft,
   appendSadhanaLog,
   localDayStamp,
+  markGuestJourneyDay,
 } from "@/storage/local";
 import { images, moodAccent } from "@/theme/assets";
 import { uuidv4 } from "@/utils/uuid";
@@ -55,6 +57,7 @@ export default function SadhanaScreen() {
   const params = useLocalSearchParams<{
     pathId?: string;
     pathDay?: string;
+    pathTotal?: string;
     chapter?: string;
     verse?: string;
     minutes?: string;
@@ -104,7 +107,12 @@ export default function SadhanaScreen() {
   const [pathContext, setPathContext] = useState<{
     pathId: string;
     pathDay: number;
+    /** null when the caller did not say how long the path is. */
+    pathTotal: number | null;
   } | null>(null);
+  // The day the path resumes on, once this one is marked. Null while unknown —
+  // without a total there is no honest clamp, so the line simply stays away.
+  const [tomorrowDay, setTomorrowDay] = useState<number | null>(null);
   const [chartOffer, setChartOffer] = useState<{
     verseId: number;
     ref: string;
@@ -137,6 +145,7 @@ export default function SadhanaScreen() {
     if (pathBootstrapped.current) return;
     const pathId = typeof params.pathId === "string" ? params.pathId : null;
     const pathDay = params.pathDay ? Number(params.pathDay) : NaN;
+    const pathTotal = params.pathTotal ? Number(params.pathTotal) : NaN;
     const minutes = params.minutes ? Number(params.minutes) : NaN;
     const slokaId = params.slokaId ? Number(params.slokaId) : NaN;
     const chapter = params.chapter ? Number(params.chapter) : NaN;
@@ -144,7 +153,16 @@ export default function SadhanaScreen() {
 
     const hasPath =
       pathId && Number.isInteger(pathDay) && pathDay >= 1
-        ? { pathId, pathDay }
+        ? {
+            pathId,
+            pathDay,
+            pathTotal:
+              Number.isInteger(pathTotal) &&
+              pathTotal >= pathDay &&
+              pathTotal <= 60
+                ? pathTotal
+                : null,
+          }
         : null;
     const hasRef =
       Number.isInteger(slokaId) && slokaId > 0
@@ -274,6 +292,49 @@ export default function SadhanaScreen() {
       ? t("sadhanaStart")
       : t("sadhanaResume");
 
+  /**
+   * Mark the active path day complete after the practice was recorded — the
+   * same write as the path screen's "Mark day complete" — and work out whether
+   * a "tomorrow" line has a day to point at, closing the paths → sādhana →
+   * paths loop the web already had.
+   *
+   * Secondary to the practice log: any failure here is silent, the sit still
+   * counted, and the day can still be marked from the path screen. A signed-out
+   * person's day lands in device storage, where the sign-in merge finds it —
+   * before this it was simply dropped.
+   */
+  const recordPathDay = async () => {
+    const pc = pathContext;
+    if (!pc) return;
+    // Without a total there is no honest clamp; mark the day, say nothing.
+    const daysCount = pc.pathTotal ?? 400;
+    let nextDay: number | null = null;
+    let completedCount = 0;
+
+    const markLocally = async () => {
+      const days = await markGuestJourneyDay(pc.pathId, pc.pathDay, daysCount);
+      completedCount = days.length;
+      nextDay = pc.pathTotal ? nextDayFrom(days, pc.pathTotal, "open") : null;
+    };
+
+    if (isSignedIn) {
+      try {
+        const data = await journeysApi.markDay(pc.pathId, pc.pathDay);
+        completedCount = data.completedDays?.length ?? 0;
+        nextDay = data.currentDay ?? null;
+      } catch {
+        await markLocally();
+      }
+    } else {
+      await markLocally();
+    }
+
+    const pathDone = pc.pathTotal !== null && completedCount >= pc.pathTotal;
+    setTomorrowDay(
+      nextDay !== null && nextDay > pc.pathDay && !pathDone ? nextDay : null
+    );
+  };
+
   const finish = async () => {
     if (doneLoggedRef.current) return;
     setSaving(true);
@@ -309,19 +370,17 @@ export default function SadhanaScreen() {
           timezone,
         });
         setStreakRes(res.streak);
-        if (pathContext) {
-          try {
-            await pathsApi.markDay(pathContext.pathId, pathContext.pathDay);
-          } catch {
-            /* secondary */
-          }
-        }
+        await recordPathDay();
       } catch {
         await appendSadhanaLog(entry);
+        await recordPathDay();
         setGuestSaved(true);
       }
     } else {
       await appendSadhanaLog(entry);
+      // The path day used to be dropped entirely on this branch — a signed-out
+      // person walked the path and kept nothing.
+      await recordPathDay();
       setGuestSaved(true);
     }
     doneLoggedRef.current = true;
@@ -571,6 +630,24 @@ export default function SadhanaScreen() {
                 </Text>
               ) : null}
             </Panel>
+          </Rise>
+        ) : null}
+
+        {/* The return line: the path names the day it resumes on, so the loop
+            closes here rather than dead-ending on the streak. */}
+        {tomorrowDay !== null && pathContext ? (
+          <Rise style={{ marginTop: spacing.md }}>
+            <Pressable onPress={() => router.push(`/paths/${pathContext.pathId}`)}>
+              <Panel>
+                <Text color={colors.brassSoft}>
+                  {t("sadhanaTomorrowPath").replace(
+                    "{n}",
+                    String(tomorrowDay)
+                  )}{" "}
+                  →
+                </Text>
+              </Panel>
+            </Pressable>
           </Rise>
         ) : null}
 

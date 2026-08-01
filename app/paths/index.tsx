@@ -9,13 +9,24 @@ import { Rise } from "@/components/Rise";
 import { PRACTICE_PATHS } from "@/data/paths";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useJourneyRuns } from "@/hooks/useJourneyRun";
 import { images } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
+
+function fill(template: string, vars: Record<string, string | number>) {
+  return Object.entries(vars).reduce(
+    (s, [k, v]) => s.replace(`{${k}}`, String(v)),
+    template
+  );
+}
 
 export default function PathsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
+  // The 7-day themed paths are "open" journeys — every day is reachable, and
+  // people use them as a menu rather than a chain.
+  const runs = useJourneyRuns(PRACTICE_PATHS, "open");
 
   return (
     <Screen atmosphere="soft" padded>
@@ -36,6 +47,8 @@ export default function PathsScreen() {
           {PRACTICE_PATHS.map((path, i) => {
             const title = lang === "hi" ? path.title_hi : path.title_en;
             const intro = lang === "hi" ? path.intro_hi : path.intro_en;
+            const run = runs[path.id];
+            const done = run ? run.completedCount >= path.days_count : false;
             return (
               <Rise key={path.id} delay={40 * (i + 1)}>
                 <Pressable onPress={() => router.push(`/paths/${path.id}`)}>
@@ -53,6 +66,22 @@ export default function PathsScreen() {
                     <Text variant="muted" style={{ marginTop: spacing.sm }}>
                       {intro}
                     </Text>
+                    {/* No run, no line — never guess "day 1 of 7" at someone
+                        who has not started. */}
+                    {run ? (
+                      <Text
+                        variant="muted"
+                        color={colors.brassSoft}
+                        style={{ marginTop: spacing.sm }}
+                      >
+                        {done
+                          ? t("pathRunDone")
+                          : fill(t("pathRunProgress"), {
+                              n: run.currentDay,
+                              total: path.days_count,
+                            })}
+                      </Text>
+                    ) : null}
                   </Panel>
                 </Pressable>
               </Rise>
