@@ -86,7 +86,7 @@ Madhav context clears the opposite of `memberId` / `chartSessionId` to avoid cro
 | Concern | Implementation |
 |---------|----------------|
 | Session | Supabase JS + AsyncStorage |
-| Methods | Anonymous, Google, email OTP, Apple (iOS) |
+| Methods | Anonymous, Google, email OTP |
 | Deep link | `mindkshetra://auth/callback` |
 | Guest merge | On upgrade: merge chat session + guest progress via API |
 | Local prefs | Theme, language, text scale, onboarding flag, chat session id |

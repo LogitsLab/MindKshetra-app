@@ -19,6 +19,11 @@ the original list assumed the app was correct and only needed configuration.
 
 ## Blocking — still to do
 
+- [ ] **EAS push credentials (APNs + FCM).** Code registers tokens via
+      `expo-notifications`; real-device delivery needs `eas credentials` push
+      key (iOS) and FCM (Android), then a rebuild. See web
+      `docs/runbooks/push-dispatch.md` § APNs/FCM. Verify Account prefs against
+      dawn / streak kinds on a TestFlight / internal build. — **[new]**
 - [ ] **Run `eas init`** to write a real `extra.eas.projectId`. The previous value
       (`"mindkshetra-mobile"`) was a slug, not a UUID, and has been removed — `eas build`
       would have failed on it. — **[new]**
@@ -29,8 +34,7 @@ the original list assumed the app was correct and only needed configuration.
       transitive `react-dom@19.2.8` requires `^19.2.8`. Adding any new dependency fails
       without `--legacy-peer-deps`. — **[new]**
 - [ ] `EXPO_PUBLIC_*` env set for production API + Supabase
-- [ ] Supabase Auth: Google, Apple, email redirect `mindkshetra://auth/callback`
-- [ ] Apple Sign-In capability on iOS bundle `app.mindkshetra.mobile`
+- [ ] Supabase Auth: Google, email redirect `mindkshetra://auth/callback`
 - [ ] Privacy policy URL live: `https://mind.logitslab.com/privacy`; link from Account screen
 - [ ] **Privacy nutrition label** declaring Supabase auth data collection. Required by
       App Store Connect and absent from the original list. — **[new]**

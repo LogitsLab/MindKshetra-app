@@ -16,7 +16,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.mindkshetra.mobile",
-      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserNotificationsUsageDescription": "MindKshetra sends gentle reminders for your daily verse and practice streak."
@@ -42,7 +41,6 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
-      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {

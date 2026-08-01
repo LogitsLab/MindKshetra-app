@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -9,7 +8,6 @@ import {
   View,
   ActivityIndicator,
 } from "react-native";
-import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -40,7 +38,6 @@ export default function AccountScreen() {
     isAnonymous,
     isSignedIn,
     signInAnonymously,
-    signInWithApple,
     signInWithEmail,
     signInWithGoogle,
     signOut,
@@ -54,18 +51,9 @@ export default function AccountScreen() {
   const [linkSent, setLinkSent] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [streak, setStreak] = useState(0);
-  const [appleAvailable, setAppleAvailable] = useState(false);
   const [deleteStage, setDeleteStage] = useState<
     "idle" | "confirming" | "deleting"
   >("idle");
-
-  // App Store 4.8: anywhere Google sign-in is offered, Apple must be too.
-  useEffect(() => {
-    if (Platform.OS !== "ios") return;
-    AppleAuthentication.isAvailableAsync()
-      .then(setAppleAvailable)
-      .catch(() => setAppleAvailable(false));
-  }, []);
 
   const [votdConfigured, setVotdConfigured] = useState(false);
   const [votdTestingMode, setVotdTestingMode] = useState(false);
@@ -276,17 +264,9 @@ export default function AccountScreen() {
 
         {showAuth ? (
           <View style={{ gap: spacing.sm }}>
-            {appleAvailable ? (
-              <Button
-                label={t("signInApple")}
-                variant="primary"
-                loading={busy}
-                onPress={() => void run(signInWithApple)}
-              />
-            ) : null}
             <Button
               label={t("signInGoogle")}
-              variant={appleAvailable ? "ghost" : "primary"}
+              variant="primary"
               loading={busy}
               onPress={() => void run(signInWithGoogle)}
             />

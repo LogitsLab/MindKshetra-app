@@ -9,7 +9,7 @@ Expo app for iOS and Android — the same Gita companion and Jyotish experience 
 - Explore verses, mood matching, favorites, journal
 - **Ask Madhav** (FAB → full-screen chat over the web API)
 - Astrology: members, incognito charts, dashas, predictions
-- Auth: anonymous, Google, email OTP, Apple (iOS)
+- Auth: anonymous, Google, email OTP
 
 ## Quick start
 

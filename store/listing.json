@@ -30,7 +30,7 @@
   },
   "ios": {
     "bundleId": "app.mindkshetra.mobile",
-    "submitNotes": "No third-party login required for guest use. Sign-in optional (Apple / Google / email). Astrology charts are informational only — not medical or financial advice."
+    "submitNotes": "No third-party login required for guest use. Sign-in optional (Google / email). Astrology charts are informational only — not medical or financial advice."
   },
   "android": {
     "package": "app.mindkshetra.mobile",

@@ -9,11 +9,9 @@ import React, {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import * as WebBrowser from "expo-web-browser";
-import * as AppleAuthentication from "expo-apple-authentication";
 import { makeRedirectUri } from "expo-auth-session";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
-import { Platform } from "react-native";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
 import { getAuthCallbackRedirect } from "@/auth/redirect";
 import { shouldMerge } from "@/auth/should-merge";
@@ -104,8 +102,6 @@ type AuthContextValue = {
   signInAnonymously: () => Promise<void>;
   /** false means the person cancelled; callers must not treat that as done. */
   signInWithGoogle: () => Promise<boolean>;
-  /** false means the person cancelled; callers must not treat that as done. */
-  signInWithApple: () => Promise<boolean>;
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -336,37 +332,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, [mergeForUser]);
 
-  /** Resolves false when the person backed out, true when a session started. */
-  const signInWithApple = useCallback(async () => {
-    if (!supabaseConfigured || Platform.OS !== "ios") return false;
-    let credential: AppleAuthentication.AppleAuthenticationCredential;
-    try {
-      credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-    } catch (e) {
-      // Dismissing the Apple sheet is a decision, not a failure. Surfacing it
-      // as an error message would blame the user for changing their mind.
-      if ((e as { code?: string }).code === "ERR_REQUEST_CANCELED") return false;
-      throw e;
-    }
-    if (!credential.identityToken) throw new Error("Apple Sign-In failed");
-    const { error } = await supabase.auth.signInWithIdToken({
-      provider: "apple",
-      token: credential.identityToken,
-    });
-    if (error) throw error;
-    // The SIGNED_IN listener also merges; mergeForUser dedupes by user id.
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData.session?.user) {
-      await mergeForUser(sessionData.session.user.id);
-    }
-    return true;
-  }, [mergeForUser]);
-
   const signInWithEmail = useCallback(async (email: string) => {
     if (!supabaseConfigured) return;
     const trimmed = email.trim();
@@ -425,7 +390,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       emailCooldownSec,
       signInAnonymously,
       signInWithGoogle,
-      signInWithApple,
       signInWithEmail,
       signOut,
     }),
@@ -436,7 +400,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       emailCooldownSec,
       signInAnonymously,
       signInWithGoogle,
-      signInWithApple,
       signInWithEmail,
       signOut,
     ]
