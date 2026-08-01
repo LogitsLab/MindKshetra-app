@@ -7,7 +7,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
 import { Screen } from "@/components/Screen";
@@ -15,7 +15,13 @@ import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { Rise } from "@/components/Rise";
-import { contentApi, sadhanaApi, userApi } from "@/api/endpoints";
+import {
+  astrologyApi,
+  contentApi,
+  pathsApi,
+  sadhanaApi,
+  userApi,
+} from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -45,6 +51,14 @@ function formatClock(totalSec: number): string {
 export default function SadhanaScreen() {
   useKeepAwake();
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    pathId?: string;
+    pathDay?: string;
+    chapter?: string;
+    verse?: string;
+    minutes?: string;
+    slokaId?: string;
+  }>();
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const { session, isSignedIn } = useAuth();
@@ -85,6 +99,128 @@ export default function SadhanaScreen() {
   const [streakRes, setStreakRes] = useState<SadhanaStreak | null>(null);
   const [guestSaved, setGuestSaved] = useState(false);
   const doneLoggedRef = useRef(false);
+  const pathBootstrapped = useRef(false);
+  const [pathContext, setPathContext] = useState<{
+    pathId: string;
+    pathDay: number;
+  } | null>(null);
+  const [chartOffer, setChartOffer] = useState<{
+    verseId: number;
+    ref: string;
+    excerpt: string;
+  } | null>(null);
+
+  const loadVerseById = (id: number) => {
+    setMoodId("path");
+    setVerse(null);
+    setVerseFailed(false);
+    setVerseLoading(true);
+    const req = ++moodReqRef.current;
+    contentApi
+      .sloka(id)
+      .then((s) => {
+        if (moodReqRef.current !== req) return;
+        setVerse(s);
+        setVerseFailed(!s);
+      })
+      .catch(() => {
+        if (moodReqRef.current === req) setVerseFailed(true);
+      })
+      .finally(() => {
+        if (moodReqRef.current === req) setVerseLoading(false);
+      });
+  };
+
+  // Path-day deep link → load verse by id or chapter/verse.
+  useEffect(() => {
+    if (pathBootstrapped.current) return;
+    const pathId = typeof params.pathId === "string" ? params.pathId : null;
+    const pathDay = params.pathDay ? Number(params.pathDay) : NaN;
+    const minutes = params.minutes ? Number(params.minutes) : NaN;
+    const slokaId = params.slokaId ? Number(params.slokaId) : NaN;
+    const chapter = params.chapter ? Number(params.chapter) : NaN;
+    const verseNum = params.verse ? Number(params.verse) : NaN;
+
+    const hasPath =
+      pathId && Number.isInteger(pathDay) && pathDay >= 1
+        ? { pathId, pathDay }
+        : null;
+    const hasRef =
+      Number.isInteger(slokaId) && slokaId > 0
+        ? { kind: "id" as const, slokaId }
+        : Number.isInteger(chapter) &&
+            chapter >= 1 &&
+            Number.isInteger(verseNum) &&
+            verseNum >= 1
+          ? { kind: "ref" as const, chapter, verseNum }
+          : null;
+    if (!hasRef && !hasPath) return;
+    pathBootstrapped.current = true;
+    if (hasPath) setPathContext(hasPath);
+    if (Number.isFinite(minutes) && minutes >= 1 && minutes <= 60) {
+      const m = Math.round(minutes);
+      setPresetMin(m);
+      remainingRef.current = m * 60;
+      setRemaining(m * 60);
+    }
+    if (hasRef?.kind === "id") {
+      loadVerseById(hasRef.slokaId);
+      return;
+    }
+    if (hasRef?.kind === "ref") {
+      setMoodId("path");
+      setVerseLoading(true);
+      const req = ++moodReqRef.current;
+      contentApi
+        .slokas({ chapter: hasRef.chapter })
+        .then((r) => {
+          if (moodReqRef.current !== req) return;
+          const match =
+            r.slokas.find((s) => s.verse_number === hasRef.verseNum) ?? null;
+          setVerse(match);
+          setVerseFailed(!match);
+        })
+        .catch(() => {
+          if (moodReqRef.current === req) setVerseFailed(true);
+        })
+        .finally(() => {
+          if (moodReqRef.current === req) setVerseLoading(false);
+        });
+    }
+  }, [params]);
+
+  // Optional Pressure→Practice for signed-in chart users.
+  useEffect(() => {
+    if (!isSignedIn || moodId) {
+      setChartOffer(null);
+      return;
+    }
+    let cancelled = false;
+    astrologyApi
+      .members()
+      .then(async ({ members }) => {
+        if (!members?.length || cancelled) return;
+        const self =
+          members.find((m) => m.relationship === "self") ?? members[0];
+        const card = await astrologyApi.practiceCard(self.id);
+        if (!card?.verse || cancelled) return;
+        const excerptSource =
+          lang === "hi" ? card.verse.hindi : card.verse.english;
+        const excerpt =
+          excerptSource.length > 120
+            ? `${excerptSource.slice(0, 120).trimEnd()}…`
+            : excerptSource;
+        setChartOffer({
+          verseId: card.verse.id,
+          ref: card.verse.ref,
+          excerpt,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, moodId, lang]);
 
   const pickMood = (id: string) => {
     setMoodId(id);
@@ -172,6 +308,13 @@ export default function SadhanaScreen() {
           timezone,
         });
         setStreakRes(res.streak);
+        if (pathContext) {
+          try {
+            await pathsApi.markDay(pathContext.pathId, pathContext.pathDay);
+          } catch {
+            /* secondary */
+          }
+        }
       } catch {
         await appendSadhanaLog(entry);
         setGuestSaved(true);
@@ -203,6 +346,30 @@ export default function SadhanaScreen() {
           <Text variant="display" style={[{ marginTop: spacing.sm }, hiDisplay]}>
             {t("sadhanaMoodTitle")}
           </Text>
+          {pathContext ? (
+            <Text variant="muted" color={colors.brassSoft} style={{ marginTop: spacing.sm }}>
+              {t("sadhanaPathDayHint")}
+            </Text>
+          ) : null}
+          {chartOffer && !moodId ? (
+            <Panel style={{ marginTop: spacing.md }}>
+              <Text variant="eyebrow" color={colors.brassSoft}>
+                {chartOffer.ref}
+              </Text>
+              <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                {t("sadhanaChartVerseBlurb")}
+              </Text>
+              <Text variant="soft" style={{ marginTop: spacing.sm }}>
+                {chartOffer.excerpt}
+              </Text>
+              <Pressable
+                onPress={() => loadVerseById(chartOffer.verseId)}
+                style={{ marginTop: spacing.md }}
+              >
+                <Text color={colors.brassSoft}>{t("sadhanaChartVerse")} →</Text>
+              </Pressable>
+            </Panel>
+          ) : null}
           <View style={styles.moodWrap}>
             {sadhanaMoods.map((mood) => {
               const accent = moodAccent[mood.id] ?? colors.brass;

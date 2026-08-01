@@ -34,6 +34,11 @@ export const en = {
   sadhanaStreakLine: "Day {n} of your practice.",
   sadhanaGrace: "Your practice rested yesterday. Continue today.",
   sadhanaSavedDevice: "Saved on this device — sign in to keep your streak.",
+  pathBeginPractice: "Begin day’s practice",
+  sadhanaPathDayHint: "Path day — this verse, then sit and complete.",
+  sadhanaChartVerse: "Use today’s Pressure→Practice verse",
+  sadhanaChartVerseBlurb:
+    "Your chart’s leading tension meets one Gita verse — optional.",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -68,4 +73,9 @@ export const hi: Record<keyof typeof en, string> = {
   sadhanaStreakLine: "आपके अभ्यास का दिन {n}।",
   sadhanaGrace: "कल अभ्यास विश्राम में रहा। आज फिर से जुड़ें।",
   sadhanaSavedDevice: "इस डिवाइस पर सहेजा गया — लकीर खाते में रखने के लिए साइन इन करें।",
+  pathBeginPractice: "दिन का अभ्यास शुरू करें",
+  sadhanaPathDayHint: "मार्ग का दिन — यह श्लोक, फिर बैठें और पूर्ण करें।",
+  sadhanaChartVerse: "आज का Pressure→Practice श्लोक लें",
+  sadhanaChartVerseBlurb:
+    "कुंडली का मुख्य दबाव एक गीता श्लोक से मिलता है — वैकल्पिक।",
 };

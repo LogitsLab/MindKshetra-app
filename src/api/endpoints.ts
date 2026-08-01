@@ -140,6 +140,48 @@ export const eventsApi = {
     }).catch(() => ({ ok: false })),
 };
 
+export const pathsApi = {
+  markDay: (pathId: string, day: number) =>
+    apiFetch<{ currentDay?: number; completedDays?: number[] }>(
+      `/api/paths/${encodeURIComponent(pathId)}/run`,
+      {
+        method: "POST",
+        body: JSON.stringify({ day }),
+      }
+    ),
+};
+
+export const meditationApi = {
+  progress: (program = "foundation-7") =>
+    apiFetch<{
+      currentDay: number;
+      completedDays: number[];
+      guest?: boolean;
+      streak: { current: number; longest: number } | null;
+    }>(`/api/meditation/progress?program=${encodeURIComponent(program)}`),
+  complete: (body: {
+    sessionId: string;
+    moodBefore?: number | null;
+    moodAfter?: number | null;
+    durationSec?: number;
+    clientRef: string;
+    timezone?: string;
+  }) =>
+    apiFetch<{
+      ok: boolean;
+      progress: { currentDay: number; completedDays: number[] };
+      streak: { current: number; longest: number };
+    }>("/api/meditation/complete", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  merge: (completions: unknown[], timezone?: string) =>
+    apiFetch<{ ok: boolean; merged: number }>("/api/meditation/merge", {
+      method: "POST",
+      body: JSON.stringify({ completions, timezone }),
+    }),
+};
+
 export const pushApi = {
   register: (body: { token: string; platform: "ios" | "android" }) =>
     apiFetch<{ ok: boolean }>("/api/push/register", {
@@ -239,6 +281,18 @@ export const astrologyApi = {
     apiFetch<{ ok: boolean }>(`/api/astrology/members/${id}`, { method: "DELETE" }),
   chart: (id: string) =>
     apiFetch<{ chart: Record<string, unknown> }>(`/api/astrology/members/${id}/chart`),
+  practiceCard: (memberId: string) =>
+    apiFetch<{
+      verse: {
+        id: number;
+        ref: string;
+        english: string;
+        hindi: string;
+      };
+    }>("/api/astrology/practice-card", {
+      method: "POST",
+      body: JSON.stringify({ memberId }),
+    }),
   compute: (body: Record<string, unknown>) =>
     apiFetch<{ chart: Record<string, unknown>; chartSessionId?: string }>(
       "/api/astrology/compute",
