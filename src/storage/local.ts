@@ -1,5 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { normalizeDays } from "@/data/journeys";
 import type { PanchangDay, SadhanaLogEntry } from "@/types";
+
+/**
+ * Per-journey guest progress: `mindkshetra-journey-<id>` → { completedDays }.
+ * One key per journey rather than one blob, matching the web's storage format
+ * so the two sides describe device-local progress the same way.
+ */
+const JOURNEY_KEY_PREFIX = "mindkshetra-journey-";
 
 const KEYS = {
   theme: "mindkshetra-theme",
@@ -129,6 +137,8 @@ export async function clearUserLocalState(): Promise<void> {
     KEYS.sadhanaLog,
     KEYS.pushToken,
   ]);
+  // Journey runs are one key per journey, so they are swept by prefix.
+  await clearAllGuestJourneys();
 }
 
 export async function getStoredPushToken(): Promise<string | null> {
@@ -211,6 +221,90 @@ export async function appendSadhanaLog(entry: SadhanaLogEntry): Promise<void> {
 
 export async function clearSadhanaLog(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.sadhanaLog);
+}
+
+/* ------------------------------------------------------------------ */
+/* Guest journey runs.                                                 */
+/*                                                                     */
+/* Mobile had none of this: a signed-out person's path days lived only  */
+/* in component state and were gone at the next launch. These four      */
+/* helpers are the device-local half of the journeys engine — the sign- */
+/* in merge in AuthContext replays them through /api/journeys/merge.    */
+/*                                                                     */
+/* The meditation course keeps its own completion queue rather than     */
+/* folding in here: those rows carry mood before/after and a duration,  */
+/* which a journey run has nowhere to put.                              */
+/* ------------------------------------------------------------------ */
+
+function journeyKey(journeyId: string): string {
+  return `${JOURNEY_KEY_PREFIX}${journeyId}`;
+}
+
+export async function getGuestJourneyDays(
+  journeyId: string,
+  daysCount: number
+): Promise<number[]> {
+  const raw = await AsyncStorage.getItem(journeyKey(journeyId));
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as { completedDays?: unknown };
+    return normalizeDays(parsed.completedDays, daysCount);
+  } catch {
+    return [];
+  }
+}
+
+export async function setGuestJourneyDays(
+  journeyId: string,
+  completedDays: number[]
+): Promise<void> {
+  await AsyncStorage.setItem(
+    journeyKey(journeyId),
+    JSON.stringify({ completedDays })
+  );
+}
+
+/** Add one day and return the updated, sorted list. */
+export async function markGuestJourneyDay(
+  journeyId: string,
+  day: number,
+  daysCount: number
+): Promise<number[]> {
+  const prior = await getGuestJourneyDays(journeyId, daysCount);
+  const next = normalizeDays([...prior, day], daysCount);
+  await setGuestJourneyDays(journeyId, next);
+  return next;
+}
+
+/**
+ * Every guest journey on this device, for the sign-in merge. The day count is
+ * generously capped here because the catalog is not in hand at merge time —
+ * the server re-validates each list against the real journey.
+ */
+export async function getAllGuestJourneys(): Promise<
+  Array<{ journeyId: string; completedDays: number[] }>
+> {
+  const keys = await AsyncStorage.getAllKeys();
+  const mine = keys.filter((k) => k.startsWith(JOURNEY_KEY_PREFIX));
+  if (!mine.length) return [];
+  const out: Array<{ journeyId: string; completedDays: number[] }> = [];
+  for (const key of mine) {
+    const journeyId = key.slice(JOURNEY_KEY_PREFIX.length);
+    if (!journeyId) continue;
+    const completedDays = await getGuestJourneyDays(journeyId, 400);
+    if (completedDays.length) out.push({ journeyId, completedDays });
+  }
+  return out;
+}
+
+export async function clearGuestJourney(journeyId: string): Promise<void> {
+  await AsyncStorage.removeItem(journeyKey(journeyId));
+}
+
+export async function clearAllGuestJourneys(): Promise<void> {
+  const keys = await AsyncStorage.getAllKeys();
+  const mine = keys.filter((k) => k.startsWith(JOURNEY_KEY_PREFIX));
+  if (mine.length) await AsyncStorage.multiRemove(mine);
 }
 
 export type StoredPanchang = { date: string; payload: PanchangDay };

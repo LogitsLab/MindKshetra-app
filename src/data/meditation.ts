@@ -55,15 +55,12 @@ export function getSessionById(id: string): MeditationSession | undefined {
   );
 }
 
-export function isDayUnlocked(
-  day: number,
-  completedDays: number[],
-  daysCount: number
-): boolean {
-  if (!Number.isInteger(day) || day < 1 || day > daysCount) return false;
-  if (day === 1) return true;
-  return completedDays.includes(day - 1);
-}
+/**
+ * The course chains, so it reads the journeys core rather than keeping its own
+ * copy of the arithmetic — that duplication is exactly what let the day screen
+ * and the hub disagree about which days were reachable.
+ */
+export { isDayUnlocked } from "@/data/journeys";
 
 export function sessionTranscript(
   session: MeditationSession,

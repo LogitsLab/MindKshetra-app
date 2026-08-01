@@ -140,15 +140,48 @@ export const eventsApi = {
     }).catch(() => ({ ok: false })),
 };
 
-export const pathsApi = {
-  markDay: (pathId: string, day: number) =>
+export const journeysApi = {
+  /** Catalog summaries, no day bodies — the 21-day arcs carry guided scripts. */
+  catalog: () =>
+    apiFetch<{
+      journeys: Array<{
+        id: string;
+        kind: "scripture" | "meditation";
+        unlock: "chain" | "open";
+        daysCount: number;
+        title: { en: string; hi: string };
+        intro: { en: string; hi: string };
+      }>;
+    }>("/api/journeys"),
+  /** Guests get `{ guest: true }` with an empty run, not a 401. */
+  run: (journeyId: string) =>
+    apiFetch<{
+      journeyId: string;
+      currentDay: number;
+      completedDays: number[];
+      guest?: boolean;
+    }>(`/api/journeys/${encodeURIComponent(journeyId)}/run`),
+  /** 409 means the day is locked — the server enforces the chain, not the client. */
+  markDay: (journeyId: string, day: number) =>
     apiFetch<{ currentDay?: number; completedDays?: number[] }>(
-      `/api/paths/${encodeURIComponent(pathId)}/run`,
-      {
-        method: "POST",
-        body: JSON.stringify({ day }),
-      }
+      `/api/journeys/${encodeURIComponent(journeyId)}/run`,
+      { method: "POST", body: JSON.stringify({ day }) }
     ),
+  /** Replay of device-local runs on sign-in; idempotent, the server dedupes. */
+  merge: (journeys: Array<{ journeyId: string; completedDays: number[] }>) =>
+    apiFetch<{ ok: boolean; merged?: number }>("/api/journeys/merge", {
+      method: "POST",
+      body: JSON.stringify({ journeys }),
+    }),
+};
+
+export const pathsApi = {
+  /**
+   * Repointed at the journeys route, which is the same write with server-side
+   * unlock enforcement. `/api/paths/[id]/run` still exists as a forwarder for
+   * one release, so an older build keeps working; new calls skip the hop.
+   */
+  markDay: (pathId: string, day: number) => journeysApi.markDay(pathId, day),
 };
 
 export const meditationApi = {

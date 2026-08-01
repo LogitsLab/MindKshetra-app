@@ -15,13 +15,21 @@ import { router } from "expo-router";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
 import { getAuthCallbackRedirect } from "@/auth/redirect";
 import { shouldMerge } from "@/auth/should-merge";
-import { chatApi, progressApi, sadhanaApi, userApi } from "@/api/endpoints";
+import {
+  chatApi,
+  journeysApi,
+  progressApi,
+  sadhanaApi,
+  userApi,
+} from "@/api/endpoints";
 import {
   registerPush,
   unregisterPush,
 } from "@/notifications/registerPush";
 import {
+  clearAllGuestJourneys,
   clearSadhanaLog,
+  getAllGuestJourneys,
   getChatSessionId,
   getGuestProgress,
   getJournalDrafts,
@@ -146,6 +154,19 @@ async function mergeOnUpgrade() {
     }
   } catch {
     /* keep the log */
+  }
+  // Journey days marked while signed out. Until now mobile had no guest store
+  // at all, so a signed-out person's path progress simply vanished; these rows
+  // replay through the idempotent merge endpoint, which re-validates each day
+  // against the real journey. Clear only on success, like the sadhana log.
+  try {
+    const journeys = await getAllGuestJourneys();
+    if (journeys.length) {
+      await journeysApi.merge(journeys);
+      await clearAllGuestJourneys();
+    }
+  } catch {
+    /* keep the runs for the next upgrade */
   }
   // Reflections written while signed out wait as local drafts; failed sends
   // stay queued for the next upgrade.
