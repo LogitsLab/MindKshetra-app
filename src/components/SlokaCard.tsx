@@ -147,7 +147,39 @@ function MoodPathMark({ size = 36 }: { size?: number }) {
   );
 }
 
-export type PathMarkKind = "explore" | "mood" | "madhav" | "astrology";
+function MeditationPathMark({ size = 36 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <Circle
+        cx="32"
+        cy="34"
+        r="16"
+        stroke="#c9a227"
+        strokeWidth="1.25"
+        opacity={0.55}
+      />
+      <Path
+        d="M32 22c0 8-6 12-6 18a6 6 0 0 0 12 0c0-6-6-10-6-18z"
+        stroke="#e2c45a"
+        strokeWidth="1.25"
+      />
+      <Path
+        d="M20 48h24"
+        stroke="#c9a227"
+        strokeWidth="1.1"
+        opacity={0.7}
+      />
+      <Circle cx="32" cy="14" r="2" fill="#e2c45a" />
+    </Svg>
+  );
+}
+
+export type PathMarkKind =
+  | "explore"
+  | "mood"
+  | "madhav"
+  | "astrology"
+  | "meditation";
 
 /**
  * Path card for the home 2×2 grid. Landscape web photos use cover;
@@ -200,6 +232,8 @@ export function PathTile({
             />
           ) : mark === "mood" ? (
             <MoodPathMark size={28} />
+          ) : mark === "meditation" ? (
+            <MeditationPathMark size={28} />
           ) : (
             <ExplorePathMark size={28} />
           )}
