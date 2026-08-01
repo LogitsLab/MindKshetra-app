@@ -16,6 +16,7 @@ const KEYS = {
   timezoneSynced: "mindkshetra-tz-synced",
   sadhanaLog: "mindkshetra-sadhana-log",
   panchangToday: "mindkshetra-panchang-today",
+  pushToken: "mindkshetra-push-token",
 } as const;
 
 export async function getStoredTheme(): Promise<"dark" | "light" | null> {
@@ -126,7 +127,20 @@ export async function clearUserLocalState(): Promise<void> {
     KEYS.journalDrafts,
     KEYS.timezoneSynced,
     KEYS.sadhanaLog,
+    KEYS.pushToken,
   ]);
+}
+
+export async function getStoredPushToken(): Promise<string | null> {
+  return AsyncStorage.getItem(KEYS.pushToken);
+}
+
+export async function setStoredPushToken(token: string): Promise<void> {
+  await AsyncStorage.setItem(KEYS.pushToken, token);
+}
+
+export async function clearStoredPushToken(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.pushToken);
 }
 
 /** Local calendar date (device zone) as YYYY-MM-DD. */

@@ -1,6 +1,6 @@
 /** @jest-environment node */
 
-import { contentApi } from "../endpoints";
+import { contentApi, pushApi } from "../endpoints";
 
 jest.mock("../client", () => ({
   apiFetch: jest.fn(),
@@ -36,5 +36,32 @@ describe("contentApi.slokas", () => {
 
     expect(res.slokas).toHaveLength(1);
     expect(res.slokas[0].id).toBe(2);
+  });
+});
+
+describe("pushApi", () => {
+  beforeEach(() => {
+    mockApiFetch.mockReset();
+  });
+
+  it("POSTs token + platform to /api/push/register", async () => {
+    mockApiFetch.mockResolvedValue({ ok: true });
+    await pushApi.register({ token: "ExponentPushToken[x]", platform: "ios" });
+    expect(mockApiFetch).toHaveBeenCalledWith("/api/push/register", {
+      method: "POST",
+      body: JSON.stringify({
+        token: "ExponentPushToken[x]",
+        platform: "ios",
+      }),
+    });
+  });
+
+  it("DELETEs token to disable", async () => {
+    mockApiFetch.mockResolvedValue({ ok: true });
+    await pushApi.disable({ token: "ExponentPushToken[x]" });
+    expect(mockApiFetch).toHaveBeenCalledWith("/api/push/register", {
+      method: "DELETE",
+      body: JSON.stringify({ token: "ExponentPushToken[x]" }),
+    });
   });
 });

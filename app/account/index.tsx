@@ -70,6 +70,9 @@ export default function AccountScreen() {
   const [votdConfigured, setVotdConfigured] = useState(false);
   const [votdTestingMode, setVotdTestingMode] = useState(false);
   const [votdEnabled, setVotdEnabled] = useState(true);
+  const [notifDailyVerse, setNotifDailyVerse] = useState(false);
+  const [notifDailyVerseHour, setNotifDailyVerseHour] = useState(8);
+  const [notifStreakReminder, setNotifStreakReminder] = useState(false);
   const [prefsBusy, setPrefsBusy] = useState(false);
   const [votdEmailStatus, setVotdEmailStatus] = useState<
     "idle" | "sending" | "sent"
@@ -100,6 +103,9 @@ export default function AccountScreen() {
       setVotdConfigured(false);
       setVotdTestingMode(false);
       setVotdEnabled(true);
+      setNotifDailyVerse(false);
+      setNotifDailyVerseHour(8);
+      setNotifStreakReminder(false);
       return;
     }
     let alive = true;
@@ -115,6 +121,15 @@ export default function AccountScreen() {
       }
       if (typeof prefs?.votdEmailEnabled === "boolean") {
         setVotdEnabled(prefs.votdEmailEnabled);
+      }
+      if (typeof prefs?.notifDailyVerse === "boolean") {
+        setNotifDailyVerse(prefs.notifDailyVerse);
+      }
+      if (typeof prefs?.notifDailyVerseHour === "number") {
+        setNotifDailyVerseHour(prefs.notifDailyVerseHour);
+      }
+      if (typeof prefs?.notifStreakReminder === "boolean") {
+        setNotifStreakReminder(prefs.notifStreakReminder);
       }
     });
     return () => {
@@ -151,6 +166,27 @@ export default function AccountScreen() {
     try {
       const data = await userApi.updatePreferences({ votdEmailEnabled: next });
       setVotdEnabled(Boolean(data.votdEmailEnabled));
+    } catch (e) {
+      setMessage((e as Error).message);
+    } finally {
+      setPrefsBusy(false);
+    }
+  }
+
+  async function patchNotifPrefs(body: Record<string, unknown>) {
+    setPrefsBusy(true);
+    setMessage(null);
+    try {
+      const data = await userApi.updatePreferences(body);
+      if (typeof data.notifDailyVerse === "boolean") {
+        setNotifDailyVerse(data.notifDailyVerse);
+      }
+      if (typeof data.notifDailyVerseHour === "number") {
+        setNotifDailyVerseHour(data.notifDailyVerseHour);
+      }
+      if (typeof data.notifStreakReminder === "boolean") {
+        setNotifStreakReminder(data.notifStreakReminder);
+      }
     } catch (e) {
       setMessage((e as Error).message);
     } finally {
@@ -550,6 +586,155 @@ export default function AccountScreen() {
                 </Pressable>
               ) : null}
             </Panel>
+
+            <Text variant="eyebrow" style={{ marginTop: spacing.lg }}>
+              {t("notifTitle")}
+            </Text>
+            <Text variant="soft" style={{ marginTop: spacing.xs }}>
+              {t("notifBlurb")}
+            </Text>
+            <Panel style={{ marginTop: spacing.md }}>
+              <View style={styles.votdRow}>
+                <View style={{ flex: 1, paddingRight: spacing.md }}>
+                  <Text variant="body">{t("notifDailyVerse")}</Text>
+                  <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                    {t("notifDailyVerseBlurb")}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: notifDailyVerse }}
+                  accessibilityLabel={
+                    notifDailyVerse ? t("notifOn") : t("notifOff")
+                  }
+                  disabled={prefsBusy}
+                  onPress={() =>
+                    void patchNotifPrefs({ notifDailyVerse: !notifDailyVerse })
+                  }
+                  style={[
+                    styles.switch,
+                    {
+                      borderColor: notifDailyVerse ? colors.brass : colors.line,
+                      backgroundColor: notifDailyVerse
+                        ? "rgba(201,162,39,0.25)"
+                        : colors.surface,
+                      opacity: prefsBusy ? 0.5 : 1,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.switchKnob,
+                      {
+                        backgroundColor: colors.brassSoft,
+                        alignSelf: notifDailyVerse ? "flex-end" : "flex-start",
+                        opacity: notifDailyVerse ? 1 : 0.5,
+                      },
+                    ]}
+                  />
+                </Pressable>
+              </View>
+
+              {notifDailyVerse ? (
+                <View style={{ marginTop: spacing.md }}>
+                  <Text variant="muted">{t("notifDailyVerseHour")}</Text>
+                  <Text
+                    variant="muted"
+                    style={{ marginTop: spacing.xs, opacity: 0.8 }}
+                  >
+                    {t("notifDailyVerseHourBlurb")}
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.hourRow}
+                  >
+                    {Array.from({ length: 19 }, (_, i) => i + 4).map((hour) => {
+                      const active = notifDailyVerseHour === hour;
+                      return (
+                        <Pressable
+                          key={hour}
+                          disabled={prefsBusy}
+                          onPress={() =>
+                            void patchNotifPrefs({ notifDailyVerseHour: hour })
+                          }
+                          style={[
+                            styles.hourChip,
+                            {
+                              borderColor: active ? colors.brass : colors.line,
+                              backgroundColor: active
+                                ? "rgba(201,162,39,0.18)"
+                                : colors.surface,
+                              opacity: prefsBusy ? 0.5 : 1,
+                            },
+                          ]}
+                        >
+                          <Text
+                            variant="muted"
+                            style={{
+                              color: active
+                                ? colors.brassSoft
+                                : colors.textMuted,
+                            }}
+                          >
+                            {hour}:00
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              ) : null}
+
+              <Hairline style={{ marginVertical: spacing.md }} />
+
+              <View style={styles.votdRow}>
+                <View style={{ flex: 1, paddingRight: spacing.md }}>
+                  <Text variant="body">{t("notifStreakReminder")}</Text>
+                  <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                    {t("notifStreakReminderBlurb")}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: notifStreakReminder }}
+                  accessibilityLabel={
+                    notifStreakReminder ? t("notifOn") : t("notifOff")
+                  }
+                  disabled={prefsBusy}
+                  onPress={() =>
+                    void patchNotifPrefs({
+                      notifStreakReminder: !notifStreakReminder,
+                    })
+                  }
+                  style={[
+                    styles.switch,
+                    {
+                      borderColor: notifStreakReminder
+                        ? colors.brass
+                        : colors.line,
+                      backgroundColor: notifStreakReminder
+                        ? "rgba(201,162,39,0.25)"
+                        : colors.surface,
+                      opacity: prefsBusy ? 0.5 : 1,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.switchKnob,
+                      {
+                        backgroundColor: colors.brassSoft,
+                        alignSelf: notifStreakReminder
+                          ? "flex-end"
+                          : "flex-start",
+                        opacity: notifStreakReminder ? 1 : 0.5,
+                      },
+                    ]}
+                  />
+                </Pressable>
+              </View>
+            </Panel>
           </>
         ) : null}
 
@@ -693,6 +878,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
+  },
+  hourRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    paddingRight: spacing.md,
+  },
+  hourChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
   },
   switch: {
     width: 56,

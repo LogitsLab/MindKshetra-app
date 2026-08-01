@@ -47,6 +47,21 @@ the original list assumed the app was correct and only needed configuration.
 - [ ] Bearer auth smoke-test: signed-in favorites from device
 - [ ] Madhav reply renders progressively, not all at once
 
+## Push
+
+- [ ] **APNs + FCM credentials in EAS** before any push-capable release. Run
+      `eas credentials` (or answer yes when EAS Build first prompts) so Apple Push
+      and Firebase Cloud Messaging V1 are attached to the project. Without them,
+      token registration compiles but remote delivery fails.
+- [ ] **Physical device + dev-backend / production build required** to exercise
+      end-to-end push. Simulators and emulators cannot obtain a real Expo push
+      token; registration no-ops there.
+- [ ] **Expo Go limitations.** Remote push is unreliable or unavailable in Expo
+      Go (especially Android). Use a development build (`eas build --profile
+      development` or `npx expo run:[ios|android]`) when verifying
+      `registerPush` + `/api/push/register`. Denied permissions and Expo Go gaps
+      are intentional soft no-ops — the app must still launch and sign in.
+
 Full review and rationale:
 `~/.gstack/projects/LogitsLab-MindKshetra-app/main-launch-plan-20260727-125750.md`
 Deferred scope: [`TODOS.md`](../TODOS.md)

@@ -18,7 +18,8 @@
       "bundleIdentifier": "app.mindkshetra.mobile",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserNotificationsUsageDescription": "MindKshetra sends gentle reminders for your daily verse and practice streak."
       }
     },
     "android": {
@@ -30,7 +31,8 @@
       },
       "package": "app.mindkshetra.mobile",
       "predictiveBackGestureEnabled": false,
-      "softwareKeyboardLayoutMode": "resize"
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": ["POST_NOTIFICATIONS"]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -46,6 +48,15 @@
         {
           "backgroundColor": "#07090f",
           "image": "./assets/splash-icon.png"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#C9A227",
+          "defaultChannel": "daily-verse",
+          "sounds": [],
+          "enableBackgroundRemoteNotifications": false
         }
       ]
     ],

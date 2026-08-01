@@ -86,6 +86,9 @@ export const userApi = {
   preferences: () =>
     apiFetch<{
       votdEmailEnabled?: boolean;
+      notifDailyVerse?: boolean;
+      notifDailyVerseHour?: number;
+      notifStreakReminder?: boolean;
       displayName?: string;
       email?: string | null;
       [key: string]: unknown;
@@ -93,6 +96,9 @@ export const userApi = {
   updatePreferences: (body: Record<string, unknown>) =>
     apiFetch<{
       votdEmailEnabled?: boolean;
+      notifDailyVerse?: boolean;
+      notifDailyVerseHour?: number;
+      notifStreakReminder?: boolean;
       [key: string]: unknown;
     }>("/api/account/preferences", {
       method: "PATCH",
@@ -132,6 +138,19 @@ export const eventsApi = {
       method: "POST",
       body: JSON.stringify(props ? { name, props } : { name }),
     }).catch(() => ({ ok: false })),
+};
+
+export const pushApi = {
+  register: (body: { token: string; platform: "ios" | "android" }) =>
+    apiFetch<{ ok: boolean }>("/api/push/register", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  disable: (body: { token: string }) =>
+    apiFetch<{ ok: boolean }>("/api/push/register", {
+      method: "DELETE",
+      body: JSON.stringify(body),
+    }),
 };
 
 export const progressApi = {

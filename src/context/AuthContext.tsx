@@ -19,6 +19,10 @@ import { getAuthCallbackRedirect } from "@/auth/redirect";
 import { shouldMerge } from "@/auth/should-merge";
 import { chatApi, progressApi, sadhanaApi, userApi } from "@/api/endpoints";
 import {
+  registerPush,
+  unregisterPush,
+} from "@/notifications/registerPush";
+import {
   clearSadhanaLog,
   getChatSessionId,
   getGuestProgress,
@@ -265,6 +269,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, [user]);
 
+  // Best-effort Expo push token registration whenever a session exists
+  // (including anonymous — the server re-owns the token on upgrade).
+  useEffect(() => {
+    if (!session) return;
+    void registerPush();
+  }, [session]);
+
   const signInAnonymously = useCallback(async () => {
     if (!supabaseConfigured) return;
     const { error } = await supabase.auth.signInAnonymously();
@@ -399,6 +410,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!supabaseConfigured) return;
+    await unregisterPush();
     await supabase.auth.signOut();
   }, []);
 
