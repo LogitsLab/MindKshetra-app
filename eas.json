@@ -14,7 +14,7 @@
     "dev-backend": {
       "extends": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://dev-mind.logitslab.com",
+        "EXPO_PUBLIC_API_URL": "https://mind-dev.logitslab.com",
         "EXPO_PUBLIC_SUPABASE_URL": "https://xtadssxgwskyobxmhnxa.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_KBNmCiZpJC6Sqd0-9XF4Lg_qgrJoOz-"
       }
