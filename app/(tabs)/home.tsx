@@ -26,6 +26,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useVotd } from "@/hooks/useVotd";
 import { usePanchang } from "@/hooks/usePanchang";
+import { useMeditationProgress } from "@/hooks/useMeditationProgress";
 import { images, moodAccent } from "@/theme/assets";
 import { motion, radii, spacing } from "@/theme/tokens";
 
@@ -38,6 +39,7 @@ export default function HomeScreen() {
   const [streak, setStreak] = useState(0);
   const [sadhanaDone, setSadhanaDone] = useState(false);
   const { votd, nakshatra: votdNakshatra } = useVotd();
+  const med = useMeditationProgress();
   const { panchang } = usePanchang();
 
   const day = Math.floor(Date.now() / 86400000);
@@ -123,7 +125,7 @@ export default function HomeScreen() {
     {
       index: "03",
       title: t("homeMeditationTitle"),
-      body: lang === "hi" ? "सात दिन का पाठ्यक्रम" : "7-day course",
+      body: lang === "hi" ? "४५ दिन का पाठ्यक्रम" : "45-day course",
       image: images.pathMeditation,
       mark: "meditation" as const,
       href: "/meditation" as const,
@@ -354,6 +356,35 @@ export default function HomeScreen() {
             </Panel>
           </Pressable>
         </Rise>
+
+        {!med.loading ? (
+          <Rise delay={motion.staggerMs * 3.5} style={{ marginTop: spacing.sm }}>
+            <Pressable
+              onPress={() =>
+                router.push(
+                  `/meditation/${Math.min(45, Math.max(1, med.currentDay))}`
+                )
+              }
+            >
+              <Panel>
+                <Text variant="eyebrow" color={colors.brassSoft}>
+                  {t("medEyebrow")}
+                </Text>
+                <Text
+                  variant="title"
+                  style={{ marginTop: spacing.xs, fontSize: 18 }}
+                >
+                  {med.completedDays.length === 0
+                    ? t("medHomeStart")
+                    : t("medHomeContinue").replace(
+                        "{n}",
+                        String(Math.min(45, Math.max(1, med.currentDay)))
+                      )}
+                </Text>
+              </Panel>
+            </Pressable>
+          </Rise>
+        ) : null}
 
         {/* Practice entries — lifestyle grid */}
         <Rise delay={motion.staggerMs * 4} style={{ marginTop: spacing.md }}>

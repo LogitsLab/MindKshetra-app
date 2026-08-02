@@ -206,7 +206,7 @@ export const pathsApi = {
 };
 
 export const meditationApi = {
-  progress: (program = "foundation-7") =>
+  progress: (program = "sitting-course") =>
     apiFetch<{
       currentDay: number;
       completedDays: number[];
@@ -225,6 +225,7 @@ export const meditationApi = {
       ok: boolean;
       progress: { currentDay: number; completedDays: number[] };
       streak: { current: number; longest: number };
+      milestone?: 7 | 21 | 45 | null;
     }>("/api/meditation/complete", {
       method: "POST",
       body: JSON.stringify(body),
@@ -274,6 +275,44 @@ export const progressApi = {
 export const panchangApi = {
   /** No args in v1 — the server defaults to the shared New Delhi reference sky. */
   today: () => apiFetch<PanchangDay>("/api/panchang"),
+  /** Month calendar — `month` as YYYY-MM. Defaults to New Delhi sky. */
+  calendar: (month: string) =>
+    apiFetch<{
+      month: string;
+      ianaTz: string;
+      days: Array<{
+        date: string;
+        tithi: string;
+        nakshatra: string;
+        vaar: string;
+        isEkadashi?: boolean;
+        isPurnima?: boolean;
+        isAmavasya?: boolean;
+      }>;
+      observances: Array<{ date: string; name: string; kind?: string }>;
+    }>(`/api/panchang/calendar?month=${encodeURIComponent(month)}`),
+};
+
+export const profileApi = {
+  get: () =>
+    apiFetch<{
+      profile: {
+        handle: string;
+        display_name: string | null;
+        bio: string | null;
+        is_public: boolean;
+      } | null;
+    }>("/api/profile"),
+  save: (body: {
+    handle: string;
+    displayName?: string;
+    bio?: string;
+    isPublic?: boolean;
+  }) =>
+    apiFetch<{ profile: unknown }>("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 };
 
 export const sadhanaApi = {
