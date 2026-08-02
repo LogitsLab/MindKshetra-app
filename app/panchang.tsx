@@ -1,5 +1,12 @@
 import React from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
@@ -75,6 +82,7 @@ function Row({
 }
 
 export default function PanchangScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const { panchang, loading, error } = usePanchang();
@@ -160,6 +168,12 @@ export default function PanchangScreen() {
         <Text variant="muted" style={{ marginTop: spacing.lg }}>
           {t("panchangFootnote")}
         </Text>
+        <Pressable
+          onPress={() => router.push("/panchang-calendar")}
+          style={{ marginTop: spacing.md }}
+        >
+          <Text color={colors.brassSoft}>{t("panchangCalendarLink")} →</Text>
+        </Pressable>
       </ScrollView>
     </Screen>
   );

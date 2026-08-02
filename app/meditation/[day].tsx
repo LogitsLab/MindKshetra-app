@@ -7,9 +7,9 @@ import { MeditationPlayer } from "@/components/MeditationPlayer";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
-  foundationProgram,
-  getFoundationDay,
+  getSittingDay,
   isDayUnlocked,
+  sittingProgram,
 } from "@/data/meditation";
 import { useMeditationProgress } from "@/hooks/useMeditationProgress";
 import { spacing } from "@/theme/tokens";
@@ -21,7 +21,7 @@ export default function MeditationDayScreen() {
   const { t } = useLanguage();
   const progress = useMeditationProgress();
   const dayNumber = Number(day);
-  const session = getFoundationDay(dayNumber);
+  const session = getSittingDay(dayNumber);
 
   if (!session) {
     return (
@@ -39,17 +39,11 @@ export default function MeditationDayScreen() {
     );
   }
 
-  /*
-   * The chain was enforced only by disabling the hub's list item, so opening
-   * /meditation/7 directly — a deep link, a notification, a back-stack entry —
-   * played day 7 on day one. The gate belongs here, where the session is
-   * actually handed to the player.
-   */
   if (
     !isDayUnlocked(
       dayNumber,
       progress.completedDays,
-      foundationProgram.days_count
+      sittingProgram.days_count
     )
   ) {
     return (
@@ -81,5 +75,10 @@ export default function MeditationDayScreen() {
     );
   }
 
-  return <MeditationPlayer session={session} />;
+  return (
+    <MeditationPlayer
+      session={session}
+      daysCount={sittingProgram.days_count}
+    />
+  );
 }

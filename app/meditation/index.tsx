@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
@@ -14,8 +14,10 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
   dailySitsCatalog,
-  foundationProgram,
   isDayUnlocked,
+  sittingProgram,
+  sittingSectionForDay,
+  type MeditationSession,
 } from "@/data/meditation";
 import {
   GUEST_QUEUE_KEY,
@@ -58,10 +60,31 @@ export default function MeditationHubScreen() {
     })();
   }, [isSignedIn, reload]);
 
-  const program = foundationProgram;
-  // The server's cursor, not `last completed + 1` — the two disagree whenever
-  // days were completed out of order or a merge grew the past.
-  const continueDay = currentDay;
+  const program = sittingProgram;
+  const continueDay = Math.min(program.days_count, Math.max(1, currentDay));
+
+  const sections = useMemo(() => {
+    const groups: Array<{
+      id: "foundation" | "habit" | "deepening";
+      days: MeditationSession[];
+    }> = [];
+    for (const day of program.days) {
+      const sec = sittingSectionForDay(day.day_number);
+      const last = groups[groups.length - 1];
+      if (!last || last.id !== sec.id) {
+        groups.push({ id: sec.id, days: [day] });
+      } else {
+        last.days.push(day);
+      }
+    }
+    return groups;
+  }, [program.days]);
+
+  function sectionLabel(id: "foundation" | "habit" | "deepening") {
+    if (id === "foundation") return t("medSectionFoundation");
+    if (id === "habit") return t("medSectionHabit");
+    return t("medSectionDeepening");
+  }
 
   return (
     <Screen atmosphere="soft" padded>
@@ -102,45 +125,52 @@ export default function MeditationHubScreen() {
           </Pressable>
         </Rise>
 
-        <View style={{ marginTop: spacing.xl, gap: spacing.sm }}>
-          {program.days.map((day) => {
-            const done = completedDays.includes(day.day_number);
-            const unlocked = isDayUnlocked(
-              day.day_number,
-              completedDays,
-              program.days_count
-            );
-            const title = lang === "hi" ? day.title_hi : day.title_en;
-            return (
-              <Rise key={day.id}>
-                <Pressable
-                  disabled={!unlocked}
-                  onPress={() => router.push(`/meditation/${day.day_number}`)}
-                >
-                  <Panel style={{ opacity: unlocked ? 1 : 0.55 }}>
-                    <Text variant="eyebrow" color={colors.brassSoft}>
-                      Day {day.day_number} · {day.duration_minutes}{" "}
-                      {t("sadhanaMin")}
-                    </Text>
-                    <Text
-                      variant="title"
-                      style={{ marginTop: spacing.xs, fontSize: 18 }}
-                    >
-                      {title}
-                    </Text>
-                    <Text variant="muted" style={{ marginTop: spacing.xs }}>
-                      {done
-                        ? t("medDayComplete")
-                        : unlocked
-                          ? t("medDayAvailable")
-                          : t("medDayLocked")}
-                    </Text>
-                  </Panel>
-                </Pressable>
-              </Rise>
-            );
-          })}
-        </View>
+        {sections.map((section) => (
+          <View key={section.id} style={{ marginTop: spacing.xl, gap: spacing.sm }}>
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {sectionLabel(section.id)}
+            </Text>
+            {section.days.map((day) => {
+              const done = completedDays.includes(day.day_number);
+              const unlocked = isDayUnlocked(
+                day.day_number,
+                completedDays,
+                program.days_count
+              );
+              const title = lang === "hi" ? day.title_hi : day.title_en;
+              return (
+                <Rise key={day.id}>
+                  <Pressable
+                    disabled={!unlocked}
+                    onPress={() =>
+                      router.push(`/meditation/${day.day_number}`)
+                    }
+                  >
+                    <Panel style={{ opacity: unlocked ? 1 : 0.55 }}>
+                      <Text variant="eyebrow" color={colors.brassSoft}>
+                        Day {day.day_number} · {day.duration_minutes}{" "}
+                        {t("sadhanaMin")}
+                      </Text>
+                      <Text
+                        variant="title"
+                        style={{ marginTop: spacing.xs, fontSize: 18 }}
+                      >
+                        {title}
+                      </Text>
+                      <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                        {done
+                          ? t("medDayComplete")
+                          : unlocked
+                            ? t("medDayAvailable")
+                            : t("medDayLocked")}
+                      </Text>
+                    </Panel>
+                  </Pressable>
+                </Rise>
+              );
+            })}
+          </View>
+        ))}
 
         <Rise style={{ marginTop: spacing.xl }}>
           <Text variant="title" style={{ fontSize: 22 }}>
@@ -175,8 +205,14 @@ export default function MeditationHubScreen() {
         </Rise>
 
         <Pressable
-          onPress={() => void Linking.openURL(SUPPORT_URL)}
+          onPress={() => router.push("/paths")}
           style={{ marginTop: spacing.xl }}
+        >
+          <Text color={colors.brassSoft}>{t("medBridgePaths")} →</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => void Linking.openURL(SUPPORT_URL)}
+          style={{ marginTop: spacing.md }}
         >
           <Text color={colors.brassSoft}>{t("medBridgeSupport")} →</Text>
         </Pressable>

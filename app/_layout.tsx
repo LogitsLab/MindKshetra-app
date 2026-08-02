@@ -81,6 +81,10 @@ function RootNavigator() {
         <Stack.Screen name="verse-of-the-day" options={{ title: "Verse of the Day" }} />
         <Stack.Screen name="japa" options={{ title: "Japa" }} />
         <Stack.Screen name="panchang" options={{ title: "Panchang" }} />
+        <Stack.Screen
+          name="panchang-calendar"
+          options={{ title: "Month calendar" }}
+        />
         <Stack.Screen name="sadhana" options={{ title: "Sādhana" }} />
         <Stack.Screen
           name="community"

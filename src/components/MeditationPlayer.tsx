@@ -20,10 +20,10 @@ import { meditationApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
-import { sessionTranscript, type MeditationSession } from "@/data/meditation";
+import { sessionTranscript, type MeditationSession, type SittingMilestone } from "@/data/meditation";
 import {
   GUEST_QUEUE_KEY,
-  GUEST_RUN_KEY,
+  markSittingGuestDay,
 } from "@/hooks/useMeditationProgress";
 import { uuidv4 } from "@/utils/uuid";
 import { radii, spacing } from "@/theme/tokens";
@@ -38,20 +38,6 @@ function formatClock(sec: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-async function markGuestDay(day: number) {
-  if (day < 1) return;
-  const raw = await AsyncStorage.getItem(GUEST_RUN_KEY);
-  const parsed = raw ? JSON.parse(raw) : {};
-  const prior = Array.isArray(parsed.completedDays) ? parsed.completedDays : [];
-  const next = Array.from(new Set([...prior, day])).sort(
-    (a: number, b: number) => a - b
-  );
-  await AsyncStorage.setItem(
-    GUEST_RUN_KEY,
-    JSON.stringify({ completedDays: next })
-  );
-}
-
 async function queueGuest(row: Record<string, unknown>) {
   const raw = await AsyncStorage.getItem(GUEST_QUEUE_KEY);
   const list = raw ? JSON.parse(raw) : [];
@@ -59,7 +45,13 @@ async function queueGuest(row: Record<string, unknown>) {
   await AsyncStorage.setItem(GUEST_QUEUE_KEY, JSON.stringify(next));
 }
 
-export function MeditationPlayer({ session }: { session: MeditationSession }) {
+export function MeditationPlayer({
+  session,
+  daysCount = 45,
+}: {
+  session: MeditationSession;
+  daysCount?: number;
+}) {
   useKeepAwake();
   const router = useRouter();
   const { colors } = useTheme();
@@ -73,9 +65,7 @@ export function MeditationPlayer({ session }: { session: MeditationSession }) {
   const [showTranscript, setShowTranscript] = useState(false);
   const [saving, setSaving] = useState(false);
   const [guestSaved, setGuestSaved] = useState(false);
-  // Matches the web player's three speeds. A guided sit read at one fixed rate
-  // is too fast for some and too slow for others, and the phase auto-advances
-  // when the voice ends — so the rate sets the pace of the whole sit.
+  const [milestone, setMilestone] = useState<SittingMilestone | null>(null);
   const [rate, setRate] = useState(1);
   const [speaking, setSpeaking] = useState(false);
   const satSecRef = useRef(0);
@@ -85,6 +75,10 @@ export function MeditationPlayer({ session }: { session: MeditationSession }) {
   const phase = session.phases[phaseIdx];
   const title = lang === "hi" ? session.title_hi : session.title_en;
   const theme = lang === "hi" ? session.theme_hi : session.theme_en;
+  const nextDay =
+    session.tier !== "daily" && session.day_number < daysCount
+      ? session.day_number + 1
+      : null;
 
   useEffect(() => {
     return () => {
@@ -195,14 +189,22 @@ export function MeditationPlayer({ session }: { session: MeditationSession }) {
     };
     try {
       if (isSignedIn) {
-        await meditationApi.complete(body);
+        const res = await meditationApi.complete(body);
+        setMilestone(res.milestone ?? null);
       } else {
-        await markGuestDay(session.day_number);
+        await markSittingGuestDay(session.day_number, daysCount);
         await queueGuest(body);
+        if (
+          session.day_number === 7 ||
+          session.day_number === 21 ||
+          session.day_number === 45
+        ) {
+          setMilestone(session.day_number as SittingMilestone);
+        }
         setGuestSaved(true);
       }
     } catch {
-      await markGuestDay(session.day_number);
+      await markSittingGuestDay(session.day_number, daysCount);
       await queueGuest(body);
       setGuestSaved(true);
     }
@@ -414,10 +416,16 @@ export function MeditationPlayer({ session }: { session: MeditationSession }) {
         {stage === "done" ? (
           <View style={{ marginTop: spacing.xl }}>
             <Text variant="title" style={{ fontSize: 22 }}>
-              {t("medDoneTitle")}
+              {milestone ? t("medMilestoneTitle") : t("medDoneTitle")}
             </Text>
             <Text variant="soft" style={{ marginTop: spacing.sm }}>
-              {t("medDoneBody")}
+              {milestone === 7
+                ? t("medMilestone7")
+                : milestone === 21
+                  ? t("medMilestone21")
+                  : milestone === 45
+                    ? t("medMilestone45")
+                    : t("medDoneBody")}
             </Text>
             {guestSaved ? (
               <Text
@@ -428,17 +436,34 @@ export function MeditationPlayer({ session }: { session: MeditationSession }) {
                 {t("medGuestSaved")}
               </Text>
             ) : null}
-            <Pressable
-              onPress={() => router.push("/meditation")}
-              style={{ marginTop: spacing.lg }}
-            >
-              <Text color={colors.brassSoft}>{t("medBack")} →</Text>
-            </Pressable>
+            {nextDay && milestone !== 45 ? (
+              <Pressable
+                onPress={() => router.push(`/meditation/${nextDay}`)}
+                style={{ marginTop: spacing.lg }}
+              >
+                <Text color={colors.brassSoft}>
+                  {t("medContinue").replace("{n}", String(nextDay))} →
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => router.push("/meditation")}
+                style={{ marginTop: spacing.lg }}
+              >
+                <Text color={colors.brassSoft}>{t("medBack")} →</Text>
+              </Pressable>
+            )}
             <Pressable
               onPress={() => router.push("/sadhana")}
               style={{ marginTop: spacing.sm }}
             >
               <Text color={colors.brassSoft}>{t("medBridgeSadhana")} →</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/paths")}
+              style={{ marginTop: spacing.sm }}
+            >
+              <Text color={colors.brassSoft}>{t("medBridgePaths")} →</Text>
             </Pressable>
             <Pressable
               onPress={() => void Linking.openURL(SUPPORT_URL)}

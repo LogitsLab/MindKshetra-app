@@ -16,7 +16,7 @@ import { Panel } from "@/components/Panel";
 import { BrandMark } from "@/components/BrandMark";
 import { BRAND_NAME } from "@/components/BrandWordmark";
 import { PracticeMarks } from "@/components/PracticeMarks";
-import { userApi, votdApi } from "@/api/endpoints";
+import { userApi, votdApi, profileApi } from "@/api/endpoints";
 import { clearUserLocalState } from "@/storage/local";
 import { useAuth } from "@/context/AuthContext";
 import { useOnboarding } from "@/context/OnboardingContext";
@@ -66,6 +66,32 @@ export default function AccountScreen() {
   const [votdEmailStatus, setVotdEmailStatus] = useState<
     "idle" | "sending" | "sent"
   >("idle");
+  const [handle, setHandle] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [profileBusy, setProfileBusy] = useState(false);
+
+  useEffect(() => {
+    if (!isSignedIn || isAnonymous) {
+      setHandle("");
+      setDisplayName("");
+      setBio("");
+      return;
+    }
+    let alive = true;
+    void profileApi
+      .get()
+      .then((data) => {
+        if (!alive || !data.profile) return;
+        setHandle(data.profile.handle ?? "");
+        setDisplayName(data.profile.display_name ?? "");
+        setBio(data.profile.bio ?? "");
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [isSignedIn, isAnonymous]);
 
   useEffect(() => {
     const authError = Array.isArray(params.auth_error)
@@ -203,6 +229,23 @@ export default function AccountScreen() {
     }
   }
 
+  async function onSaveProfile() {
+    setProfileBusy(true);
+    setMessage(null);
+    try {
+      await profileApi.save({
+        handle: handle.trim().toLowerCase(),
+        displayName: displayName.trim(),
+        bio: bio.trim(),
+      });
+      setMessage(t("profileSaved"));
+    } catch (e) {
+      setMessage((e as Error).message);
+    } finally {
+      setProfileBusy(false);
+    }
+  }
+
   if (loading) {
     return (
       <Screen>
@@ -258,6 +301,75 @@ export default function AccountScreen() {
             <Text variant="title" style={{ marginTop: spacing.xs }}>
               {streak} {t("streakDays")}
             </Text>
+          </Panel>
+        ) : null}
+
+        {isSignedIn && !isAnonymous ? (
+          <Panel style={{ marginTop: spacing.lg }}>
+            <Text variant="eyebrow">{t("profileSectionTitle")}</Text>
+            <Text variant="muted" style={{ marginTop: spacing.xs }}>
+              {t("profileSectionBody")}
+            </Text>
+            <Text variant="muted" style={{ marginTop: spacing.md }}>
+              {t("profileHandle")}
+            </Text>
+            <TextInput
+              value={handle}
+              onChangeText={setHandle}
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="your_name"
+              placeholderTextColor={colors.textMuted}
+              style={[
+                styles.input,
+                {
+                  borderColor: colors.line,
+                  color: colors.text,
+                  marginTop: spacing.xs,
+                },
+              ]}
+            />
+            <Text variant="muted" style={{ marginTop: spacing.md }}>
+              {t("profileDisplayName")}
+            </Text>
+            <TextInput
+              value={displayName}
+              onChangeText={setDisplayName}
+              placeholderTextColor={colors.textMuted}
+              style={[
+                styles.input,
+                {
+                  borderColor: colors.line,
+                  color: colors.text,
+                  marginTop: spacing.xs,
+                },
+              ]}
+            />
+            <Text variant="muted" style={{ marginTop: spacing.md }}>
+              {t("profileBio")}
+            </Text>
+            <TextInput
+              value={bio}
+              onChangeText={setBio}
+              multiline
+              placeholderTextColor={colors.textMuted}
+              style={[
+                styles.input,
+                {
+                  borderColor: colors.line,
+                  color: colors.text,
+                  marginTop: spacing.xs,
+                  minHeight: 72,
+                },
+              ]}
+            />
+            <View style={{ marginTop: spacing.md }}>
+              <Button
+                label={profileBusy ? t("medSaving") : t("profileSave")}
+                onPress={() => void onSaveProfile()}
+                disabled={profileBusy || handle.trim().length < 3}
+              />
+            </View>
           </Panel>
         ) : null}
 

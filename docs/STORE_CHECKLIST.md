@@ -24,6 +24,8 @@ the original list assumed the app was correct and only needed configuration.
       key (iOS) and FCM (Android), then a rebuild. See web
       `docs/runbooks/push-dispatch.md` § APNs/FCM. Verify Account prefs against
       dawn / streak kinds on a TestFlight / internal build. — **[new]**
+      Sitting-course + VOTD streak prefs are already wired client-side; this is
+      the only blocker for practice nudges.
 - [ ] **Run `eas init`** to write a real `extra.eas.projectId`. The previous value
       (`"mindkshetra-mobile"`) was a slug, not a UUID, and has been removed — `eas build`
       would have failed on it. — **[new]**
