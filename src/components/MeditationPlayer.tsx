@@ -7,8 +7,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-import * as Speech from "expo-speech";
 import * as Linking from "expo-linking";
+import { playOrSpeak, stopNarration } from "@/audio/narration";
 import { useKeepAwake } from "expo-keep-awake";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Screen } from "@/components/Screen";
@@ -82,12 +82,12 @@ export function MeditationPlayer({
 
   useEffect(() => {
     return () => {
-      Speech.stop();
+      stopNarration();
     };
   }, []);
 
   const advancePhase = () => {
-    Speech.stop();
+    stopNarration();
     setSilenceLeft(null);
     const next = phaseIdxRef.current + 1;
     if (next >= session.phases.length) {
@@ -120,8 +120,8 @@ export function MeditationPlayer({
 
     autoAdvance.current = true;
     const text = lang === "hi" ? current.text_hi : current.text_en;
-    Speech.speak(text, {
-      language: lang === "hi" ? "hi-IN" : "en-IN",
+    void playOrSpeak(text, {
+      lang,
       rate,
       onStart: () => setSpeaking(true),
       onDone: () => {
@@ -134,7 +134,7 @@ export function MeditationPlayer({
     return () => {
       autoAdvance.current = false;
       setSpeaking(false);
-      Speech.stop();
+      stopNarration();
     };
     // Changing the rate restarts the current phase at the new speed, which is
     // the only way expo-speech can apply it.
@@ -145,9 +145,8 @@ export function MeditationPlayer({
     const current = session.phases[phaseIdxRef.current];
     if (!current || current.type !== "speak") return;
     autoAdvance.current = true;
-    Speech.stop();
-    Speech.speak(lang === "hi" ? current.text_hi : current.text_en, {
-      language: lang === "hi" ? "hi-IN" : "en-IN",
+    void playOrSpeak(lang === "hi" ? current.text_hi : current.text_en, {
+      lang,
       rate,
       onStart: () => setSpeaking(true),
       onDone: () => {
@@ -162,7 +161,7 @@ export function MeditationPlayer({
   /** Silence the voice but hold the phase — reading the transcript instead. */
   const stopVoice = () => {
     autoAdvance.current = false;
-    Speech.stop();
+    stopNarration();
     setSpeaking(false);
   };
 
@@ -337,7 +336,7 @@ export function MeditationPlayer({
                 <Pressable
                   onPress={() => {
                     autoAdvance.current = false;
-                    Speech.stop();
+                    stopNarration();
                     advancePhase();
                   }}
                   style={{ marginTop: spacing.sm }}
