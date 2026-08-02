@@ -179,7 +179,8 @@ export type PathMarkKind =
   | "mood"
   | "madhav"
   | "astrology"
-  | "meditation";
+  | "meditation"
+  | "paths";
 
 /**
  * Path card for the home 2×2 grid. Landscape web photos use cover;

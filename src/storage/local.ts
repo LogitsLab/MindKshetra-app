@@ -56,7 +56,9 @@ export async function setStoredTextScale(scale: "sm" | "md" | "lg"): Promise<voi
 }
 
 /** Bump when onboarding content/flow changes to re-show once for returning users. */
-const ONBOARDING_VERSION = 4;
+// v5: six-path overview (meditation, themed paths), sādhana framing,
+// auth-aware gate (signed-in users skip onboarding entirely).
+const ONBOARDING_VERSION = 5;
 
 export async function getOnboardingComplete(): Promise<boolean> {
   const storedVersion = await AsyncStorage.getItem(KEYS.onboardingVersion);

@@ -144,6 +144,14 @@ export default function HomeScreen() {
       mark: "astrology" as const,
       href: "/(tabs)/astrology" as const,
     },
+    {
+      index: "06",
+      title: t("homeBlockPathsTitle"),
+      body: lang === "hi" ? "सात दिन प्रत्येक" : "7 days each",
+      image: images.pathPaths,
+      mark: "paths" as const,
+      href: "/paths" as const,
+    },
   ];
 
   return (
