@@ -27,11 +27,18 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     let alive = true;
-    getOnboardingComplete().then((done) => {
-      if (!alive) return;
-      setComplete(done);
-      setReady(true);
-    });
+    getOnboardingComplete()
+      .then((done) => {
+        if (!alive) return;
+        setComplete(done);
+      })
+      .catch(() => {
+        // Unreadable storage counts as "not onboarded" — never block the app.
+        if (alive) setComplete(false);
+      })
+      .finally(() => {
+        if (alive) setReady(true);
+      });
     return () => {
       alive = false;
     };
