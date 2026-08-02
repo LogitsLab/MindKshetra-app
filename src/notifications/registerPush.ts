@@ -17,6 +17,20 @@ function projectId(): string | undefined {
 }
 
 /**
+ * FCM is wired through app.json → android.googleServicesFile. Without it,
+ * getExpoPushTokenAsync dies in native code ("Default FirebaseApp is not
+ * initialized") — a JS try/catch cannot contain it, and because registration
+ * fires whenever a session exists, Android crash-looped on every launch
+ * after the first sign-in.
+ */
+function androidFcmConfigured(): boolean {
+  const android = Constants.expoConfig?.android as
+    | { googleServicesFile?: string }
+    | undefined;
+  return Boolean(android?.googleServicesFile);
+}
+
+/**
  * Best-effort Expo push registration. No-ops on web, simulators, denied
  * permissions, missing projectId, and Expo Go / credential gaps — callers
  * must never surface these as user-facing errors.
@@ -24,6 +38,10 @@ function projectId(): string | undefined {
 export async function registerPush(): Promise<string | null> {
   if (Platform.OS !== "ios" && Platform.OS !== "android") return null;
   if (!Device.isDevice) return null;
+  // Guard BEFORE any expo-notifications call: no FCM config means a native
+  // crash on Android, not a catchable rejection. Remove once
+  // google-services.json + the EAS FCM V1 key are in place.
+  if (Platform.OS === "android" && !androidFcmConfigured()) return null;
 
   try {
     const current = await Notifications.getPermissionsAsync();
