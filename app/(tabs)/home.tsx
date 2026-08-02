@@ -460,53 +460,27 @@ export default function HomeScreen() {
             {t("homePaths")}
           </Text>
           <View style={styles.pathGrid}>
-            <View style={styles.pathRow}>
-              <PathTile
-                index={paths[0].index}
-                title={paths[0].title}
-                body={paths[0].body}
-                image={paths[0].image}
-                mark={paths[0].mark}
-                onPress={() => router.push(paths[0].href)}
-              />
-              <PathTile
-                index={paths[1].index}
-                title={paths[1].title}
-                body={paths[1].body}
-                image={paths[1].image}
-                mark={paths[1].mark}
-                onPress={() => router.push(paths[1].href)}
-              />
-            </View>
-            <View style={styles.pathRow}>
-              <PathTile
-                index={paths[2].index}
-                title={paths[2].title}
-                body={paths[2].body}
-                image={paths[2].image}
-                mark={paths[2].mark}
-                onPress={() => router.push(paths[2].href)}
-              />
-              <PathTile
-                index={paths[3].index}
-                title={paths[3].title}
-                body={paths[3].body}
-                image={paths[3].image}
-                mark={paths[3].mark}
-                onPress={() => router.push(paths[3].href)}
-              />
-            </View>
-            <View style={styles.pathRow}>
-              <PathTile
-                index={paths[4].index}
-                title={paths[4].title}
-                body={paths[4].body}
-                image={paths[4].image}
-                mark={paths[4].mark}
-                onPress={() => router.push(paths[4].href)}
-                style={{ maxWidth: "48.5%" }}
-              />
-            </View>
+            {/* Rows of two, derived from the array — a hardcoded grid once
+                silently dropped the sixth path. */}
+            {Array.from(
+              { length: Math.ceil(paths.length / 2) },
+              (_, row) => paths.slice(row * 2, row * 2 + 2)
+            ).map((pair, row) => (
+              <View key={row} style={styles.pathRow}>
+                {pair.map((path) => (
+                  <PathTile
+                    key={path.index}
+                    index={path.index}
+                    title={path.title}
+                    body={path.body}
+                    image={path.image}
+                    mark={path.mark}
+                    onPress={() => router.push(path.href)}
+                    style={pair.length === 1 ? { maxWidth: "48.5%" } : undefined}
+                  />
+                ))}
+              </View>
+            ))}
           </View>
         </Rise>
 
