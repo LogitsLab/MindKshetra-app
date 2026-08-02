@@ -16,7 +16,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 
 /** Which sign-in is in flight, so only that control reports as busy. */
-export type AuthAction = "apple" | "google" | "email" | "guest";
+export type AuthAction = "google" | "email" | "guest";
 
 type Props = {
   configured: boolean;
@@ -27,10 +27,8 @@ type Props = {
   linkSent: boolean;
   emailCooldownSec: number;
   guestFailed: boolean;
-  appleAvailable: boolean;
   onEmailChange: (value: string) => void;
   onEmailOpen: () => void;
-  onApple: () => void;
   onGoogle: () => void;
   onEmailSubmit: () => void;
   onGuest: () => void;
@@ -46,10 +44,8 @@ export function OnboardingAuthStep({
   linkSent,
   emailCooldownSec,
   guestFailed,
-  appleAvailable,
   onEmailChange,
   onEmailOpen,
-  onApple,
   onGoogle,
   onEmailSubmit,
   onGuest,
@@ -106,18 +102,9 @@ export function OnboardingAuthStep({
         </Panel>
       ) : (
         <View style={styles.methods}>
-          {appleAvailable ? (
-            <Button
-              label={t("signInApple")}
-              loading={pending === "apple"}
-              disabled={blocked("apple")}
-              onPress={onApple}
-            />
-          ) : null}
-
           <Button
             label={t("signInGoogle")}
-            variant={appleAvailable ? "ghost" : "primary"}
+            variant="primary"
             loading={pending === "google"}
             disabled={blocked("google")}
             onPress={onGoogle}

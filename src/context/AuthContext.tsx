@@ -9,19 +9,31 @@ import React, {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import * as WebBrowser from "expo-web-browser";
-import * as AppleAuthentication from "expo-apple-authentication";
 import { makeRedirectUri } from "expo-auth-session";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
-import { Platform } from "react-native";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
 import { getAuthCallbackRedirect } from "@/auth/redirect";
 import { shouldMerge } from "@/auth/should-merge";
-import { chatApi, progressApi, userApi } from "@/api/endpoints";
 import {
+  chatApi,
+  journeysApi,
+  progressApi,
+  sadhanaApi,
+  userApi,
+} from "@/api/endpoints";
+import {
+  registerPush,
+  unregisterPush,
+} from "@/notifications/registerPush";
+import {
+  clearAllGuestJourneys,
+  clearSadhanaLog,
+  getAllGuestJourneys,
   getChatSessionId,
   getGuestProgress,
   getJournalDrafts,
+  getSadhanaLog,
   getTimezoneSynced,
   removeJournalDrafts,
   setTimezoneSynced,
@@ -98,8 +110,6 @@ type AuthContextValue = {
   signInAnonymously: () => Promise<void>;
   /** false means the person cancelled; callers must not treat that as done. */
   signInWithGoogle: () => Promise<boolean>;
-  /** false means the person cancelled; callers must not treat that as done. */
-  signInWithApple: () => Promise<boolean>;
   signInWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -118,6 +128,45 @@ async function mergeOnUpgrade() {
     if (guest.completed.length) await progressApi.merge(guest.completed);
   } catch {
     /* ignore */
+  }
+  // Practice sessions logged with no session replay through the idempotent
+  // merge endpoint (clientRef dedupes). The server caps one request at 200
+  // sessions, so replay in chunks and clear only after every chunk landed —
+  // a failed chunk keeps the whole log for the next upgrade rather than
+  // clearing history the server never received.
+  try {
+    const sessions = await getSadhanaLog();
+    if (sessions.length) {
+      let timezone: string | undefined;
+      try {
+        timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+      } catch {
+        timezone = undefined;
+      }
+      const CHUNK = 200;
+      for (let i = 0; i < sessions.length; i += CHUNK) {
+        await sadhanaApi.merge({
+          sessions: sessions.slice(i, i + CHUNK),
+          timezone,
+        });
+      }
+      await clearSadhanaLog();
+    }
+  } catch {
+    /* keep the log */
+  }
+  // Journey days marked while signed out. Until now mobile had no guest store
+  // at all, so a signed-out person's path progress simply vanished; these rows
+  // replay through the idempotent merge endpoint, which re-validates each day
+  // against the real journey. Clear only on success, like the sadhana log.
+  try {
+    const journeys = await getAllGuestJourneys();
+    if (journeys.length) {
+      await journeysApi.merge(journeys);
+      await clearAllGuestJourneys();
+    }
+  } catch {
+    /* keep the runs for the next upgrade */
   }
   // Reflections written while signed out wait as local drafts; failed sends
   // stay queued for the next upgrade.
@@ -237,6 +286,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, [user]);
 
+  // Best-effort Expo push token registration whenever a session exists
+  // (including anonymous — the server re-owns the token on upgrade).
+  useEffect(() => {
+    if (!session) return;
+    void registerPush();
+  }, [session]);
+
   const signInAnonymously = useCallback(async () => {
     if (!supabaseConfigured) return;
     const { error } = await supabase.auth.signInAnonymously();
@@ -297,37 +353,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, [mergeForUser]);
 
-  /** Resolves false when the person backed out, true when a session started. */
-  const signInWithApple = useCallback(async () => {
-    if (!supabaseConfigured || Platform.OS !== "ios") return false;
-    let credential: AppleAuthentication.AppleAuthenticationCredential;
-    try {
-      credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-    } catch (e) {
-      // Dismissing the Apple sheet is a decision, not a failure. Surfacing it
-      // as an error message would blame the user for changing their mind.
-      if ((e as { code?: string }).code === "ERR_REQUEST_CANCELED") return false;
-      throw e;
-    }
-    if (!credential.identityToken) throw new Error("Apple Sign-In failed");
-    const { error } = await supabase.auth.signInWithIdToken({
-      provider: "apple",
-      token: credential.identityToken,
-    });
-    if (error) throw error;
-    // The SIGNED_IN listener also merges; mergeForUser dedupes by user id.
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData.session?.user) {
-      await mergeForUser(sessionData.session.user.id);
-    }
-    return true;
-  }, [mergeForUser]);
-
   const signInWithEmail = useCallback(async (email: string) => {
     if (!supabaseConfigured) return;
     const trimmed = email.trim();
@@ -371,6 +396,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!supabaseConfigured) return;
+    await unregisterPush();
     await supabase.auth.signOut();
   }, []);
 
@@ -385,7 +411,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       emailCooldownSec,
       signInAnonymously,
       signInWithGoogle,
-      signInWithApple,
       signInWithEmail,
       signOut,
     }),
@@ -396,7 +421,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       emailCooldownSec,
       signInAnonymously,
       signInWithGoogle,
-      signInWithApple,
       signInWithEmail,
       signOut,
     ]

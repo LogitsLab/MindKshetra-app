@@ -6,7 +6,7 @@ type UserLike = { id: string; is_anonymous?: boolean } | null | undefined;
  *
  * The listener previously read the prior user from a stale closure (always
  * null), so email magic-link upgrades — where the listener is the only hook —
- * never merged. Google/Apple flows call merge explicitly, which is why only
+ * never merged. The Google flow calls merge explicitly, which is why only
  * the magic-link path lost data.
  */
 export function shouldMerge(prevUser: UserLike, nextUser: UserLike): boolean {

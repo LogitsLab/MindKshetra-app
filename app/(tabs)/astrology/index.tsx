@@ -19,7 +19,7 @@ import type { AstrologyMember } from "@/types";
 export default function AstrologyHub() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const { isSignedIn } = useAuth();
   const [members, setMembers] = useState<AstrologyMember[]>([]);
   const [hubError, setHubError] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export default function AstrologyHub() {
 
         <View style={styles.hero}>
           <Image
-            source={images.pathExplore}
+            source={images.pathAstrology}
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
           />
@@ -107,6 +107,22 @@ export default function AstrologyHub() {
             </Pressable>
           ) : null}
         </View>
+
+        {members.length >= 2 ? (
+          <Pressable
+            onPress={() => router.push("/astrology/milan")}
+            style={{ marginTop: spacing.md }}
+          >
+            <Panel>
+              <Text variant="title" style={{ fontSize: 18 }}>
+                {t("milanTitle")}
+              </Text>
+              <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                {t("milanHubBody")}
+              </Text>
+            </Panel>
+          </Pressable>
+        ) : null}
 
         {members.length > 0 ? (
           <Panel style={{ marginTop: spacing.xl }}>

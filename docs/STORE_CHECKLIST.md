@@ -19,6 +19,11 @@ the original list assumed the app was correct and only needed configuration.
 
 ## Blocking — still to do
 
+- [ ] **EAS push credentials (APNs + FCM).** Code registers tokens via
+      `expo-notifications`; real-device delivery needs `eas credentials` push
+      key (iOS) and FCM (Android), then a rebuild. See web
+      `docs/runbooks/push-dispatch.md` § APNs/FCM. Verify Account prefs against
+      dawn / streak kinds on a TestFlight / internal build. — **[new]**
 - [ ] **Run `eas init`** to write a real `extra.eas.projectId`. The previous value
       (`"mindkshetra-mobile"`) was a slug, not a UUID, and has been removed — `eas build`
       would have failed on it. — **[new]**
@@ -29,8 +34,7 @@ the original list assumed the app was correct and only needed configuration.
       transitive `react-dom@19.2.8` requires `^19.2.8`. Adding any new dependency fails
       without `--legacy-peer-deps`. — **[new]**
 - [ ] `EXPO_PUBLIC_*` env set for production API + Supabase
-- [ ] Supabase Auth: Google, Apple, email redirect `mindkshetra://auth/callback`
-- [ ] Apple Sign-In capability on iOS bundle `app.mindkshetra.mobile`
+- [ ] Supabase Auth: Google, email redirect `mindkshetra://auth/callback`
 - [ ] Privacy policy URL live: `https://mind.logitslab.com/privacy`; link from Account screen
 - [ ] **Privacy nutrition label** declaring Supabase auth data collection. Required by
       App Store Connect and absent from the original list. — **[new]**
@@ -46,6 +50,21 @@ the original list assumed the app was correct and only needed configuration.
       Hindi and confirm the helpline banner appears **before** the model replies
 - [ ] Bearer auth smoke-test: signed-in favorites from device
 - [ ] Madhav reply renders progressively, not all at once
+
+## Push
+
+- [ ] **APNs + FCM credentials in EAS** before any push-capable release. Run
+      `eas credentials` (or answer yes when EAS Build first prompts) so Apple Push
+      and Firebase Cloud Messaging V1 are attached to the project. Without them,
+      token registration compiles but remote delivery fails.
+- [ ] **Physical device + dev-backend / production build required** to exercise
+      end-to-end push. Simulators and emulators cannot obtain a real Expo push
+      token; registration no-ops there.
+- [ ] **Expo Go limitations.** Remote push is unreliable or unavailable in Expo
+      Go (especially Android). Use a development build (`eas build --profile
+      development` or `npx expo run:[ios|android]`) when verifying
+      `registerPush` + `/api/push/register`. Denied permissions and Expo Go gaps
+      are intentional soft no-ops — the app must still launch and sign in.
 
 Full review and rationale:
 `~/.gstack/projects/LogitsLab-MindKshetra-app/main-launch-plan-20260727-125750.md`

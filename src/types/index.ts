@@ -72,3 +72,72 @@ export type Streak = {
   longest: number;
   last_active_date?: string | null;
 };
+
+export type SadhanaPractice = "flow" | "japa" | "sit" | "pranayama";
+
+/** One device-local practice session awaiting a signed-in merge. */
+export type SadhanaLogEntry = {
+  practice: SadhanaPractice;
+  /** Device-local calendar day, YYYY-MM-DD. */
+  occurredOn: string;
+  durationSec?: number;
+  count?: number;
+  /** uuid v4 — the server-side dedupe key; required for merge. */
+  clientRef: string;
+};
+
+export type PracticeStreak = {
+  practice: SadhanaPractice;
+  current: number;
+  longest: number;
+  lastDay?: string | null;
+};
+
+export type SadhanaStreak = {
+  current: number;
+  longest: number;
+  graceUsedToday?: boolean;
+};
+
+export type Koota = {
+  name: string;
+  score: number;
+  max: number;
+  note: string;
+};
+
+export type CompatibilityBand =
+  | "excellent"
+  | "good"
+  | "acceptable"
+  | "needs-discussion";
+
+export type CompatibilityResult = {
+  kootas: Koota[];
+  total: number;
+  max: number;
+  band: CompatibilityBand;
+  /** Always present — the count is a starting point, not a verdict. */
+  caveat: string;
+  nadiDosha: boolean;
+};
+
+/** Server daily panchang, computed at local sunrise for its location. */
+export type PanchangDay = {
+  tithi: string;
+  tithiIndex: number;
+  nakshatra: string;
+  pada: number;
+  yoga: string;
+  karana: string;
+  vaar: string;
+  date: string;
+  ianaTz: string;
+  sunrise: string | null;
+  sunset: string | null;
+  tithiEndsAt: string | null;
+  nakshatraEndsAt: string | null;
+  isEkadashi: boolean;
+  isPurnima: boolean;
+  isAmavasya: boolean;
+};

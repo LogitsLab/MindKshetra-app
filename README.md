@@ -9,25 +9,25 @@ Expo app for iOS and Android — the same Gita companion and Jyotish experience 
 - Explore verses, mood matching, favorites, journal
 - **Ask Madhav** (FAB → full-screen chat over the web API)
 - Astrology: members, incognito charts, dashas, predictions
-- Auth: anonymous, Google, email OTP, Apple (iOS)
+- Auth: anonymous, Google, email OTP
 
 ## Quick start
 
-Requires a recent **Expo Go** build matching the project SDK (see `package.json` / `app.json`).
+No credentials to hunt for — local dev needs no secrets. Requires **Node 20+** (`.nvmrc`) and a recent **Expo Go** build matching the project SDK (see `package.json` / `app.json`).
 
 ```bash
 cp .env.example .env
-# EXPO_PUBLIC_API_URL=https://mind.logitslab.com
-# EXPO_PUBLIC_SUPABASE_URL=…
-# EXPO_PUBLIC_SUPABASE_ANON_KEY=…
-
-npm install --legacy-peer-deps
+npm install
 npx expo start
 ```
 
 Scan the QR code, or press `i` / `a` / `w`.
 
-For local API work, point `EXPO_PUBLIC_API_URL` at your Next.js server (`http://localhost:3000` or your LAN IP).
+- `.env.example` ships working defaults: the dev API plus the matching **MindKshetra-dev** Supabase URL and publishable key — the same public pair already committed in `eas.json` (`dev-backend` profile). `EXPO_PUBLIC_*` values are embedded in the client bundle by design; none of them is a secret.
+- The app reads exactly three variables: `EXPO_PUBLIC_API_URL` (defaults to production in code), plus `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY`, which must be set for a dev launch (`src/auth/supabase.ts` fails loudly without them) and must belong to the same stack as the API URL.
+- Plain `npm install` works — the committed `.npmrc` already applies `legacy-peer-deps`.
+
+For local API work, point `EXPO_PUBLIC_API_URL` at your Next.js server from the [web repo](https://github.com/LogitsLab/MindKshetra) (`http://localhost:3000` or your LAN IP) and use that server's Supabase pair.
 
 ## Contributing
 

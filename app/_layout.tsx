@@ -10,7 +10,7 @@ import {
 import { Sora_400Regular, Sora_600SemiBold } from "@expo-google-fonts/sora";
 import * as SplashScreen from "expo-splash-screen";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
-import { LanguageProvider } from "@/context/LanguageContext";
+import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
 import { TextScaleProvider } from "@/context/TextScaleContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -32,6 +32,7 @@ export const unstable_settings = {
 
 function RootNavigator() {
   const { mode, colors } = useTheme();
+  const { t } = useLanguage();
   const { ready } = useOnboarding();
   const segments = useSegments();
   const onOnboarding = segments[0] === "onboarding";
@@ -78,6 +79,26 @@ function RootNavigator() {
         />
         <Stack.Screen name="sloka/[id]" options={{ title: "Verse" }} />
         <Stack.Screen name="verse-of-the-day" options={{ title: "Verse of the Day" }} />
+        <Stack.Screen name="japa" options={{ title: "Japa" }} />
+        <Stack.Screen name="panchang" options={{ title: "Panchang" }} />
+        <Stack.Screen name="sadhana" options={{ title: "Sādhana" }} />
+        <Stack.Screen
+          name="community"
+          options={{ title: t("homeBlockSanghaTitle") }}
+        />
+        <Stack.Screen name="paths/index" options={{ title: "Paths" }} />
+        <Stack.Screen name="paths/[id]" options={{ title: "Path" }} />
+        {/* Unregistered until now, so all three fell back to expo-router's
+            default header instead of the app's. */}
+        <Stack.Screen
+          name="meditation/index"
+          options={{ title: t("medEyebrow") }}
+        />
+        <Stack.Screen name="meditation/[day]" options={{ title: "Day" }} />
+        <Stack.Screen
+          name="meditation/daily/[id]"
+          options={{ title: t("medDailiesTitle") }}
+        />
         <Stack.Screen name="favorites" options={{ title: "Favorites" }} />
         <Stack.Screen
           name="account/index"
@@ -97,6 +118,7 @@ function RootNavigator() {
         <Stack.Screen name="astrology/members/index" options={{ title: "Members" }} />
         <Stack.Screen name="astrology/members/new" options={{ title: "Add member" }} />
         <Stack.Screen name="astrology/members/[id]" options={{ title: "Chart" }} />
+        <Stack.Screen name="astrology/milan" options={{ title: "Kundli Milan" }} />
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
         <Stack.Screen name="privacy" options={{ title: "Privacy" }} />
       </Stack>

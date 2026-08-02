@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   BackHandler,
   FlatList,
-  Platform,
   ScrollView,
   StyleSheet,
   View,
@@ -10,7 +9,6 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
-import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter, Redirect } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
@@ -54,7 +52,6 @@ export default function OnboardingScreen() {
     signInAnonymously,
     signInWithEmail,
     signInWithGoogle,
-    signInWithApple,
     emailCooldownSec,
   } = useAuth();
 
@@ -66,29 +63,12 @@ export default function OnboardingScreen() {
   const [pending, setPending] = useState<AuthAction | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [guestFailed, setGuestFailed] = useState(false);
-  const [appleAvailable, setAppleAvailable] = useState(false);
   const welcomeRef = useRef<FlatList>(null);
 
   const mainIndex = MAIN_STEPS.indexOf(mainStep);
   const flowStep = mainStep === "welcome" ? welcomeSub : mainIndex + 1;
   const onPoster = mainStep === "welcome" && welcomeSub === 0;
   const reading = useReadingVeil(!onPoster);
-
-  // Apple requires Sign in with Apple wherever a third-party sign-in is offered
-  // (App Store guideline 4.8). isAvailableAsync also covers iPads and iOS
-  // versions where the capability is absent.
-  useEffect(() => {
-    let alive = true;
-    if (Platform.OS !== "ios") return;
-    AppleAuthentication.isAvailableAsync()
-      .then((ok) => {
-        if (alive) setAppleAvailable(ok);
-      })
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   // The route sets gestureEnabled: false, so without this Android's back button
   // would try to pop the stack and leave the app rather than step back a screen.
@@ -272,10 +252,8 @@ export default function OnboardingScreen() {
               linkSent={linkSent}
               emailCooldownSec={emailCooldownSec}
               guestFailed={guestFailed}
-              appleAvailable={appleAvailable}
               onEmailChange={setEmail}
               onEmailOpen={() => setEmailOpen(true)}
-              onApple={() => void runAuth("apple", signInWithApple)}
               onGoogle={() => void runAuth("google", signInWithGoogle)}
               onEmailSubmit={() =>
                 void runAuth(

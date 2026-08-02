@@ -14,7 +14,7 @@ Use [Issues](https://github.com/LogitsLab/MindKshetra-app/issues) for:
 Search existing issues before opening a new one.
 
 ### Open a pull request
-1. Fork and branch from `main`
+1. Fork and branch from `dev`; target PRs at **`dev`** — never `main`. `main` is the release branch (store builds are cut from it)
 2. Keep PRs small and focused
 3. Match existing theme tokens and navigation patterns
 4. Run `npm run lint` before pushing
@@ -24,14 +24,17 @@ If your change needs a store release note, add or update `store/release-notes/<v
 
 ## Local development
 
+Node **20+** (`.nvmrc`). No secrets needed — `.env.example` ships working publishable defaults.
+
 ```bash
 cp .env.example .env
-# EXPO_PUBLIC_API_URL, EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY
-npm install --legacy-peer-deps
+npm install
 npx expo start
 ```
 
-The default API points at production web (`https://mind.logitslab.com`). Point `EXPO_PUBLIC_API_URL` at a local Next.js server when working on API + app together.
+Plain `npm install` is enough; the committed `.npmrc` already applies `legacy-peer-deps`.
+
+This repo is a thin client: the API lives in the web repo, [LogitsLab/MindKshetra](https://github.com/LogitsLab/MindKshetra). Point `EXPO_PUBLIC_API_URL` at a local Next.js server from that repo when working on API + app together (keep the Supabase pair matching that server's project).
 
 ## What not to commit
 
@@ -39,7 +42,7 @@ The default API points at production web (`https://mind.logitslab.com`). Point `
 - `.expo/`, `node_modules/`, generated `ios/` / `android/`
 - Internal agent or planning files (`.claude/`, `*.plan.md`)
 
-Maintainers set `EXPO_TOKEN` / Play submit secrets in GitHub Actions — contributors do not need them for ordinary PRs.
+Store builds go through **EAS** (`eas.json`), triggered by maintainers from `main`. Maintainers set `EXPO_TOKEN` / Play submit secrets in GitHub Actions — contributors do not need EAS or store credentials for local development or ordinary PRs.
 
 ## License
 

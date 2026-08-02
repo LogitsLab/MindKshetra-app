@@ -3,10 +3,11 @@ import { ScrollView, Linking, View } from "react-native";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
+import { siteUrl } from "@/api/client";
 import { useLanguage } from "@/context/LanguageContext";
 import { spacing } from "@/theme/tokens";
 
-const PRIVACY_URL = "https://mind.logitslab.com/privacy";
+const PRIVACY_URL = siteUrl("/privacy");
 
 export default function PrivacyScreen() {
   const { lang } = useLanguage();
@@ -22,6 +23,11 @@ export default function PrivacyScreen() {
           {lang === "hi"
             ? "MindKshetra आपके पठन, पसंदीदा, जर्नल, चैट और ज्योतिष विवरण को सेवा चलाने के लिए संसाधित करता है। हम व्यक्तिगत डेटा नहीं बेचते। वेब और मोबाइल एक ही खाते/बैकएंड का उपयोग करते हैं।"
             : "MindKshetra processes your reading progress, favorites, journal, chat, and astrology details to run the product. We do not sell personal data. Web and mobile share the same account and backend."}
+        </Text>
+        <Text variant="soft" style={{ marginTop: spacing.md }}>
+          {lang === "hi"
+            ? "हम कुछ सीमित प्रथम-पक्ष उत्पाद इवेंट (जैसे श्लोक पूर्ण, स्ट्रीक दर्ज) भी रिकॉर्ड करते हैं — बिना IP पते या यूज़र एजेंट के — केवल अभ्यास सुविधाओं को समझने और बेहतर बनाने के लिए। कोई तृतीय-पक्ष एनालिटिक्स नहीं, कोई विज्ञापन उपयोग नहीं।"
+            : "We also record a small, fixed set of first-party product events (like verse completed or streak recorded) without IP address or user agent, only to understand and improve the practice features. No third-party analytics, no advertising use."}
         </Text>
         <Text variant="soft" style={{ marginTop: spacing.md }}>
           {lang === "hi"

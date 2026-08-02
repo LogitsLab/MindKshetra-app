@@ -1,4 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { normalizeDays } from "@/data/journeys";
+import type { PanchangDay, SadhanaLogEntry } from "@/types";
+
+/**
+ * Per-journey guest progress: `mindkshetra-journey-<id>` → { completedDays }.
+ * One key per journey rather than one blob, matching the web's storage format
+ * so the two sides describe device-local progress the same way.
+ */
+const JOURNEY_KEY_PREFIX = "mindkshetra-journey-";
 
 const KEYS = {
   theme: "mindkshetra-theme",
@@ -13,6 +22,10 @@ const KEYS = {
   votdToday: "mindkshetra-votd-today",
   journalDrafts: "mindkshetra-journal-drafts",
   timezoneSynced: "mindkshetra-tz-synced",
+  sadhanaLog: "mindkshetra-sadhana-log",
+  panchangToday: "mindkshetra-panchang-today",
+  pushToken: "mindkshetra-push-token",
+  milestonesSeen: "mindkshetra-milestones-seen",
 } as const;
 
 export async function getStoredTheme(): Promise<"dark" | "light" | null> {
@@ -122,7 +135,23 @@ export async function clearUserLocalState(): Promise<void> {
     KEYS.visitDay,
     KEYS.journalDrafts,
     KEYS.timezoneSynced,
+    KEYS.sadhanaLog,
+    KEYS.pushToken,
   ]);
+  // Journey runs are one key per journey, so they are swept by prefix.
+  await clearAllGuestJourneys();
+}
+
+export async function getStoredPushToken(): Promise<string | null> {
+  return AsyncStorage.getItem(KEYS.pushToken);
+}
+
+export async function setStoredPushToken(token: string): Promise<void> {
+  await AsyncStorage.setItem(KEYS.pushToken, token);
+}
+
+export async function clearStoredPushToken(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.pushToken);
 }
 
 /** Local calendar date (device zone) as YYYY-MM-DD. */
@@ -150,7 +179,13 @@ export async function setTimezoneSynced(stamp: string): Promise<void> {
   await AsyncStorage.setItem(KEYS.timezoneSynced, stamp);
 }
 
-export type StoredVotd = { id: number; ref: string; date: string };
+export type StoredVotd = {
+  id: number;
+  ref: string;
+  date: string;
+  /** Present when the day's verse was moon-driven. */
+  nakshatra?: string;
+};
 
 /** Day-scoped cache of the server verse of the day (offline fallback). */
 export async function getStoredVotd(): Promise<StoredVotd | null> {
@@ -165,6 +200,154 @@ export async function getStoredVotd(): Promise<StoredVotd | null> {
 
 export async function setStoredVotd(votd: StoredVotd): Promise<void> {
   await AsyncStorage.setItem(KEYS.votdToday, JSON.stringify(votd));
+}
+
+/** Practice sessions logged with no Supabase session; replayed on upgrade. */
+export async function getSadhanaLog(): Promise<SadhanaLogEntry[]> {
+  const raw = await AsyncStorage.getItem(KEYS.sadhanaLog);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as SadhanaLogEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function appendSadhanaLog(entry: SadhanaLogEntry): Promise<void> {
+  const log = await getSadhanaLog();
+  log.push(entry);
+  await AsyncStorage.setItem(KEYS.sadhanaLog, JSON.stringify(log));
+}
+
+export async function clearSadhanaLog(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.sadhanaLog);
+}
+
+/* ------------------------------------------------------------------ */
+/* Guest journey runs.                                                 */
+/*                                                                     */
+/* Mobile had none of this: a signed-out person's path days lived only  */
+/* in component state and were gone at the next launch. These four      */
+/* helpers are the device-local half of the journeys engine — the sign- */
+/* in merge in AuthContext replays them through /api/journeys/merge.    */
+/*                                                                     */
+/* The meditation course keeps its own completion queue rather than     */
+/* folding in here: those rows carry mood before/after and a duration,  */
+/* which a journey run has nowhere to put.                              */
+/* ------------------------------------------------------------------ */
+
+function journeyKey(journeyId: string): string {
+  return `${JOURNEY_KEY_PREFIX}${journeyId}`;
+}
+
+export async function getGuestJourneyDays(
+  journeyId: string,
+  daysCount: number
+): Promise<number[]> {
+  const raw = await AsyncStorage.getItem(journeyKey(journeyId));
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as { completedDays?: unknown };
+    return normalizeDays(parsed.completedDays, daysCount);
+  } catch {
+    return [];
+  }
+}
+
+export async function setGuestJourneyDays(
+  journeyId: string,
+  completedDays: number[]
+): Promise<void> {
+  await AsyncStorage.setItem(
+    journeyKey(journeyId),
+    JSON.stringify({ completedDays })
+  );
+}
+
+/** Add one day and return the updated, sorted list. */
+export async function markGuestJourneyDay(
+  journeyId: string,
+  day: number,
+  daysCount: number
+): Promise<number[]> {
+  const prior = await getGuestJourneyDays(journeyId, daysCount);
+  const next = normalizeDays([...prior, day], daysCount);
+  await setGuestJourneyDays(journeyId, next);
+  return next;
+}
+
+/**
+ * Every guest journey on this device, for the sign-in merge. The day count is
+ * generously capped here because the catalog is not in hand at merge time —
+ * the server re-validates each list against the real journey.
+ */
+export async function getAllGuestJourneys(): Promise<
+  Array<{ journeyId: string; completedDays: number[] }>
+> {
+  const keys = await AsyncStorage.getAllKeys();
+  const mine = keys.filter((k) => k.startsWith(JOURNEY_KEY_PREFIX));
+  if (!mine.length) return [];
+  const out: Array<{ journeyId: string; completedDays: number[] }> = [];
+  for (const key of mine) {
+    const journeyId = key.slice(JOURNEY_KEY_PREFIX.length);
+    if (!journeyId) continue;
+    const completedDays = await getGuestJourneyDays(journeyId, 400);
+    if (completedDays.length) out.push({ journeyId, completedDays });
+  }
+  return out;
+}
+
+export async function clearGuestJourney(journeyId: string): Promise<void> {
+  await AsyncStorage.removeItem(journeyKey(journeyId));
+}
+
+export async function clearAllGuestJourneys(): Promise<void> {
+  const keys = await AsyncStorage.getAllKeys();
+  const mine = keys.filter((k) => k.startsWith(JOURNEY_KEY_PREFIX));
+  if (mine.length) await AsyncStorage.multiRemove(mine);
+}
+
+/**
+ * Milestone keys this device has already shown. `null` means the ledger has
+ * never been written — a first read backfills silently rather than announcing
+ * a long history all at once.
+ */
+export async function getMilestonesSeen(): Promise<string[] | null> {
+  const raw = await AsyncStorage.getItem(KEYS.milestonesSeen);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((k): k is string => typeof k === "string")
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setMilestonesSeen(keys: string[]): Promise<void> {
+  await AsyncStorage.setItem(
+    KEYS.milestonesSeen,
+    JSON.stringify(Array.from(new Set(keys)))
+  );
+}
+
+export type StoredPanchang = { date: string; payload: PanchangDay };
+
+/** Day-scoped cache of the daily panchang (offline fallback, like votdToday). */
+export async function getStoredPanchang(): Promise<StoredPanchang | null> {
+  const raw = await AsyncStorage.getItem(KEYS.panchangToday);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as StoredPanchang;
+  } catch {
+    return null;
+  }
+}
+
+export async function setStoredPanchang(entry: StoredPanchang): Promise<void> {
+  await AsyncStorage.setItem(KEYS.panchangToday, JSON.stringify(entry));
 }
 
 export type JournalDraft = { slokaId: number; text: string; at: number };
