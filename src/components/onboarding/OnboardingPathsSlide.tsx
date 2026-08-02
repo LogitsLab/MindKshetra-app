@@ -36,17 +36,31 @@ const PATHS: PathCard[] = [
   },
   {
     index: "03",
+    titleKey: "onboardingPathMeditationTitle",
+    blurbKey: "onboardingPathMeditationBlurb",
+    image: images.pathMeditation,
+    mark: "meditation",
+  },
+  {
+    index: "04",
     titleKey: "onboardingPathMadhavTitle",
     blurbKey: "onboardingPathMadhavBlurb",
     image: images.pathMadhav,
     mark: "madhav",
   },
   {
-    index: "04",
+    index: "05",
     titleKey: "onboardingPathAstrologyTitle",
     blurbKey: "onboardingPathAstrologyBlurb",
     image: images.pathAstrology,
     mark: "astrology",
+  },
+  {
+    index: "06",
+    titleKey: "onboardingPathPathsTitle",
+    blurbKey: "onboardingPathPathsBlurb",
+    image: images.pathPaths,
+    mark: "paths",
   },
 ];
 

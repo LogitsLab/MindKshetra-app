@@ -49,6 +49,7 @@ export default function OnboardingScreen() {
   const { markComplete, complete } = useOnboarding();
   const {
     configured,
+    isSignedIn,
     signInAnonymously,
     signInWithEmail,
     signInWithGoogle,
@@ -77,7 +78,9 @@ export default function OnboardingScreen() {
     return () => sub.remove();
   }, [mainStep, welcomeSub]);
 
-  if (complete) {
+  // A signed-in account never sits through onboarding — including the moment
+  // sign-in succeeds mid-flow (the redirect doubles as the exit).
+  if (complete || isSignedIn) {
     return <Redirect href="/(tabs)/home" />;
   }
 
