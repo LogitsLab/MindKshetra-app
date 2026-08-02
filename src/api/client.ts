@@ -42,9 +42,14 @@ async function authHeaders(): Promise<Record<string, string>> {
     "Content-Type": "application/json",
   };
   if (!supabaseConfigured) return headers;
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (token) headers.Authorization = `Bearer ${token}`;
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } catch {
+    // A broken auth store must not take content endpoints down with it —
+    // fall through to an unauthenticated request instead.
+  }
   return headers;
 }
 

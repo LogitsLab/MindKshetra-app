@@ -236,16 +236,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
-    supabase.auth.getSession().then(({ data }) => {
-      prevUserRef.current = data.session?.user ?? null;
-      // A session restored at launch is not an upgrade; never re-merge it.
-      if (data.session?.user && !data.session.user.is_anonymous) {
-        mergedForUserIdRef.current = data.session.user.id;
-      }
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        prevUserRef.current = data.session?.user ?? null;
+        // A session restored at launch is not an upgrade; never re-merge it.
+        if (data.session?.user && !data.session.user.is_anonymous) {
+          mergedForUserIdRef.current = data.session.user.id;
+        }
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+      })
+      .catch(() => {
+        // Corrupted storage or a failed token refresh must degrade to
+        // signed-out, never wedge the app: routing gates on `loading`, so a
+        // rejection here without this handler left the root index black
+        // forever with only the FAB rendered.
+        prevUserRef.current = null;
+        setSession(null);
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, next) => {
       const prevUser = prevUserRef.current;
       prevUserRef.current = next?.user ?? null;

@@ -16,8 +16,15 @@ export default function RootIndex() {
   const { ready, complete } = useOnboarding();
   const { loading: authLoading, isSignedIn } = useAuth();
   const { colors } = useTheme();
+  // A boot signal that never resolves must not strand the app on this
+  // spinner — after the deadline, proceed with whatever we know.
+  const [timedOut, setTimedOut] = React.useState(false);
+  React.useEffect(() => {
+    const id = setTimeout(() => setTimedOut(true), 5000);
+    return () => clearTimeout(id);
+  }, []);
 
-  if (!ready || authLoading) {
+  if ((!ready || authLoading) && !timedOut) {
     return (
       <View
         style={{
