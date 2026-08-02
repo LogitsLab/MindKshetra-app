@@ -10,7 +10,8 @@ import {
   Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as Speech from "expo-speech";
+import { playOrSpeak, stopNarration } from "@/audio/narration";
+import { resolveRecitationUrl } from "@/audio/manifest";
 import * as Haptics from "expo-haptics";
 import { BlurView } from "expo-blur";
 import { Screen } from "@/components/Screen";
@@ -160,8 +161,16 @@ export default function SlokaScreen() {
         glyph="♪"
         label={lang === "hi" ? "सुनें" : "Speak"}
         onPress={() => {
-          Speech.stop();
-          Speech.speak(translation, { language: lang === "hi" ? "hi-IN" : "en-US" });
+          stopNarration();
+          void (async () => {
+            // The shloka recitation is the thing worth hearing; the spoken
+            // translation (pre-generated or TTS) is the fallback.
+            const recitation = await resolveRecitationUrl(
+              sloka.chapter,
+              sloka.verse_number
+            );
+            void playOrSpeak(translation, { lang, url: recitation });
+          })();
         }}
       />
       <Tool

@@ -58,7 +58,8 @@
           "sounds": [],
           "enableBackgroundRemoteNotifications": false
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": false
