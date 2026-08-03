@@ -22,10 +22,7 @@ import {
   sadhanaApi,
   userApi,
 } from "@/api/endpoints";
-import {
-  registerPush,
-  unregisterPush,
-} from "@/notifications/registerPush";
+import { registerPush, unregisterPush } from "@/notifications/push";
 import {
   clearAllGuestJourneys,
   clearSadhanaLog,
@@ -299,6 +296,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Best-effort Expo push token registration whenever a session exists
   // (including anonymous — the server re-owns the token on upgrade).
+  // Silent by design: registerPush only proceeds when OS permission was
+  // already granted; the ask itself lives in the pre-permission sheet.
   useEffect(() => {
     if (!session) return;
     void registerPush();

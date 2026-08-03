@@ -16,8 +16,21 @@ import { Panel } from "@/components/Panel";
 import { BrandMark } from "@/components/BrandMark";
 import { BRAND_NAME } from "@/components/BrandWordmark";
 import { PracticeMarks } from "@/components/PracticeMarks";
-import { userApi, votdApi, profileApi } from "@/api/endpoints";
-import { clearUserLocalState } from "@/storage/local";
+import {
+  notificationPrefsApi,
+  profileApi,
+  userApi,
+  votdApi,
+} from "@/api/endpoints";
+import {
+  getPushPermission,
+  pushSupported,
+  registerPush,
+  requestPushPermission,
+  unregisterPush,
+  type PushPermission,
+} from "@/notifications/push";
+import { clearUserLocalState, getStoredPushToken } from "@/storage/local";
 import { useAuth } from "@/context/AuthContext";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -59,10 +72,19 @@ export default function AccountScreen() {
   const [votdConfigured, setVotdConfigured] = useState(false);
   const [votdTestingMode, setVotdTestingMode] = useState(false);
   const [votdEnabled, setVotdEnabled] = useState(true);
-  const [notifDailyVerse, setNotifDailyVerse] = useState(false);
-  const [notifDailyVerseHour, setNotifDailyVerseHour] = useState(8);
-  const [notifStreakReminder, setNotifStreakReminder] = useState(false);
   const [prefsBusy, setPrefsBusy] = useState(false);
+
+  // Push notifications: device state (permission + registered token) plus
+  // the server's notification-preferences row for signed-in members.
+  const pushAvailable = pushSupported();
+  const [pushPermission, setPushPermission] =
+    useState<PushPermission>("undetermined");
+  const [pushRegistered, setPushRegistered] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [notifDailyVerse, setNotifDailyVerse] = useState(false);
+  const [notifStreakReminder, setNotifStreakReminder] = useState(false);
+  const [sendHourLocal, setSendHourLocal] = useState(8);
+  const [pushBusy, setPushBusy] = useState(false);
   const [votdEmailStatus, setVotdEmailStatus] = useState<
     "idle" | "sending" | "sent"
   >("idle");
@@ -118,9 +140,6 @@ export default function AccountScreen() {
       setVotdConfigured(false);
       setVotdTestingMode(false);
       setVotdEnabled(true);
-      setNotifDailyVerse(false);
-      setNotifDailyVerseHour(8);
-      setNotifStreakReminder(false);
       return;
     }
     let alive = true;
@@ -137,16 +156,49 @@ export default function AccountScreen() {
       if (typeof prefs?.votdEmailEnabled === "boolean") {
         setVotdEnabled(prefs.votdEmailEnabled);
       }
-      if (typeof prefs?.notifDailyVerse === "boolean") {
-        setNotifDailyVerse(prefs.notifDailyVerse);
-      }
-      if (typeof prefs?.notifDailyVerseHour === "number") {
-        setNotifDailyVerseHour(prefs.notifDailyVerseHour);
-      }
-      if (typeof prefs?.notifStreakReminder === "boolean") {
-        setNotifStreakReminder(prefs.notifStreakReminder);
-      }
     });
+    return () => {
+      alive = false;
+    };
+  }, [isSignedIn, isAnonymous]);
+
+  // Device-level push state — read for everyone, guests included, since
+  // token registration works anonymously.
+  useEffect(() => {
+    let alive = true;
+    void Promise.all([getPushPermission(), getStoredPushToken()]).then(
+      ([permission, token]) => {
+        if (!alive) return;
+        setPushPermission(permission);
+        setPushRegistered(Boolean(token) && permission === "granted");
+      }
+    );
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Server notification preferences — members only; the server creates
+  // defaults on first read.
+  useEffect(() => {
+    if (!isSignedIn || isAnonymous) {
+      setPushEnabled(true);
+      setNotifDailyVerse(false);
+      setNotifStreakReminder(false);
+      setSendHourLocal(8);
+      return;
+    }
+    let alive = true;
+    notificationPrefsApi
+      .get()
+      .then((prefs) => {
+        if (!alive) return;
+        setPushEnabled(prefs.pushEnabled);
+        setNotifDailyVerse(prefs.dailyVerse);
+        setNotifStreakReminder(prefs.streakReminder);
+        setSendHourLocal(prefs.sendHourLocal);
+      })
+      .catch(() => undefined);
     return () => {
       alive = false;
     };
@@ -188,24 +240,86 @@ export default function AccountScreen() {
     }
   }
 
-  async function patchNotifPrefs(body: Record<string, unknown>) {
+  const isMember = isSignedIn && !isAnonymous;
+  const pushMasterOn = pushRegistered && (!isMember || pushEnabled);
+
+  async function patchNotifPrefs(
+    body: Partial<{
+      pushEnabled: boolean;
+      dailyVerse: boolean;
+      streakReminder: boolean;
+      sendHourLocal: number;
+    }>
+  ) {
     setPrefsBusy(true);
     setMessage(null);
     try {
-      const data = await userApi.updatePreferences(body);
-      if (typeof data.notifDailyVerse === "boolean") {
-        setNotifDailyVerse(data.notifDailyVerse);
-      }
-      if (typeof data.notifDailyVerseHour === "number") {
-        setNotifDailyVerseHour(data.notifDailyVerseHour);
-      }
-      if (typeof data.notifStreakReminder === "boolean") {
-        setNotifStreakReminder(data.notifStreakReminder);
-      }
+      const data = await notificationPrefsApi.update(body);
+      setPushEnabled(data.pushEnabled);
+      setNotifDailyVerse(data.dailyVerse);
+      setNotifStreakReminder(data.streakReminder);
+      setSendHourLocal(data.sendHourLocal);
     } catch (e) {
       setMessage((e as Error).message);
     } finally {
       setPrefsBusy(false);
+    }
+  }
+
+  /**
+   * Master toggle. Off: the device token is disabled on the server and, for
+   * members, pushEnabled goes false. On: OS permission (asking only if it
+   * was never asked or was re-enabled), token registration, pushEnabled true.
+   */
+  async function onTogglePushMaster() {
+    if (pushBusy) return;
+    setPushBusy(true);
+    setMessage(null);
+    try {
+      if (pushMasterOn) {
+        await unregisterPush();
+        setPushRegistered(false);
+        if (isMember) {
+          try {
+            const data = await notificationPrefsApi.update({
+              pushEnabled: false,
+            });
+            setPushEnabled(data.pushEnabled);
+          } catch {
+            setPushEnabled(false);
+          }
+        }
+        return;
+      }
+
+      let permission = await getPushPermission();
+      if (permission !== "granted") {
+        permission = (await requestPushPermission()) ? "granted" : "denied";
+      }
+      setPushPermission(permission);
+      if (permission !== "granted") {
+        setMessage(t("notifMasterDenied"));
+        return;
+      }
+
+      const token = await registerPush();
+      if (!token) {
+        setMessage(t("notifUnavailable"));
+        return;
+      }
+      setPushRegistered(true);
+      if (isMember) {
+        try {
+          const data = await notificationPrefsApi.update({
+            pushEnabled: true,
+          });
+          setPushEnabled(data.pushEnabled);
+        } catch {
+          setPushEnabled(true);
+        }
+      }
+    } finally {
+      setPushBusy(false);
     }
   }
 
@@ -679,14 +793,52 @@ export default function AccountScreen() {
                 </Pressable>
               ) : null}
             </Panel>
+          </>
+        ) : null}
 
-            <Text variant="eyebrow" style={{ marginTop: spacing.lg }}>
-              {t("notifTitle")}
-            </Text>
-            <Text variant="soft" style={{ marginTop: spacing.xs }}>
-              {t("notifBlurb")}
-            </Text>
-            <Panel style={{ marginTop: spacing.md }}>
+        <Hairline style={{ marginVertical: spacing.lg }} />
+
+        {/* Notifications — the master switch is device-level and works for
+            guests too (tokens upsert anonymously); category choices and the
+            delivery hour live on the account. */}
+        <Text variant="eyebrow">{t("notifTitle")}</Text>
+        <Text variant="soft" style={{ marginTop: spacing.xs }}>
+          {t("notifBlurb")}
+        </Text>
+        <Panel style={{ marginTop: spacing.md }}>
+          <View style={styles.votdRow}>
+            <View style={{ flex: 1, paddingRight: spacing.md }}>
+              <Text variant="body">{t("notifMaster")}</Text>
+              <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                {t("notifMasterBlurb")}
+              </Text>
+              {!pushAvailable ? (
+                <Text
+                  variant="muted"
+                  style={{ marginTop: spacing.xs, opacity: 0.8 }}
+                >
+                  {t("notifUnavailable")}
+                </Text>
+              ) : pushPermission === "denied" && !pushMasterOn ? (
+                <Text
+                  variant="muted"
+                  style={{ marginTop: spacing.xs, opacity: 0.8 }}
+                >
+                  {t("notifMasterDenied")}
+                </Text>
+              ) : null}
+            </View>
+            <ToggleSwitch
+              checked={pushMasterOn}
+              disabled={pushBusy || !pushAvailable}
+              onPress={() => void onTogglePushMaster()}
+            />
+          </View>
+
+          <Hairline style={{ marginVertical: spacing.md }} />
+
+          {isMember ? (
+            <>
               <View style={styles.votdRow}>
                 <View style={{ flex: 1, paddingRight: spacing.md }}>
                   <Text variant="body">{t("notifDailyVerse")}</Text>
@@ -694,38 +846,13 @@ export default function AccountScreen() {
                     {t("notifDailyVerseBlurb")}
                   </Text>
                 </View>
-                <Pressable
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: notifDailyVerse }}
-                  accessibilityLabel={
-                    notifDailyVerse ? t("notifOn") : t("notifOff")
-                  }
+                <ToggleSwitch
+                  checked={notifDailyVerse}
                   disabled={prefsBusy}
                   onPress={() =>
-                    void patchNotifPrefs({ notifDailyVerse: !notifDailyVerse })
+                    void patchNotifPrefs({ dailyVerse: !notifDailyVerse })
                   }
-                  style={[
-                    styles.switch,
-                    {
-                      borderColor: notifDailyVerse ? colors.brass : colors.line,
-                      backgroundColor: notifDailyVerse
-                        ? "rgba(201,162,39,0.25)"
-                        : colors.surface,
-                      opacity: prefsBusy ? 0.5 : 1,
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.switchKnob,
-                      {
-                        backgroundColor: colors.brassSoft,
-                        alignSelf: notifDailyVerse ? "flex-end" : "flex-start",
-                        opacity: notifDailyVerse ? 1 : 0.5,
-                      },
-                    ]}
-                  />
-                </Pressable>
+                />
               </View>
 
               {notifDailyVerse ? (
@@ -742,14 +869,14 @@ export default function AccountScreen() {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.hourRow}
                   >
-                    {Array.from({ length: 19 }, (_, i) => i + 4).map((hour) => {
-                      const active = notifDailyVerseHour === hour;
+                    {Array.from({ length: 18 }, (_, i) => i + 4).map((hour) => {
+                      const active = sendHourLocal === hour;
                       return (
                         <Pressable
                           key={hour}
                           disabled={prefsBusy}
                           onPress={() =>
-                            void patchNotifPrefs({ notifDailyVerseHour: hour })
+                            void patchNotifPrefs({ sendHourLocal: hour })
                           }
                           style={[
                             styles.hourChip,
@@ -788,48 +915,21 @@ export default function AccountScreen() {
                     {t("notifStreakReminderBlurb")}
                   </Text>
                 </View>
-                <Pressable
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: notifStreakReminder }}
-                  accessibilityLabel={
-                    notifStreakReminder ? t("notifOn") : t("notifOff")
-                  }
+                <ToggleSwitch
+                  checked={notifStreakReminder}
                   disabled={prefsBusy}
                   onPress={() =>
                     void patchNotifPrefs({
-                      notifStreakReminder: !notifStreakReminder,
+                      streakReminder: !notifStreakReminder,
                     })
                   }
-                  style={[
-                    styles.switch,
-                    {
-                      borderColor: notifStreakReminder
-                        ? colors.brass
-                        : colors.line,
-                      backgroundColor: notifStreakReminder
-                        ? "rgba(201,162,39,0.25)"
-                        : colors.surface,
-                      opacity: prefsBusy ? 0.5 : 1,
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.switchKnob,
-                      {
-                        backgroundColor: colors.brassSoft,
-                        alignSelf: notifStreakReminder
-                          ? "flex-end"
-                          : "flex-start",
-                        opacity: notifStreakReminder ? 1 : 0.5,
-                      },
-                    ]}
-                  />
-                </Pressable>
+                />
               </View>
-            </Panel>
-          </>
-        ) : null}
+            </>
+          ) : (
+            <Text variant="muted">{t("notifGuestRow")}</Text>
+          )}
+        </Panel>
 
         <PracticeMarks />
 
@@ -947,6 +1047,50 @@ export default function AccountScreen() {
         ) : null}
       </ScrollView>
     </Screen>
+  );
+}
+
+/** The app's quiet two-state switch, shared by the notification rows. */
+function ToggleSwitch({
+  checked,
+  disabled,
+  onPress,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  const { t } = useLanguage();
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityState={{ checked }}
+      accessibilityLabel={checked ? t("notifOn") : t("notifOff")}
+      disabled={disabled}
+      onPress={onPress}
+      style={[
+        styles.switch,
+        {
+          borderColor: checked ? colors.brass : colors.line,
+          backgroundColor: checked
+            ? "rgba(201,162,39,0.25)"
+            : colors.surface,
+          opacity: disabled ? 0.5 : 1,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.switchKnob,
+          {
+            backgroundColor: colors.brassSoft,
+            alignSelf: checked ? "flex-end" : "flex-start",
+            opacity: checked ? 1 : 0.5,
+          },
+        ]}
+      />
+    </Pressable>
   );
 }
 

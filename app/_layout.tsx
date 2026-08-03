@@ -20,6 +20,7 @@ import { ProfileButton } from "@/components/ScreenHeader";
 import { OnboardingGate } from "@/components/OnboardingGate";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useDailyVisit } from "@/hooks/useDailyVisit";
+import { useNotificationObserver } from "@/notifications/handlers";
 import { useOnboardingRouting } from "@/hooks/useOnboardingRouting";
 import { useSegments } from "expo-router";
 
@@ -39,6 +40,8 @@ function RootNavigator() {
 
   useOnboardingRouting();
   useDailyVisit();
+  // Notification taps → in-app routes (warm and cold start). One mount.
+  useNotificationObserver();
 
   if (!ready) return null;
 

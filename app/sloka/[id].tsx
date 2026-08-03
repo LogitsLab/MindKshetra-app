@@ -20,6 +20,10 @@ import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { Rise } from "@/components/Rise";
 import { EmptyState } from "@/components/SlokaCard";
+import {
+  NotificationPrompt,
+  maybeShowNotificationPrompt,
+} from "@/components/NotificationPrompt";
 import { contentApi, eventsApi, progressApi, userApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -53,6 +57,16 @@ export default function SlokaScreen() {
   const [journal, setJournal] = useState("");
   const [showJournal, setShowJournal] = useState(false);
   const [journalNotice, setJournalNotice] = useState<string | null>(null);
+  const [notifPromptVisible, setNotifPromptVisible] = useState(false);
+
+  // The pre-permission sheet appears only after the first meaningful action
+  // succeeds here (verse done, favorite added) — never on launch, and only
+  // while OS permission is undetermined and the decline cooldown allows.
+  const offerNotifications = () => {
+    void maybeShowNotificationPrompt().then((show) => {
+      if (show) setNotifPromptVisible(true);
+    });
+  };
 
   useEffect(() => {
     setVerseContext(slokaId);
@@ -157,6 +171,7 @@ export default function SlokaScreen() {
             if (next) await userApi.addFavorite(sloka.id);
             else await userApi.removeFavorite(sloka.id);
             bumpFocusVersion("favorites");
+            if (next) offerNotifications();
           } catch {
             setFavorited(!next);
           }
@@ -215,6 +230,7 @@ export default function SlokaScreen() {
           }
           bumpFocusVersion("progress");
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          offerNotifications();
         }}
       />
       <Tool
@@ -353,6 +369,11 @@ export default function SlokaScreen() {
           {toolbar}
         </View>
       )}
+
+      <NotificationPrompt
+        visible={notifPromptVisible}
+        onClose={() => setNotifPromptVisible(false)}
+      />
     </Screen>
   );
 }
