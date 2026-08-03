@@ -1,20 +1,28 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
+import { BirthDetailsForm } from "@/components/astrology/BirthDetailsForm";
+import {
+  birthPayloadFromDetails,
+  emptyBirthDetails,
+  hasValidDob,
+  type BirthDetails,
+} from "@/components/astrology/birthDetails";
 import { ChartOverviewPanel } from "@/components/astrology/ChartOverviewPanel";
 import { DashaTimelinePanel } from "@/components/astrology/DashaTimelinePanel";
 import { PredictionsPanel } from "@/components/astrology/PredictionsPanel";
+import { PredictionsStatus } from "@/components/astrology/PredictionsStatus";
 import { astrologyApi } from "@/api/endpoints";
+import { usePredictions } from "@/hooks/usePredictions";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -25,10 +33,8 @@ import {
   type ChartPlanet,
   type DashaPeriodNode,
   type LifeArea,
-  type PredictionsText,
 } from "@/types/astrology";
 
-type GeoResult = { label: string; lat: number; lng: number; ianaTz: string };
 type Tab = "chart" | "dasha" | "predictions";
 
 export default function IncognitoChartScreen() {
@@ -37,65 +43,52 @@ export default function IncognitoChartScreen() {
   const { lang, t } = useLanguage();
   const { ask, setChartSession } = useMadhav();
 
-  const [dob, setDob] = useState("");
-  const [tob, setTob] = useState("12:00");
-  const [placeQuery, setPlaceQuery] = useState("");
-  const [place, setPlace] = useState<GeoResult | null>(null);
-  const [suggestions, setSuggestions] = useState<GeoResult[]>([]);
+  const [details, setDetails] = useState<BirthDetails>(emptyBirthDetails);
   const [chart, setChart] = useState<Record<string, unknown> | null>(null);
   const [chartSessionId, setLocalSession] = useState<string | null>(null);
-  const [birth, setBirth] = useState<Record<string, unknown> | null>(null);
-  const [predictions, setPredictions] = useState<PredictionsText | null>(null);
   const [tab, setTab] = useState<Tab>("chart");
   const [busy, setBusy] = useState(false);
-  const [predBusy, setPredBusy] = useState(false);
-  const [geoBusy, setGeoBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const birthBody = useMemo(() => {
-    if (!place || !/^\d{4}-\d{2}-\d{2}$/.test(dob)) return null;
-    return {
-      dob,
-      tob,
-      tobUnknown: false,
-      placeLabel: place.label,
-      lat: place.lat,
-      lng: place.lng,
-      ianaTz: place.ianaTz,
-    };
-  }, [dob, tob, place]);
+  const birthBody = useMemo(() => birthPayloadFromDetails(details), [details]);
 
-  async function searchPlace() {
-    const q = placeQuery.trim();
-    if (q.length < 2) return;
-    setGeoBusy(true);
-    setError(null);
-    try {
-      const res = await astrologyApi.geocode(q);
-      setSuggestions(res.results ?? []);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setGeoBusy(false);
-    }
-  }
+  // Refs so the predictions prefetch fired inside compute() sees the fresh
+  // session id / birth payload before React state has re-rendered.
+  const sessionRef = useRef<string | null>(null);
+  const birthRef = useRef<Record<string, unknown> | null>(null);
+
+  const predictions = usePredictions({
+    language: lang,
+    getRequest: () =>
+      sessionRef.current || birthRef.current
+        ? {
+            chartSessionId: sessionRef.current ?? undefined,
+            birth: birthRef.current,
+          }
+        : null,
+    onChart: (c) => setChart(c),
+  });
 
   async function compute() {
     if (!birthBody) {
-      setError(t("astroDobRequired"));
+      setError(hasValidDob(details) ? t("astroPlaceRequired") : t("astroDobRequired"));
       return;
     }
     setBusy(true);
     setError(null);
-    setPredictions(null);
     try {
       const res = await astrologyApi.compute(birthBody);
       setChart(res.chart ?? null);
-      setBirth(birthBody);
+      // chartSessionId is server-minted only; the client never generates one.
       const sid = res.chartSessionId ?? null;
       setLocalSession(sid);
       if (sid) setChartSession(sid, birthBody);
       setTab("chart");
+      predictions.reset();
+      sessionRef.current = sid;
+      birthRef.current = birthBody;
+      // Prefetch so the predictions tab is warm by the time it is opened.
+      void predictions.load();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -103,26 +96,20 @@ export default function IncognitoChartScreen() {
     }
   }
 
-  async function loadPredictions(force = false) {
-    if (!chartSessionId && !birthBody) return;
-    setPredBusy(true);
-    setError(null);
-    try {
-      const res = await astrologyApi.predictions({
-        chartSessionId: chartSessionId ?? undefined,
-        birth: birth ?? birthBody ?? undefined,
-        language: lang,
-        force,
-      });
-      if (res.chart) setChart(res.chart);
-      setPredictions(res.predictionsText);
-      setTab("predictions");
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setPredBusy(false);
+  // Load when the tab opens cold, and again after an EN↔HI switch — the
+  // hook caches per language, so the other language's reading stays intact.
+  useEffect(() => {
+    if (
+      tab === "predictions" &&
+      chart &&
+      !predictions.predictions &&
+      !predictions.busy &&
+      !predictions.errorKind
+    ) {
+      void predictions.load();
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, lang, chart, predictions.predictions, predictions.busy, predictions.errorKind]);
 
   const overview = (chart?.overview as ChartOverview | undefined) ?? undefined;
   const planets = (chart?.planets as ChartPlanet[] | undefined) ?? [];
@@ -155,56 +142,7 @@ export default function IncognitoChartScreen() {
         </Text>
 
         <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
-          <Text variant="eyebrow">{t("astroDob")}</Text>
-          <TextInput
-            value={dob}
-            onChangeText={setDob}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.textMuted}
-            style={inputStyle(colors)}
-          />
-          <Text variant="eyebrow">{t("astroTob")}</Text>
-          <TextInput
-            value={tob}
-            onChangeText={setTob}
-            placeholder="HH:MM"
-            placeholderTextColor={colors.textMuted}
-            style={inputStyle(colors)}
-          />
-          <Text variant="eyebrow">{t("astroPlace")}</Text>
-          <View style={{ flexDirection: "row", gap: spacing.sm }}>
-            <TextInput
-              value={placeQuery}
-              onChangeText={setPlaceQuery}
-              placeholder={t("astroPlacePh")}
-              placeholderTextColor={colors.textMuted}
-              style={[inputStyle(colors), { flex: 1 }]}
-            />
-            <Button
-              label={t("astroSearch")}
-              variant="ghost"
-              loading={geoBusy}
-              onPress={() => void searchPlace()}
-            />
-          </View>
-          {suggestions.map((s) => (
-            <Pressable
-              key={`${s.lat}-${s.lng}-${s.label}`}
-              onPress={() => {
-                setPlace(s);
-                setPlaceQuery(s.label);
-                setSuggestions([]);
-              }}
-              style={[styles.suggest, { borderBottomColor: colors.hairline }]}
-            >
-              <Text variant="soft">{s.label}</Text>
-            </Pressable>
-          ))}
-          {place ? (
-            <Text variant="muted" style={{ color: colors.brassSoft }}>
-              {t("astroPlaceConfirm")}: {place.label}
-            </Text>
-          ) : null}
+          <BirthDetailsForm value={details} onChange={setDetails} />
 
           <Button
             label={t("astroCast")}
@@ -236,12 +174,7 @@ export default function IncognitoChartScreen() {
               ).map(([key, label]) => (
                 <Pressable
                   key={key}
-                  onPress={() => {
-                    setTab(key);
-                    if (key === "predictions" && !predictions && !predBusy) {
-                      void loadPredictions(false);
-                    }
-                  }}
+                  onPress={() => setTab(key)}
                   style={[
                     styles.tab,
                     {
@@ -291,14 +224,9 @@ export default function IncognitoChartScreen() {
                 />
               ) : null}
               {tab === "predictions" ? (
-                predBusy && !predictions ? (
-                  <View style={{ alignItems: "center", gap: spacing.sm }}>
-                    <ActivityIndicator color={colors.brass} />
-                    <Text variant="muted">{t("astroWorking")}</Text>
-                  </View>
-                ) : predictions ? (
+                predictions.predictions ? (
                   <PredictionsPanel
-                    predictions={predictions}
+                    predictions={predictions.predictions}
                     featuredArea={featuredAreaFromChart(chart)}
                     detailed
                     labels={{
@@ -315,7 +243,14 @@ export default function IncognitoChartScreen() {
                     }}
                   />
                 ) : (
-                  <Text variant="soft">{t("astroPredBlurb")}</Text>
+                  <PredictionsStatus
+                    busy={predictions.busy}
+                    stage={predictions.stage}
+                    error={predictions.error}
+                    errorKind={predictions.errorKind}
+                    retryAfterSec={predictions.retryAfterSec}
+                    onRetry={() => void predictions.load()}
+                  />
                 )
               ) : null}
             </View>
@@ -324,7 +259,7 @@ export default function IncognitoChartScreen() {
               <Button
                 label={t("askMadhavAbout")}
                 onPress={() => {
-                  if (chartSessionId) setChartSession(chartSessionId, birth);
+                  if (chartSessionId) setChartSession(chartSessionId, birthRef.current);
                   ask(
                     lang === "hi"
                       ? "इस गुप्त कुंडली के आधार पर आज क्या चिंतन करूँ?"
@@ -335,11 +270,16 @@ export default function IncognitoChartScreen() {
               />
               <Button
                 label={
-                  predictions ? t("astroRegeneratePred") : t("astroGeneratePred")
+                  predictions.predictions
+                    ? t("astroRegeneratePred")
+                    : t("astroGeneratePred")
                 }
                 variant="ghost"
-                loading={predBusy}
-                onPress={() => void loadPredictions(Boolean(predictions))}
+                loading={predictions.busy}
+                onPress={() => {
+                  setTab("predictions");
+                  void predictions.load(Boolean(predictions.predictions));
+                }}
               />
             </View>
           </View>
@@ -351,24 +291,7 @@ export default function IncognitoChartScreen() {
   );
 }
 
-function inputStyle(colors: ReturnType<typeof useTheme>["colors"]) {
-  return {
-    minHeight: 48,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    color: colors.text,
-    borderColor: colors.line,
-    backgroundColor: colors.inputBg,
-    fontFamily: "Sora_400Regular" as const,
-  };
-}
-
 const styles = StyleSheet.create({
-  suggest: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
-  },
   summary: {
     marginTop: spacing.xl,
     padding: spacing.md,

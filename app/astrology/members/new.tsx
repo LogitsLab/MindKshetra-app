@@ -10,12 +10,17 @@ import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
+import { BirthDetailsForm } from "@/components/astrology/BirthDetailsForm";
+import {
+  birthPayloadFromDetails,
+  emptyBirthDetails,
+  hasValidDob,
+  type BirthDetails,
+} from "@/components/astrology/birthDetails";
 import { astrologyApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
-
-type GeoResult = { label: string; lat: number; lng: number; ianaTz: string };
 
 const RELATIONS = ["self", "spouse", "child", "friend", "other"] as const;
 
@@ -27,41 +32,18 @@ export default function NewAstrologyMemberScreen() {
   const [name, setName] = useState("");
   const [relationship, setRelationship] =
     useState<(typeof RELATIONS)[number]>("self");
-  const [dob, setDob] = useState("");
-  const [tob, setTob] = useState("12:00");
-  const [placeQuery, setPlaceQuery] = useState("");
-  const [place, setPlace] = useState<GeoResult | null>(null);
-  const [suggestions, setSuggestions] = useState<GeoResult[]>([]);
+  const [details, setDetails] = useState<BirthDetails>(emptyBirthDetails);
   const [busy, setBusy] = useState(false);
-  const [geoBusy, setGeoBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  async function searchPlace() {
-    const q = placeQuery.trim();
-    if (q.length < 2) return;
-    setGeoBusy(true);
-    setError(null);
-    try {
-      const res = await astrologyApi.geocode(q);
-      setSuggestions(res.results ?? []);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setGeoBusy(false);
-    }
-  }
 
   async function create() {
     if (!name.trim()) {
       setError(t("astroName"));
       return;
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
-      setError(t("astroDobRequired"));
-      return;
-    }
-    if (!place) {
-      setError(t("astroPlaceRequired"));
+    const birthPayload = birthPayloadFromDetails(details);
+    if (!birthPayload) {
+      setError(hasValidDob(details) ? t("astroPlaceRequired") : t("astroDobRequired"));
       return;
     }
     setBusy(true);
@@ -70,13 +52,7 @@ export default function NewAstrologyMemberScreen() {
       const res = await astrologyApi.createMember({
         name: name.trim(),
         relationship,
-        dob,
-        tob,
-        tobUnknown: false,
-        placeLabel: place.label,
-        lat: place.lat,
-        lng: place.lng,
-        ianaTz: place.ianaTz,
+        ...birthPayload,
       });
       router.replace(`/astrology/members/${res.member.id}`);
     } catch (e) {
@@ -143,57 +119,7 @@ export default function NewAstrologyMemberScreen() {
             ))}
           </View>
 
-          <Text variant="eyebrow">{t("astroDob")}</Text>
-          <TextInput
-            value={dob}
-            onChangeText={setDob}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.textMuted}
-            style={inputStyle(colors)}
-          />
-          <Text variant="eyebrow">{t("astroTob")}</Text>
-          <TextInput
-            value={tob}
-            onChangeText={setTob}
-            placeholder="HH:MM"
-            placeholderTextColor={colors.textMuted}
-            style={inputStyle(colors)}
-          />
-
-          <Text variant="eyebrow">{t("astroPlace")}</Text>
-          <View style={{ flexDirection: "row", gap: spacing.sm }}>
-            <TextInput
-              value={placeQuery}
-              onChangeText={setPlaceQuery}
-              placeholder={t("astroPlacePh")}
-              placeholderTextColor={colors.textMuted}
-              style={[inputStyle(colors), { flex: 1 }]}
-            />
-            <Button
-              label={t("astroSearch")}
-              variant="ghost"
-              loading={geoBusy}
-              onPress={() => void searchPlace()}
-            />
-          </View>
-          {suggestions.map((s) => (
-            <Pressable
-              key={`${s.lat}-${s.lng}-${s.label}`}
-              onPress={() => {
-                setPlace(s);
-                setPlaceQuery(s.label);
-                setSuggestions([]);
-              }}
-              style={[styles.suggest, { borderColor: colors.hairline }]}
-            >
-              <Text variant="soft">{s.label}</Text>
-            </Pressable>
-          ))}
-          {place ? (
-            <Text variant="muted" style={{ color: colors.brassSoft }}>
-              {t("astroPlaceConfirm")}: {place.label}
-            </Text>
-          ) : null}
+          <BirthDetailsForm value={details} onChange={setDetails} />
 
           <Button
             label={t("astroSaveChart")}
@@ -231,9 +157,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radii.sm,
     borderWidth: StyleSheet.hairlineWidth * 2,
-  },
-  suggest: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
   },
 });
