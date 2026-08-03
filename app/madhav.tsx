@@ -15,6 +15,7 @@ import {
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MessageBubble } from "@/components/chat/MessageBubble";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { streamChat } from "@/api/client";
@@ -31,6 +32,7 @@ import {
 import { images } from "@/theme/assets";
 import { radii, spacing } from "@/theme/tokens";
 import type { ChatMessage, Citation } from "@/types";
+import { TokenBuffer } from "@/utils/TokenBuffer";
 
 type UiMessage = ChatMessage & { id: string };
 
@@ -38,11 +40,6 @@ function isTransientNetworkError(message: string): boolean {
   return /network connection was lost|network request failed|could not reach|timed out|The Internet connection appears to be offline/i.test(
     message
   );
-}
-
-function citationSnippet(c: Citation, lang: "en" | "hi"): string {
-  const text = (lang === "hi" && c.hindi ? c.hindi : c.english)?.trim() ?? "";
-  return text.replace(/\s+/g, " ");
 }
 
 export default function MadhavScreen() {
@@ -159,6 +156,32 @@ export default function MadhavScreen() {
       const ac = new AbortController();
       abortRef.current = ac;
 
+      // The streaming assistant message is always the last element, so
+      // replace it by index instead of mapping the whole array per update.
+      const replaceLast = (update: (m: UiMessage) => UiMessage) => {
+        setMessages((prev) => {
+          const lastIndex = prev.length - 1;
+          if (lastIndex < 0 || prev[lastIndex].id !== assistantId) return prev;
+          const next = prev.slice();
+          next[lastIndex] = update(prev[lastIndex]);
+          return next;
+        });
+      };
+
+      // Commit streamed tokens at most every ~50ms — per-token setState
+      // re-renders the screen for every SSE token, which drops frames on
+      // long replies. `full` is the source of truth; the flushed chunk is
+      // already folded into it by onToken.
+      const buffer = new TokenBuffer(() => {
+        const snapshot = full;
+        replaceLast((m) => ({
+          ...m,
+          content: snapshot,
+          citations,
+          chartEpigraph: epigraph || undefined,
+        }));
+      });
+
       try {
         const history = [...base, userMsg].map((m) => ({
           role: m.role,
@@ -183,50 +206,26 @@ export default function MadhavScreen() {
             },
             onCitations: (cites) => {
               citations = (Array.isArray(cites) ? cites : []) as Citation[];
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId ? { ...m, citations } : m
-                )
-              );
+              replaceLast((m) => ({ ...m, citations }));
             },
             onToken: (token) => {
               full += token;
-              const snapshot = full;
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId
-                    ? {
-                        ...m,
-                        content: snapshot,
-                        citations,
-                        chartEpigraph: epigraph || undefined,
-                      }
-                    : m
-                )
-              );
+              buffer.push(token);
             },
             onReplace: (content) => {
               full = content;
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId
-                    ? {
-                        ...m,
-                        content: full,
-                        citations,
-                        chartEpigraph: epigraph || undefined,
-                      }
-                    : m
-                )
-              );
+              // Pending tokens are superseded by the full replacement text.
+              buffer.flush();
+              replaceLast((m) => ({
+                ...m,
+                content: full,
+                citations,
+                chartEpigraph: epigraph || undefined,
+              }));
             },
             onChartEpigraph: (text) => {
               epigraph = text;
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId ? { ...m, chartEpigraph: text } : m
-                )
-              );
+              replaceLast((m) => ({ ...m, chartEpigraph: text }));
             },
             onError: (message) => {
               if (backgroundAbort.current || appState.current !== "active") {
@@ -241,6 +240,7 @@ export default function MadhavScreen() {
               }
             },
             onDone: () => {
+              buffer.flush();
               if (!userCrisis && mentionsCrisisResource(full)) {
                 setCrisisBanner(full);
               }
@@ -249,6 +249,8 @@ export default function MadhavScreen() {
           ac.signal
         );
 
+        buffer.flush();
+
         if (backgroundAbort.current) {
           // Keep whatever streamed before backgrounding; no error banner.
         } else if (!full.trim()) {
@@ -256,15 +258,14 @@ export default function MadhavScreen() {
             lang === "hi"
               ? "अभी उत्तर नहीं बन सका। थोड़ी देर बाद फिर प्रयास करें।"
               : "I could not form a reply just now. Try once more in a moment.";
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, content: fallback, citations } : m
-            )
-          );
+          replaceLast((m) => ({ ...m, content: fallback, citations }));
         } else if (!userCrisis && mentionsCrisisResource(full)) {
           setCrisisBanner(full);
         }
       } catch (e) {
+        // Land any buffered tokens first so the keep-or-remove check below
+        // sees everything that actually streamed.
+        buffer.flush();
         const message = (e as Error).message ?? "Chat failed";
         if (
           !backgroundAbort.current &&
@@ -282,6 +283,7 @@ export default function MadhavScreen() {
           return prev.filter((m) => m.id !== assistantId);
         });
       } finally {
+        buffer.destroy();
         if (abortRef.current === ac) abortRef.current = null;
         setLoading(false);
         setStreaming(false);
@@ -314,91 +316,28 @@ export default function MadhavScreen() {
     void sendMessage(prompt);
   }, [pendingPrompt, clearPending, sendMessage]);
 
+  const onPressCitation = useCallback(
+    (id: Citation["id"]) => {
+      router.push(`/sloka/${id}`);
+    },
+    [router]
+  );
+
   const renderMessage = ({ item }: { item: UiMessage }) => {
     const isUser = item.role === "user";
-    const crisis = !isUser && mentionsCrisisResource(item.content);
-
     return (
-      <View
-        style={[
-          styles.bubble,
-          {
-            alignSelf: isUser ? "flex-end" : "flex-start",
-            backgroundColor: isUser ? colors.surface : colors.panel,
-            borderColor: crisis ? colors.danger : colors.line,
-          },
-        ]}
-      >
-        <Text variant="eyebrow" style={{ color: colors.brassSoft }}>
-          {isUser ? t("you") : t("madhav")}
-        </Text>
-        {item.chartEpigraph ? (
-          <Text
-            variant="title"
-            style={{
-              marginTop: spacing.sm,
-              fontFamily: "Fraunces_500Medium",
-              fontSize: 16 * multiplier,
-              lineHeight: 24 * multiplier,
-              borderLeftWidth: 2,
-              borderLeftColor: colors.line,
-              paddingLeft: spacing.sm,
-            }}
-          >
-            {item.chartEpigraph}
-          </Text>
-        ) : null}
-        <Text
-          variant="body"
-          style={{
-            marginTop: spacing.sm,
-            color: crisis ? colors.danger : colors.text,
-          }}
-        >
-          {item.content || (loading ? "…" : "")}
-        </Text>
-        {item.citations && item.citations.length > 0 ? (
-          <View style={[styles.cites, { borderTopColor: colors.hairline }]}>
-            {item.citations.slice(0, 4).map((c) => {
-              const snippet = citationSnippet(c, lang);
-              return (
-                <Pressable
-                  key={String(c.id)}
-                  onPress={() => router.push(`/sloka/${c.id}`)}
-                  style={[styles.citeRow, { borderBottomColor: colors.hairline }]}
-                >
-                  <Text
-                    variant="muted"
-                    style={{
-                      color: colors.brassSoft,
-                      fontFamily: "Sora_600SemiBold",
-                      fontSize: 12 * multiplier,
-                      lineHeight: 16 * multiplier,
-                    }}
-                  >
-                    {c.ref || `Verse ${c.id}`}
-                  </Text>
-                  {snippet ? (
-                    <Text
-                      variant="muted"
-                      style={{
-                        marginTop: 4,
-                        color: colors.textSoft,
-                        fontSize: 13 * multiplier,
-                        lineHeight: 18 * multiplier,
-                      }}
-                      numberOfLines={2}
-                      ellipsizeMode="tail"
-                    >
-                      {snippet}
-                    </Text>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
-        ) : null}
-      </View>
+      <MessageBubble
+        isUser={isUser}
+        content={item.content}
+        chartEpigraph={item.chartEpigraph}
+        citations={item.citations}
+        label={isUser ? t("you") : t("madhav")}
+        lang={lang}
+        loading={loading}
+        multiplier={multiplier}
+        colors={colors}
+        onPressCitation={onPressCitation}
+      />
     );
   };
 
@@ -563,23 +502,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderColor: "rgba(201, 162, 39, 0.45)",
-  },
-  bubble: {
-    maxWidth: "92%",
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radii.md,
-    padding: spacing.md,
-  },
-  cites: {
-    marginTop: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth * 2,
-    paddingTop: spacing.sm,
-    gap: 2,
-  },
-  citeRow: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    minHeight: 52,
   },
   crisis: {
     marginHorizontal: spacing.md,

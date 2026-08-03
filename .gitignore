@@ -63,3 +63,8 @@ TODOS.md
 # generated native folders
 /ios
 /android
+
+# Firebase (never commit)
+fcm-service-account.json
+*firebase-adminsdk*.json
+google-services.json

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -20,6 +20,7 @@ import { ProfileButton } from "@/components/ScreenHeader";
 import { OnboardingGate } from "@/components/OnboardingGate";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useDailyVisit } from "@/hooks/useDailyVisit";
+import { useNotificationObserver } from "@/notifications/handlers";
 import { useOnboardingRouting } from "@/hooks/useOnboardingRouting";
 import { useSegments } from "expo-router";
 
@@ -39,6 +40,8 @@ function RootNavigator() {
 
   useOnboardingRouting();
   useDailyVisit();
+  // Notification taps → in-app routes (warm and cold start). One mount.
+  useNotificationObserver();
 
   if (!ready) return null;
 
@@ -132,7 +135,7 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
+  const [loaded, fontError] = useFonts({
     Fraunces_500Medium,
     Fraunces_600SemiBold,
     // Fraunces has no Devanagari coverage (see docs/design/VISUAL_SYSTEM.md);
@@ -144,11 +147,21 @@ export default function RootLayout() {
     Sora_600SemiBold,
   });
 
+  // If font loading errors or hangs, boot with system fonts after 2s rather
+  // than blocking on the splash screen forever.
+  const [fontsTimedOut, setFontsTimedOut] = useState(false);
   useEffect(() => {
-    if (loaded) SplashScreen.hideAsync().catch(() => undefined);
-  }, [loaded]);
+    const timer = setTimeout(() => setFontsTimedOut(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
-  if (!loaded) return null;
+  const ready = loaded || fontError != null || fontsTimedOut;
+
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => undefined);
+  }, [ready]);
+
+  if (!ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

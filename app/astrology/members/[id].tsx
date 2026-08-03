@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -14,7 +14,9 @@ import { EmptyState } from "@/components/SlokaCard";
 import { ChartOverviewPanel } from "@/components/astrology/ChartOverviewPanel";
 import { DashaTimelinePanel } from "@/components/astrology/DashaTimelinePanel";
 import { PredictionsPanel } from "@/components/astrology/PredictionsPanel";
+import { PredictionsStatus } from "@/components/astrology/PredictionsStatus";
 import { astrologyApi } from "@/api/endpoints";
+import { usePredictions } from "@/hooks/usePredictions";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -40,12 +42,15 @@ export default function AstrologyMemberDetailScreen() {
 
   const [member, setMember] = useState<AstrologyMember | null>(null);
   const [chart, setChart] = useState<Record<string, unknown> | null>(null);
-  const [predictions, setPredictions] = useState<PredictionsText | null>(null);
   const [tab, setTab] = useState<Tab>("chart");
   const [loading, setLoading] = useState(true);
-  const [predBusy, setPredBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const autoPred = useRef(false);
+
+  const predictions = usePredictions({
+    language: lang,
+    getRequest: () => ({ memberId: id }),
+    onChart: (c) => setChart(c),
+  });
 
   useEffect(() => {
     let alive = true;
@@ -62,7 +67,12 @@ export default function AstrologyMemberDetailScreen() {
         const nextChart = cRes.chart ?? null;
         setChart(nextChart);
         const existing = nextChart?.predictionsText as PredictionsText | undefined;
-        if (existing?.portrait) setPredictions(existing);
+        if (existing?.portrait) {
+          predictions.seed(lang, existing);
+        } else {
+          // Prefetch so the predictions tab is warm when it is opened.
+          void predictions.load();
+        }
       } catch (e) {
         if (alive) setError((e as Error).message);
       } finally {
@@ -72,35 +82,23 @@ export default function AstrologyMemberDetailScreen() {
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  async function loadPredictions(force = false) {
-    setPredBusy(true);
-    setError(null);
-    try {
-      const res = await astrologyApi.predictions({
-        memberId: id,
-        language: lang,
-        force,
-      });
-      if (res.chart) setChart(res.chart);
-      setPredictions(res.predictionsText);
-      setTab("predictions");
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setPredBusy(false);
-    }
-  }
-
+  // Load when the tab opens cold, and again after an EN↔HI switch — the
+  // hook caches per language, so switching back is instant and lossless.
   useEffect(() => {
-    if (tab !== "predictions" || predictions || predBusy || autoPred.current) {
-      return;
+    if (
+      tab === "predictions" &&
+      !loading &&
+      !predictions.predictions &&
+      !predictions.busy &&
+      !predictions.errorKind
+    ) {
+      void predictions.load();
     }
-    autoPred.current = true;
-    void loadPredictions(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, predictions, predBusy]);
+  }, [tab, lang, loading, predictions.predictions, predictions.busy, predictions.errorKind]);
 
   if (loading) {
     return (
@@ -216,14 +214,9 @@ export default function AstrologyMemberDetailScreen() {
           ) : null}
 
           {tab === "predictions" ? (
-            predBusy && !predictions ? (
-              <View style={{ gap: spacing.sm, alignItems: "center", paddingVertical: spacing.lg }}>
-                <ActivityIndicator color={colors.brass} />
-                <Text variant="muted">{t("astroWorking")}</Text>
-              </View>
-            ) : predictions ? (
+            predictions.predictions ? (
               <PredictionsPanel
-                predictions={predictions}
+                predictions={predictions.predictions}
                 featuredArea={featuredAreaFromChart(chart)}
                 detailed
                 labels={{
@@ -240,7 +233,14 @@ export default function AstrologyMemberDetailScreen() {
                 }}
               />
             ) : (
-              <Text variant="soft">{t("astroPredBlurb")}</Text>
+              <PredictionsStatus
+                busy={predictions.busy}
+                stage={predictions.stage}
+                error={predictions.error}
+                errorKind={predictions.errorKind}
+                retryAfterSec={predictions.retryAfterSec}
+                onRetry={() => void predictions.load()}
+              />
             )
           ) : null}
         </View>
@@ -260,11 +260,16 @@ export default function AstrologyMemberDetailScreen() {
           />
           <Button
             label={
-              predictions ? t("astroRegeneratePred") : t("astroGeneratePred")
+              predictions.predictions
+                ? t("astroRegeneratePred")
+                : t("astroGeneratePred")
             }
             variant="ghost"
-            loading={predBusy}
-            onPress={() => void loadPredictions(Boolean(predictions))}
+            loading={predictions.busy}
+            onPress={() => {
+              setTab("predictions");
+              void predictions.load(Boolean(predictions.predictions));
+            }}
           />
         </View>
       </ScrollView>

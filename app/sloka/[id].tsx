@@ -20,11 +20,16 @@ import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { Rise } from "@/components/Rise";
 import { EmptyState } from "@/components/SlokaCard";
+import {
+  NotificationPrompt,
+  maybeShowNotificationPrompt,
+} from "@/components/NotificationPrompt";
 import { contentApi, eventsApi, progressApi, userApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
+import { bumpFocusVersion } from "@/hooks/useFocusRefresh";
 import {
   addJournalDraft,
   cacheVerse,
@@ -52,6 +57,16 @@ export default function SlokaScreen() {
   const [journal, setJournal] = useState("");
   const [showJournal, setShowJournal] = useState(false);
   const [journalNotice, setJournalNotice] = useState<string | null>(null);
+  const [notifPromptVisible, setNotifPromptVisible] = useState(false);
+
+  // The pre-permission sheet appears only after the first meaningful action
+  // succeeds here (verse done, favorite added) — never on launch, and only
+  // while OS permission is undetermined and the decline cooldown allows.
+  const offerNotifications = () => {
+    void maybeShowNotificationPrompt().then((show) => {
+      if (show) setNotifPromptVisible(true);
+    });
+  };
 
   useEffect(() => {
     setVerseContext(slokaId);
@@ -107,6 +122,9 @@ export default function SlokaScreen() {
     if (isSignedIn) {
       progressApi.setCursor(sloka.id).catch(() => undefined);
     }
+    // The cursor moved — "Continue reading" on explore must not serve its
+    // TTL-cached copy on the next focus.
+    bumpFocusVersion("progress");
     contentApi
       .story(sloka.id, lang)
       .then((r) => setStory(r.story))
@@ -152,6 +170,8 @@ export default function SlokaScreen() {
           try {
             if (next) await userApi.addFavorite(sloka.id);
             else await userApi.removeFavorite(sloka.id);
+            bumpFocusVersion("favorites");
+            if (next) offerNotifications();
           } catch {
             setFavorited(!next);
           }
@@ -208,7 +228,9 @@ export default function SlokaScreen() {
               /* ignore */
             }
           }
+          bumpFocusVersion("progress");
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          offerNotifications();
         }}
       />
       <Tool
@@ -292,6 +314,7 @@ export default function SlokaScreen() {
                 if (!text) return;
                 if (isSignedIn) {
                   await userApi.addJournal(sloka.id, text);
+                  bumpFocusVersion("journal");
                   setJournalNotice(null);
                   void Haptics.notificationAsync(
                     Haptics.NotificationFeedbackType.Success
@@ -346,6 +369,11 @@ export default function SlokaScreen() {
           {toolbar}
         </View>
       )}
+
+      <NotificationPrompt
+        visible={notifPromptVisible}
+        onClose={() => setNotifPromptVisible(false)}
+      />
     </Screen>
   );
 }

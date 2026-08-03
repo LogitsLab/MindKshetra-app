@@ -36,20 +36,63 @@ function isBackgroundNetworkKill(e: unknown): boolean {
   return AppState.currentState !== "active";
 }
 
+/**
+ * In-memory access token cache.
+ *
+ * Every request used to await `supabase.auth.getSession()` — an AsyncStorage
+ * read on the hot path of each API call. The token is now cached in memory,
+ * kept warm by `onAuthStateChange` (sign-in, sign-out, background refresh),
+ * and only re-read from the session store when the cached copy is within
+ * `TOKEN_EXPIRY_MARGIN_S` of expiring or its expiry is unknown.
+ */
+let cachedAccessToken: string | null = null;
+/** Epoch seconds; 0 means unknown, which always falls back to getSession(). */
+let cachedTokenExpiresAt = 0;
+
+const TOKEN_EXPIRY_MARGIN_S = 60;
+
+let authListenerRegistered = false;
+
+function ensureAuthListener(): void {
+  if (authListenerRegistered || !supabaseConfigured) return;
+  authListenerRegistered = true;
+  supabase.auth.onAuthStateChange((_event, session) => {
+    cachedAccessToken = session?.access_token ?? null;
+    cachedTokenExpiresAt = session?.expires_at ?? 0;
+  });
+}
+
+function invalidateAccessToken(): void {
+  cachedAccessToken = null;
+  cachedTokenExpiresAt = 0;
+}
+
+async function getAccessToken(): Promise<string | null> {
+  if (!supabaseConfigured) return null;
+  ensureAuthListener();
+  const nowS = Date.now() / 1000;
+  if (cachedAccessToken && cachedTokenExpiresAt - nowS > TOKEN_EXPIRY_MARGIN_S) {
+    return cachedAccessToken;
+  }
+  try {
+    const { data } = await supabase.auth.getSession();
+    cachedAccessToken = data.session?.access_token ?? null;
+    cachedTokenExpiresAt = data.session?.expires_at ?? 0;
+  } catch {
+    // A broken auth store must not take content endpoints down with it —
+    // fall through to an unauthenticated request instead.
+    return null;
+  }
+  return cachedAccessToken;
+}
+
 async function authHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
   };
-  if (!supabaseConfigured) return headers;
-  try {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (token) headers.Authorization = `Bearer ${token}`;
-  } catch {
-    // A broken auth store must not take content endpoints down with it —
-    // fall through to an unauthenticated request instead.
-  }
+  const token = await getAccessToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
 
@@ -65,11 +108,24 @@ export async function apiFetch<T>(
   path: string,
   init: RequestInit = {}
 ): Promise<T> {
-  const headers = {
-    ...(await authHeaders()),
-    ...(init.headers as Record<string, string> | undefined),
+  const request = async () => {
+    const headers = {
+      ...(await authHeaders()),
+      ...(init.headers as Record<string, string> | undefined),
+    };
+    return {
+      res: await fetch(`${API_URL}${path}`, { ...init, headers }),
+      hadAuth: Boolean(headers.Authorization),
+    };
   };
-  const res = await fetch(`${API_URL}${path}`, { ...init, headers });
+
+  let { res, hadAuth } = await request();
+  if (res.status === 401 && hadAuth) {
+    // The cached token can outlive its session (revocation, clock drift).
+    // Re-read the session once and retry; a second 401 surfaces normally.
+    invalidateAccessToken();
+    ({ res } = await request());
+  }
   if (!res.ok) {
     let message = res.statusText;
     try {

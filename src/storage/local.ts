@@ -25,6 +25,7 @@ const KEYS = {
   sadhanaLog: "mindkshetra-sadhana-log",
   panchangToday: "mindkshetra-panchang-today",
   pushToken: "mindkshetra-push-token",
+  notifPrompt: "mindkshetra-notif-prompt",
   milestonesSeen: "mindkshetra-milestones-seen",
 } as const;
 
@@ -154,6 +155,35 @@ export async function setStoredPushToken(token: string): Promise<void> {
 
 export async function clearStoredPushToken(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.pushToken);
+}
+
+export type NotifPromptState = {
+  /** Epoch ms of the last decline of the pre-permission sheet. */
+  lastPromptAt: number | null;
+  declineCount: number;
+};
+
+/** Decline history of the notification pre-permission sheet (device-scoped). */
+export async function getNotifPromptState(): Promise<NotifPromptState> {
+  const raw = await AsyncStorage.getItem(KEYS.notifPrompt);
+  if (!raw) return { lastPromptAt: null, declineCount: 0 };
+  try {
+    const parsed = JSON.parse(raw) as Partial<NotifPromptState>;
+    return {
+      lastPromptAt:
+        typeof parsed.lastPromptAt === "number" ? parsed.lastPromptAt : null,
+      declineCount:
+        typeof parsed.declineCount === "number" ? parsed.declineCount : 0,
+    };
+  } catch {
+    return { lastPromptAt: null, declineCount: 0 };
+  }
+}
+
+export async function setNotifPromptState(
+  state: NotifPromptState
+): Promise<void> {
+  await AsyncStorage.setItem(KEYS.notifPrompt, JSON.stringify(state));
 }
 
 /** Local calendar date (device zone) as YYYY-MM-DD. */
@@ -382,27 +412,76 @@ export async function removeJournalDrafts(
   await AsyncStorage.setItem(KEYS.journalDrafts, JSON.stringify(remaining));
 }
 
+/* ------------------------------------------------------------------ */
+/* Verse cache.                                                        */
+/*                                                                     */
+/* Every verse open used to read, JSON.parse, mutate, stringify and    */
+/* rewrite the full 40-entry blob synchronously with the navigation.   */
+/* The map now lives in memory (loaded from AsyncStorage once) and     */
+/* persistence is debounced ~500ms trailing, so rapid verse-to-verse   */
+/* browsing costs one write instead of one per open. Reads always see  */
+/* the in-memory copy immediately.                                     */
+/* ------------------------------------------------------------------ */
+
+const VERSE_CACHE_LIMIT = 40;
+const VERSE_CACHE_FLUSH_MS = 500;
+
+type VerseCacheMap = Record<string, { at: number; payload: unknown }>;
+
+let verseCache: VerseCacheMap | null = null;
+let verseCacheLoading: Promise<VerseCacheMap> | null = null;
+let verseCacheFlushTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function loadVerseCache(): Promise<VerseCacheMap> {
+  if (verseCache) return verseCache;
+  if (!verseCacheLoading) {
+    verseCacheLoading = AsyncStorage.getItem(KEYS.verseCache)
+      .then((raw) => {
+        if (!verseCache) {
+          try {
+            verseCache = raw ? (JSON.parse(raw) as VerseCacheMap) : {};
+          } catch {
+            verseCache = {};
+          }
+        }
+        return verseCache;
+      })
+      .catch(() => {
+        verseCache = verseCache ?? {};
+        return verseCache;
+      });
+  }
+  return verseCacheLoading;
+}
+
+function scheduleVerseCacheFlush(): void {
+  if (verseCacheFlushTimer) clearTimeout(verseCacheFlushTimer);
+  verseCacheFlushTimer = setTimeout(() => {
+    verseCacheFlushTimer = null;
+    if (!verseCache) return;
+    AsyncStorage.setItem(KEYS.verseCache, JSON.stringify(verseCache)).catch(
+      () => {
+        // A failed flush costs offline reuse of recent verses, nothing more —
+        // the in-memory copy still serves this session.
+      }
+    );
+  }, VERSE_CACHE_FLUSH_MS);
+}
+
 export async function cacheVerse(id: number, payload: unknown): Promise<void> {
-  const raw = await AsyncStorage.getItem(KEYS.verseCache);
-  const map: Record<string, unknown> = raw ? JSON.parse(raw) : {};
+  const map = await loadVerseCache();
   map[String(id)] = { at: Date.now(), payload };
   const keys = Object.keys(map);
-  if (keys.length > 40) {
-    const sorted = keys.sort(
-      (a, b) => ((map[a] as { at: number }).at ?? 0) - ((map[b] as { at: number }).at ?? 0)
-    );
-    for (const k of sorted.slice(0, keys.length - 40)) delete map[k];
+  if (keys.length > VERSE_CACHE_LIMIT) {
+    const sorted = keys.sort((a, b) => (map[a].at ?? 0) - (map[b].at ?? 0));
+    for (const k of sorted.slice(0, keys.length - VERSE_CACHE_LIMIT)) {
+      delete map[k];
+    }
   }
-  await AsyncStorage.setItem(KEYS.verseCache, JSON.stringify(map));
+  scheduleVerseCacheFlush();
 }
 
 export async function getCachedVerse<T>(id: number): Promise<T | null> {
-  const raw = await AsyncStorage.getItem(KEYS.verseCache);
-  if (!raw) return null;
-  try {
-    const map = JSON.parse(raw) as Record<string, { payload: T }>;
-    return map[String(id)]?.payload ?? null;
-  } catch {
-    return null;
-  }
+  const map = await loadVerseCache();
+  return (map[String(id)]?.payload as T | undefined) ?? null;
 }

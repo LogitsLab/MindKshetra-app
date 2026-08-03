@@ -29,6 +29,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "app.mindkshetra.mobile",
+      "googleServicesFile": "./google-services.json",
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
@@ -59,7 +60,8 @@
           "enableBackgroundRemoteNotifications": false
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": false

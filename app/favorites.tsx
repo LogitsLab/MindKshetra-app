@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import { ActivityIndicator, FlatList, View } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
@@ -10,6 +10,7 @@ import { userApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useFocusRefresh } from "@/hooks/useFocusRefresh";
 import { spacing } from "@/theme/tokens";
 import type { Sloka } from "@/types";
 
@@ -22,34 +23,29 @@ export default function FavoritesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (authLoading) return;
+  useFocusRefresh(
+    "favorites",
+    async (isActive) => {
       if (!isSignedIn) {
         setLoading(false);
         setSlokas([]);
         return;
       }
-      let alive = true;
       setLoading(true);
-      userApi
-        .favorites()
-        .then((res) => {
-          if (alive) {
-            setSlokas(res.slokas ?? []);
-            setError(null);
-          }
-        })
-        .catch((e) => {
-          if (alive) setError((e as Error).message);
-        })
-        .finally(() => {
-          if (alive) setLoading(false);
-        });
-      return () => {
-        alive = false;
-      };
-    }, [isSignedIn, authLoading])
+      try {
+        const res = await userApi.favorites();
+        if (isActive()) {
+          setSlokas(res.slokas ?? []);
+          setError(null);
+        }
+      } catch (e) {
+        if (isActive()) setError((e as Error).message);
+        throw e;
+      } finally {
+        if (isActive()) setLoading(false);
+      }
+    },
+    { enabled: !authLoading, resetKey: String(isSignedIn) }
   );
 
   if (!authLoading && !isSignedIn) {

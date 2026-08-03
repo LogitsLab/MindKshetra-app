@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
@@ -9,6 +9,7 @@ import { userApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useFocusRefresh } from "@/hooks/useFocusRefresh";
 import { radii, spacing } from "@/theme/tokens";
 import type { JournalEntry } from "@/types";
 
@@ -21,34 +22,29 @@ export default function ReflectionsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (authLoading) return;
+  useFocusRefresh(
+    "journal",
+    async (isActive) => {
       if (!isSignedIn) {
         setLoading(false);
         setEntries([]);
         return;
       }
-      let alive = true;
       setLoading(true);
-      userApi
-        .journal()
-        .then((res) => {
-          if (alive) {
-            setEntries(res.entries ?? []);
-            setError(null);
-          }
-        })
-        .catch((e) => {
-          if (alive) setError((e as Error).message);
-        })
-        .finally(() => {
-          if (alive) setLoading(false);
-        });
-      return () => {
-        alive = false;
-      };
-    }, [isSignedIn, authLoading])
+      try {
+        const res = await userApi.journal();
+        if (isActive()) {
+          setEntries(res.entries ?? []);
+          setError(null);
+        }
+      } catch (e) {
+        if (isActive()) setError((e as Error).message);
+        throw e;
+      } finally {
+        if (isActive()) setLoading(false);
+      }
+    },
+    { enabled: !authLoading, resetKey: String(isSignedIn) }
   );
 
   if (!authLoading && !isSignedIn) {
