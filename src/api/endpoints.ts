@@ -238,16 +238,44 @@ export const meditationApi = {
 };
 
 export const pushApi = {
-  register: (body: { token: string; platform: "ios" | "android" }) =>
-    apiFetch<{ ok: boolean }>("/api/push/register", {
+  /** Upserts — works authed or anonymous (token rows re-home on upgrade). */
+  register: (body: {
+    expoPushToken: string;
+    platform: "ios" | "android";
+    appVersion: string;
+  }) =>
+    apiFetch<{ ok: boolean }>("/api/account/push-tokens", {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  disable: (body: { token: string }) =>
-    apiFetch<{ ok: boolean }>("/api/push/register", {
+  unregister: (body: { expoPushToken: string }) =>
+    apiFetch<{ ok: boolean }>("/api/account/push-tokens", {
       method: "DELETE",
       body: JSON.stringify(body),
     }),
+};
+
+export type NotificationPreferences = {
+  pushEnabled: boolean;
+  dailyVerse: boolean;
+  streakReminder: boolean;
+  continueReading: boolean;
+  astrologyAlerts: boolean;
+  reflections: boolean;
+  weeklyDigestEmail: boolean;
+  /** Local hour of day the daily verse goes out, 4–21. */
+  sendHourLocal: number;
+};
+
+export const notificationPrefsApi = {
+  /** Auth required; the server creates defaults on first read. */
+  get: () =>
+    apiFetch<NotificationPreferences>("/api/account/notification-preferences"),
+  update: (body: Partial<NotificationPreferences>) =>
+    apiFetch<NotificationPreferences>(
+      "/api/account/notification-preferences",
+      { method: "PATCH", body: JSON.stringify(body) }
+    ),
 };
 
 export const progressApi = {

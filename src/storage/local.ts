@@ -25,6 +25,7 @@ const KEYS = {
   sadhanaLog: "mindkshetra-sadhana-log",
   panchangToday: "mindkshetra-panchang-today",
   pushToken: "mindkshetra-push-token",
+  notifPrompt: "mindkshetra-notif-prompt",
   milestonesSeen: "mindkshetra-milestones-seen",
 } as const;
 
@@ -154,6 +155,35 @@ export async function setStoredPushToken(token: string): Promise<void> {
 
 export async function clearStoredPushToken(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.pushToken);
+}
+
+export type NotifPromptState = {
+  /** Epoch ms of the last decline of the pre-permission sheet. */
+  lastPromptAt: number | null;
+  declineCount: number;
+};
+
+/** Decline history of the notification pre-permission sheet (device-scoped). */
+export async function getNotifPromptState(): Promise<NotifPromptState> {
+  const raw = await AsyncStorage.getItem(KEYS.notifPrompt);
+  if (!raw) return { lastPromptAt: null, declineCount: 0 };
+  try {
+    const parsed = JSON.parse(raw) as Partial<NotifPromptState>;
+    return {
+      lastPromptAt:
+        typeof parsed.lastPromptAt === "number" ? parsed.lastPromptAt : null,
+      declineCount:
+        typeof parsed.declineCount === "number" ? parsed.declineCount : 0,
+    };
+  } catch {
+    return { lastPromptAt: null, declineCount: 0 };
+  }
+}
+
+export async function setNotifPromptState(
+  state: NotifPromptState
+): Promise<void> {
+  await AsyncStorage.setItem(KEYS.notifPrompt, JSON.stringify(state));
 }
 
 /** Local calendar date (device zone) as YYYY-MM-DD. */

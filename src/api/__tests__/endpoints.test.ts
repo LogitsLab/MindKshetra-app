@@ -1,6 +1,12 @@
 /** @jest-environment node */
 
-import { contentApi, journeysApi, pathsApi, pushApi } from "../endpoints";
+import {
+  contentApi,
+  journeysApi,
+  notificationPrefsApi,
+  pathsApi,
+  pushApi,
+} from "../endpoints";
 
 jest.mock("../client", () => ({
   apiFetch: jest.fn(),
@@ -44,25 +50,56 @@ describe("pushApi", () => {
     mockApiFetch.mockReset();
   });
 
-  it("POSTs token + platform to /api/push/register", async () => {
+  it("POSTs token + platform + appVersion to /api/account/push-tokens", async () => {
     mockApiFetch.mockResolvedValue({ ok: true });
-    await pushApi.register({ token: "ExponentPushToken[x]", platform: "ios" });
-    expect(mockApiFetch).toHaveBeenCalledWith("/api/push/register", {
+    await pushApi.register({
+      expoPushToken: "ExponentPushToken[x]",
+      platform: "ios",
+      appVersion: "1.2.3",
+    });
+    expect(mockApiFetch).toHaveBeenCalledWith("/api/account/push-tokens", {
       method: "POST",
       body: JSON.stringify({
-        token: "ExponentPushToken[x]",
+        expoPushToken: "ExponentPushToken[x]",
         platform: "ios",
+        appVersion: "1.2.3",
       }),
     });
   });
 
-  it("DELETEs token to disable", async () => {
+  it("DELETEs token to unregister", async () => {
     mockApiFetch.mockResolvedValue({ ok: true });
-    await pushApi.disable({ token: "ExponentPushToken[x]" });
-    expect(mockApiFetch).toHaveBeenCalledWith("/api/push/register", {
+    await pushApi.unregister({ expoPushToken: "ExponentPushToken[x]" });
+    expect(mockApiFetch).toHaveBeenCalledWith("/api/account/push-tokens", {
       method: "DELETE",
-      body: JSON.stringify({ token: "ExponentPushToken[x]" }),
+      body: JSON.stringify({ expoPushToken: "ExponentPushToken[x]" }),
     });
+  });
+});
+
+describe("notificationPrefsApi", () => {
+  beforeEach(() => {
+    mockApiFetch.mockReset();
+  });
+
+  it("GETs /api/account/notification-preferences", async () => {
+    mockApiFetch.mockResolvedValue({ pushEnabled: true });
+    await notificationPrefsApi.get();
+    expect(mockApiFetch).toHaveBeenCalledWith(
+      "/api/account/notification-preferences"
+    );
+  });
+
+  it("PATCHes partial camelCase updates", async () => {
+    mockApiFetch.mockResolvedValue({ pushEnabled: true });
+    await notificationPrefsApi.update({ dailyVerse: true, sendHourLocal: 7 });
+    expect(mockApiFetch).toHaveBeenCalledWith(
+      "/api/account/notification-preferences",
+      {
+        method: "PATCH",
+        body: JSON.stringify({ dailyVerse: true, sendHourLocal: 7 }),
+      }
+    );
   });
 });
 
