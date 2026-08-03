@@ -29,6 +29,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "app.mindkshetra.mobile",
+      "googleServicesFile": "./google-services.json",
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
