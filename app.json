@@ -2,7 +2,7 @@
   "expo": {
     "name": "MindKshetra",
     "slug": "mindkshetra",
-    "version": "1.1.12",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "mindkshetra",
@@ -19,7 +19,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserNotificationsUsageDescription": "MindKshetra sends gentle reminders for your daily verse and practice streak."
-      }
+      },
+      "buildNumber": "2"
     },
     "android": {
       "adaptiveIcon": {
@@ -34,7 +35,8 @@
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "POST_NOTIFICATIONS"
-      ]
+      ],
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png",
