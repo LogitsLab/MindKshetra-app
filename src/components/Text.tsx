@@ -15,9 +15,9 @@ type Props = RNTextProps & {
 };
 
 export function Text({ variant = "body", color, style, ...rest }: Props) {
-  const { colors } = useTheme();
+  const { mode, colors } = useTheme();
   const { multiplier } = useTextScale();
-  const styles = variantStyles(colors, multiplier);
+  const styles = variantStyles(mode, colors, multiplier);
   return (
     <RNText
       {...rest}
@@ -30,7 +30,26 @@ function scale(n: number, m: number) {
   return Math.round(n * m * 10) / 10;
 }
 
+// Colors are fully determined by theme mode, so (mode, multiplier) is a
+// complete cache key: 2 modes x 3 text scales = at most 6 sheets, instead of
+// a fresh StyleSheet.create per <Text> render.
+const styleCache = new Map<string, ReturnType<typeof createVariantStyles>>();
+
 function variantStyles(
+  mode: ReturnType<typeof useTheme>["mode"],
+  colors: ReturnType<typeof useTheme>["colors"],
+  m: number
+) {
+  const key = `${mode}:${m}`;
+  let sheet = styleCache.get(key);
+  if (!sheet) {
+    sheet = createVariantStyles(colors, m);
+    styleCache.set(key, sheet);
+  }
+  return sheet;
+}
+
+function createVariantStyles(
   colors: ReturnType<typeof useTheme>["colors"],
   m: number
 ) {
