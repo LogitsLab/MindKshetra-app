@@ -1,21 +1,18 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   BackHandler,
-  FlatList,
+  Pressable,
   ScrollView,
   StyleSheet,
+  TextInput,
   View,
-  useWindowDimensions,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
 } from "react-native";
 import { useRouter, Redirect } from "expo-router";
 import { Screen } from "@/components/Screen";
+import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
+import { BrandMark } from "@/components/BrandMark";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
-import { OnboardingHeroSlide } from "@/components/onboarding/OnboardingHeroSlide";
-import { OnboardingPathsSlide } from "@/components/onboarding/OnboardingPathsSlide";
-import { OnboardingLanguageStep } from "@/components/onboarding/OnboardingLanguageStep";
 import {
   OnboardingAuthStep,
   type AuthAction,
@@ -28,24 +25,38 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useTheme } from "@/context/ThemeContext";
-import { spacing } from "@/theme/tokens";
+import { spacing, radii } from "@/theme/tokens";
+import { userApi } from "@/api/endpoints";
+import {
+  DAILY_TIME_OPTIONS,
+  EMPTY_PERSONALIZATION,
+  GOALS,
+  GUIDANCE_STYLES,
+  INSPIRATIONS,
+  ONBOARDING_COPY,
+  ONBOARDING_VERSION,
+  PERSONALIZATION_STORAGE_KEY,
+  type GoalId,
+  type GuidanceStyleId,
+  type InspirationId,
+  type PersonalizationDraft,
+} from "@/data/personalization";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const MAIN_STEPS = ["welcome", "language", "account"] as const;
-type MainStep = (typeof MAIN_STEPS)[number];
-
-/**
- * Four screens, counted the same way from start to finish: the two welcome
- * pages, language, account. `welcome` is one MAIN_STEP holding a two-page
- * pager, but the person going through it is looking at four screens, so that
- * is what progress reports.
- */
-const FLOW_TOTAL = 4;
+const STEPS = [
+  "welcome",
+  "goals",
+  "inspirations",
+  "time",
+  "setup",
+  "account",
+] as const;
+type Step = (typeof STEPS)[number];
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const { colors } = useTheme();
-  const { t, lang, setLang } = useLanguage();
+  const { lang, setLang } = useLanguage();
   const { markComplete, complete } = useOnboarding();
   const {
     configured,
@@ -56,196 +67,375 @@ export default function OnboardingScreen() {
     emailCooldownSec,
   } = useAuth();
 
-  const [mainStep, setMainStep] = useState<MainStep>("welcome");
-  const [welcomeSub, setWelcomeSub] = useState(0);
+  const [step, setStep] = useState<Step>("welcome");
+  const [draft, setDraft] = useState<PersonalizationDraft>({
+    ...EMPTY_PERSONALIZATION,
+    preferredLanguage: lang,
+  });
   const [email, setEmail] = useState("");
   const [emailOpen, setEmailOpen] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
   const [pending, setPending] = useState<AuthAction | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [guestFailed, setGuestFailed] = useState(false);
-  const welcomeRef = useRef<FlatList>(null);
 
-  const mainIndex = MAIN_STEPS.indexOf(mainStep);
-  const flowStep = mainStep === "welcome" ? welcomeSub : mainIndex + 1;
-  const onPoster = mainStep === "welcome" && welcomeSub === 0;
+  const stepIndex = STEPS.indexOf(step);
+  const flowStep = stepIndex;
+  const flowTotal = STEPS.length;
+  const onPoster = step === "welcome";
   const reading = useReadingVeil(!onPoster);
+  const copy = ONBOARDING_COPY;
+  const L = lang === "hi" ? "hi" : "en";
 
-  // The route sets gestureEnabled: false, so without this Android's back button
-  // would try to pop the stack and leave the app rather than step back a screen.
   useEffect(() => {
-    const sub = BackHandler.addEventListener("hardwareBackPress", goBack);
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      goBack();
+      return true;
+    });
     return () => sub.remove();
-  }, [mainStep, welcomeSub]);
+  });
 
-  // A signed-in account never sits through onboarding — including the moment
-  // sign-in succeeds mid-flow (the redirect doubles as the exit).
   if (complete || isSignedIn) {
     return <Redirect href="/(tabs)/home" />;
   }
 
-  async function finish() {
+  function goBack() {
+    if (stepIndex <= 0) return false;
+    setStep(STEPS[stepIndex - 1]);
+    return true;
+  }
+
+  function toggleGoal(id: GoalId) {
+    setDraft((d) => ({
+      ...d,
+      goals: d.goals.includes(id)
+        ? d.goals.filter((g) => g !== id)
+        : [...d.goals, id],
+    }));
+  }
+
+  function toggleInspiration(id: InspirationId) {
+    setDraft((d) => ({
+      ...d,
+      inspirations: d.inspirations.includes(id)
+        ? d.inspirations.filter((g) => g !== id)
+        : [...d.inspirations, id],
+    }));
+  }
+
+  async function persistDraft(next: PersonalizationDraft, skipped = false) {
+    const payload = { ...next, skipped };
+    await AsyncStorage.setItem(
+      PERSONALIZATION_STORAGE_KEY,
+      JSON.stringify({ ...payload, onboardingVersion: ONBOARDING_VERSION })
+    );
+    try {
+      if (configured) {
+        await userApi.completeOnboarding({
+          goals: payload.goals,
+          inspirations: payload.inspirations,
+          dailyTimeMinutes: payload.dailyTimeMinutes,
+          guidanceStyle: payload.guidanceStyle,
+          displayName: payload.displayName,
+          preferredLanguage: payload.preferredLanguage,
+          skipped,
+        });
+      }
+    } catch {
+      // Local draft is enough for guests / offline.
+    }
+  }
+
+  async function finish(skipped = false) {
+    const next = { ...draft, preferredLanguage: lang, skipped };
+    await persistDraft(next, skipped);
     await markComplete();
     router.replace("/(tabs)/home");
   }
 
-  /**
-   * Bound to onScroll as well as onMomentumScrollEnd. A slow drag released
-   * without flick produces no momentum event on iOS, so momentum alone left the
-   * pager on page two while the progress track still read page one.
-   */
-  function onWelcomeScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
-    if (width <= 0) return;
-    const index = Math.round(e.nativeEvent.contentOffset.x / width);
-    const clamped = Math.max(0, Math.min(1, index));
-    if (clamped !== welcomeSub) setWelcomeSub(clamped);
-  }
-
-  function goToWelcomePage(index: number) {
-    setWelcomeSub(index);
-    welcomeRef.current?.scrollToIndex({ index, animated: true });
-  }
-
-  function advanceWelcome() {
-    if (welcomeSub === 0) {
-      goToWelcomePage(1);
-      return;
-    }
-    setMainStep("language");
-  }
-
-  /**
-   * The choice already applied on tap — the whole step is a live preview. There
-   * is nothing left to commit here, only somewhere to go next.
-   */
-  function advanceLanguage() {
-    setMainStep("account");
-  }
-
-  /** Returns true when it consumed the gesture, which is what BackHandler wants. */
-  function goBack() {
-    if (mainStep === "account") {
-      setMainStep("language");
-      return true;
-    }
-    if (mainStep === "language") {
-      setMainStep("welcome");
-      setWelcomeSub(1);
-      return true;
-    }
-    if (welcomeSub > 0) {
-      goToWelcomePage(welcomeSub - 1);
-      return true;
-    }
-    return false;
-  }
-
-  /** Drops the two intro pages. Language and account are real choices, so they stay. */
-  function skipIntro() {
-    setMainStep("language");
-  }
-
-  /**
-   * `which` is what makes the feedback legible: a single boolean meant every
-   * button on the step reported busy at once, so tapping "continue as guest"
-   * also spun the Google button and nothing said which one you had started.
-   */
-  async function runAuth(
-    which: AuthAction,
-    action: () => Promise<boolean | void>,
-    options: { finishAfter?: boolean } = {}
-  ) {
-    const { finishAfter = true } = options;
-    const isGuest = which === "guest";
-    if (pending) return;
-    setPending(which);
+  async function onAuth(action: AuthAction) {
     setMessage(null);
-    if (!isGuest) setGuestFailed(false);
+    setPending(action);
     try {
-      // A provider that resolves false means the person dismissed the sheet.
-      // Finishing there would mark onboarding complete and drop them into the
-      // app signed out, with no way back to the other sign-in options.
-      const started = await action();
-      if (finishAfter && started !== false) await finish();
-    } catch (e) {
-      const raw = (e as Error).message || "";
-      if (
-        raw === "EMAIL_QUOTA" ||
-        raw === "RATE_LIMITED" ||
-        /rate|too many|wait a minute/i.test(raw)
-      ) {
-        setMessage(t("authEmailQuota"));
-      } else {
-        setMessage(raw);
+      if (action === "guest") {
+        const ok = await signInAnonymously();
+        if (!ok) {
+          setGuestFailed(true);
+          setMessage(
+            lang === "hi"
+              ? "अतिथि साइन-इन नहीं हो सका। फिर भी जारी रखें।"
+              : "Guest sign-in failed. You can continue anyway."
+          );
+          return;
+        }
+        await finish(false);
+        return;
       }
-      if (isGuest) setGuestFailed(true);
+      if (action === "google") {
+        await signInWithGoogle();
+        await finish(false);
+        return;
+      }
+      if (action === "email") {
+        const ok = await signInWithEmail(email.trim());
+        if (ok) setLinkSent(true);
+        else
+          setMessage(
+            lang === "hi" ? "ईमेल नहीं भेजा जा सका।" : "Could not send email."
+          );
+      }
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setPending(null);
     }
   }
 
+  const selectStyle = useMemo(
+    () => ({
+      borderColor: colors.line,
+      backgroundColor: colors.field,
+    }),
+    [colors]
+  );
+
   return (
-    <View style={[styles.root, { backgroundColor: colors.void }]}>
+    <Screen atmosphere="hero" edges={["top", "bottom"]}>
       <OnboardingBackdrop reading={reading} />
-      <Screen
-        atmosphere="none"
-        padded={false}
-        style={styles.transparent}
-        edges={["top", "left", "right", "bottom"]}
-      >
-      <OnboardingHeader
-        step={flowStep}
-        total={FLOW_TOTAL}
-        onBack={flowStep > 0 ? goBack : undefined}
-        onSkip={mainStep === "welcome" ? skipIntro : undefined}
-      />
-
-      {mainStep === "welcome" ? (
-        <View style={styles.welcomeBody}>
-          <FlatList
-            ref={welcomeRef}
-            horizontal
-            pagingEnabled
-            style={styles.welcomePager}
-            data={[0, 1]}
-            keyExtractor={(item) => String(item)}
-            showsHorizontalScrollIndicator={false}
-            onScroll={onWelcomeScroll}
-            scrollEventThrottle={16}
-            onMomentumScrollEnd={onWelcomeScroll}
-            // Restores the page you were on when Back brings you here from
-            // language; the pager unmounts while the later steps are on screen.
-            initialScrollIndex={welcomeSub}
-            getItemLayout={(_, index) => ({
-              length: width,
-              offset: width * index,
-              index,
-            })}
-            renderItem={({ item }) => (
-              <View style={[styles.welcomeSlide, { width }]}>
-                {item === 0 ? (
-                  <OnboardingHeroSlide />
-                ) : (
-                  <OnboardingPathsSlide active={welcomeSub === 1} />
-                )}
-              </View>
-            )}
+      <View style={styles.wrap}>
+        {step !== "welcome" ? (
+          <OnboardingHeader
+            step={flowStep + 1}
+            total={flowTotal}
+            onBack={() => goBack()}
           />
-          <View style={styles.footer}>
-            <Button label={t("onboardingContinue")} onPress={advanceWelcome} />
-          </View>
-        </View>
-      ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
-          {mainStep === "language" ? (
-            <OnboardingLanguageStep selected={lang} onSelect={setLang} />
-          ) : null}
+        ) : null}
 
-          {mainStep === "account" ? (
+        {step === "welcome" ? (
+          <View style={styles.hero}>
+            <BrandMark size={56} />
+            <Text variant="display" style={{ color: colors.onMedia, marginTop: spacing.md }}>
+              {copy.welcome.title[L]}
+            </Text>
+            <Text variant="soft" style={{ color: colors.onMediaMuted, marginTop: spacing.xs }}>
+              {copy.welcome.subtitle[L]}
+            </Text>
+            <Text
+              variant="body"
+              style={{
+                color: colors.onMediaMuted,
+                textAlign: "center",
+                marginTop: spacing.lg,
+                paddingHorizontal: spacing.lg,
+              }}
+            >
+              {copy.welcome.tagline[L]}
+            </Text>
+            <View style={styles.ctaCol}>
+              <Button
+                label={copy.welcome.continue[L]}
+                onPress={() => setStep("goals")}
+              />
+              <Pressable onPress={() => finish(true)} hitSlop={12}>
+                <Text variant="muted" style={{ color: colors.onMediaMuted, textAlign: "center" }}>
+                  {copy.welcome.skip[L]}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+
+        {step === "goals" ? (
+          <ScrollView contentContainerStyle={styles.pad}>
+            <Text variant="display">{copy.goals.title[L]}</Text>
+            <Text variant="soft" style={{ marginTop: spacing.sm }}>
+              {copy.goals.body[L]}
+            </Text>
+            <View style={styles.grid}>
+              {GOALS.map((g) => {
+                const on = draft.goals.includes(g.id);
+                return (
+                  <Pressable
+                    key={g.id}
+                    onPress={() => toggleGoal(g.id)}
+                    style={[
+                      styles.tile,
+                      selectStyle,
+                      on && { borderColor: colors.brass },
+                    ]}
+                  >
+                    <Text variant="body">{g[L]}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Button
+              label={copy.goals.next[L]}
+              onPress={() => setStep("inspirations")}
+              style={{ marginTop: spacing.lg }}
+            />
+            <Pressable onPress={() => finish(true)} style={{ marginTop: spacing.md }}>
+              <Text variant="muted" style={{ textAlign: "center" }}>
+                {copy.welcome.skip[L]}
+              </Text>
+            </Pressable>
+          </ScrollView>
+        ) : null}
+
+        {step === "inspirations" ? (
+          <ScrollView contentContainerStyle={styles.pad}>
+            <Text variant="display">{copy.inspirations.title[L]}</Text>
+            <Text variant="soft" style={{ marginTop: spacing.sm }}>
+              {copy.inspirations.body[L]}
+            </Text>
+            <View style={styles.grid}>
+              {INSPIRATIONS.map((g) => {
+                const on = draft.inspirations.includes(g.id);
+                return (
+                  <Pressable
+                    key={g.id}
+                    onPress={() => toggleInspiration(g.id)}
+                    style={[
+                      styles.tile,
+                      selectStyle,
+                      on && { borderColor: colors.brass },
+                    ]}
+                  >
+                    <Text variant="body">{g[L]}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Button
+              label={copy.inspirations.none[L]}
+              variant="ghost"
+              onPress={() => {
+                setDraft((d) => ({ ...d, inspirations: [] }));
+                setStep("time");
+              }}
+              style={{ marginTop: spacing.lg }}
+            />
+            <Button
+              label={copy.inspirations.next[L]}
+              onPress={() => setStep("time")}
+              style={{ marginTop: spacing.sm }}
+            />
+          </ScrollView>
+        ) : null}
+
+        {step === "time" ? (
+          <ScrollView contentContainerStyle={styles.pad}>
+            <Text variant="display">{copy.time.title[L]}</Text>
+            <Text variant="soft" style={{ marginTop: spacing.sm }}>
+              {copy.time.body[L]}
+            </Text>
+            <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
+              {DAILY_TIME_OPTIONS.map((o) => {
+                const on = draft.dailyTimeMinutes === o.minutes;
+                return (
+                  <Pressable
+                    key={o.minutes}
+                    onPress={() =>
+                      setDraft((d) => ({ ...d, dailyTimeMinutes: o.minutes }))
+                    }
+                    style={[
+                      styles.row,
+                      selectStyle,
+                      on && { borderColor: colors.brass },
+                    ]}
+                  >
+                    <Text variant="body">{o[L]}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Button
+              label={copy.time.next[L]}
+              onPress={() => setStep("setup")}
+              style={{ marginTop: spacing.lg }}
+            />
+          </ScrollView>
+        ) : null}
+
+        {step === "setup" ? (
+          <ScrollView contentContainerStyle={styles.pad} keyboardShouldPersistTaps="handled">
+            <Text variant="display">{copy.setup.title[L]}</Text>
+            <Text variant="eyebrow" style={{ marginTop: spacing.lg }}>
+              {copy.setup.language[L]}
+            </Text>
+            <View style={styles.rowPair}>
+              {(["en", "hi"] as const).map((code) => (
+                <Pressable
+                  key={code}
+                  onPress={() => {
+                    setLang(code);
+                    setDraft((d) => ({ ...d, preferredLanguage: code }));
+                  }}
+                  style={[
+                    styles.half,
+                    selectStyle,
+                    draft.preferredLanguage === code && {
+                      borderColor: colors.brass,
+                    },
+                  ]}
+                >
+                  <Text variant="body">{code === "en" ? "English" : "हिंदी"}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text variant="eyebrow" style={{ marginTop: spacing.lg }}>
+              {copy.setup.guidance[L]}
+            </Text>
+            {GUIDANCE_STYLES.map((g) => {
+              const on = draft.guidanceStyle === g.id;
+              return (
+                <Pressable
+                  key={g.id}
+                  onPress={() =>
+                    setDraft((d) => ({
+                      ...d,
+                      guidanceStyle: g.id as GuidanceStyleId,
+                    }))
+                  }
+                  style={[
+                    styles.row,
+                    selectStyle,
+                    { marginTop: spacing.sm },
+                    on && { borderColor: colors.brass },
+                  ]}
+                >
+                  <Text variant="body">{g[L]}</Text>
+                </Pressable>
+              );
+            })}
+            <Text variant="eyebrow" style={{ marginTop: spacing.lg }}>
+              {copy.setup.name[L]}
+            </Text>
+            <TextInput
+              value={draft.displayName}
+              onChangeText={(displayName) =>
+                setDraft((d) => ({ ...d, displayName }))
+              }
+              placeholder={copy.setup.namePlaceholder[L]}
+              placeholderTextColor={colors.textMuted}
+              style={[
+                styles.input,
+                { color: colors.text, borderColor: colors.line, backgroundColor: colors.field },
+              ]}
+            />
+            <Text variant="soft" style={{ marginTop: spacing.md, textAlign: "center" }}>
+              {copy.setup.creating[L]}
+            </Text>
+            <Button
+              label={copy.setup.start[L]}
+              onPress={() => setStep("account")}
+              style={{ marginTop: spacing.lg }}
+            />
+          </ScrollView>
+        ) : null}
+
+        {step === "account" ? (
+          <ScrollView contentContainerStyle={styles.pad}>
             <OnboardingAuthStep
               configured={configured}
               pending={pending}
@@ -257,59 +447,62 @@ export default function OnboardingScreen() {
               guestFailed={guestFailed}
               onEmailChange={setEmail}
               onEmailOpen={() => setEmailOpen(true)}
-              onGoogle={() => void runAuth("google", signInWithGoogle)}
-              onEmailSubmit={() =>
-                void runAuth(
-                  "email",
-                  async () => {
-                    await signInWithEmail(email.trim());
-                    setLinkSent(true);
-                  },
-                  { finishAfter: false }
-                )
-              }
-              onGuest={() => void runAuth("guest", signInAnonymously)}
-              onEnterAnyway={() => void finish()}
+              onGoogle={() => onAuth("google")}
+              onEmailSubmit={() => onAuth("email")}
+              onGuest={() => onAuth("guest")}
+              onEnterAnyway={() => finish(false)}
             />
-          ) : null}
-        </ScrollView>
-      )}
-
-      {mainStep === "language" ? (
-        <View style={styles.footer}>
-          <Button label={t("onboardingContinue")} onPress={advanceLanguage} />
-        </View>
-      ) : null}
-      </Screen>
-    </View>
+          </ScrollView>
+        ) : null}
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  wrap: { flex: 1 },
+  hero: {
     flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
   },
-  transparent: {
-    backgroundColor: "transparent",
+  ctaCol: { marginTop: spacing.xxl, width: "100%", gap: spacing.md },
+  pad: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.lg,
   },
-  welcomeBody: {
-    flex: 1,
+  tile: {
+    width: "47%",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
   },
-  welcomePager: {
-    flex: 1,
-  },
-  /** No horizontal inset: the poster is edge-to-edge, slides pad their own copy. */
-  welcomeSlide: {
-    flex: 1,
-  },
-  scroll: {
+  row: {
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
   },
-  footer: {
+  rowPair: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
+  half: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    alignItems: "center",
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
+  },
+  input: {
+    marginTop: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    paddingVertical: spacing.sm,
+    fontFamily: "Sora_400Regular",
+    fontSize: 16,
   },
 });

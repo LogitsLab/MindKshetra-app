@@ -625,6 +625,21 @@ export default function AccountScreen() {
               onPress={() => router.push("/account/reflections")}
             />
             <Button
+              label={lang === "hi" ? "उपलब्धियाँ" : "Achievements"}
+              variant="ghost"
+              onPress={() => router.push("/account/achievements")}
+            />
+            <Button
+              label={lang === "hi" ? "प्रगति" : "Progress"}
+              variant="ghost"
+              onPress={() => router.push("/account/progress")}
+            />
+            <Button
+              label={lang === "hi" ? "जर्नल" : "Journal"}
+              variant="ghost"
+              onPress={() => router.push("/journal")}
+            />
+            <Button
               label={t("favorites")}
               variant="ghost"
               onPress={() => router.push("/favorites")}

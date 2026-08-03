@@ -123,6 +123,33 @@ export default function MeditationHubScreen() {
               →
             </Text>
           </Pressable>
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 8,
+              marginTop: spacing.lg,
+            }}
+          >
+            {[5, 7, 10, 15].map((mins) => (
+              <Pressable
+                key={mins}
+                onPress={() => router.push(`/meditation/${continueDay}`)}
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.line,
+                  backgroundColor: colors.field,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                }}
+              >
+                <Text variant="muted" color={colors.brassSoft}>
+                  {mins} min
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </Rise>
 
         {sections.map((section) => (

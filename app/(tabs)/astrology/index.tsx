@@ -94,6 +94,26 @@ export default function AstrologyHub() {
             variant="ghost"
             onPress={() => router.push("/astrology/members")}
           />
+          <Button
+            label={lang === "hi" ? "मुहूर्त" : "Muhurats"}
+            variant="ghost"
+            onPress={() => router.push("/astrology/muhurat")}
+          />
+          <Button
+            label={lang === "hi" ? "राशिफल" : "Horoscope"}
+            variant="ghost"
+            onPress={() => router.push("/astrology/horoscope")}
+          />
+          <Button
+            label={lang === "hi" ? "गोचर" : "Transits"}
+            variant="ghost"
+            onPress={() => router.push("/astrology/transits")}
+          />
+          <Button
+            label={lang === "hi" ? "पंचांग" : "Panchang"}
+            variant="ghost"
+            onPress={() => router.push("/panchang")}
+          />
           {!isSignedIn ? (
             <Pressable onPress={() => router.push("/account")}>
               <Text

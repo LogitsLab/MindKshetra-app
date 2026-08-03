@@ -72,12 +72,38 @@ export const userApi = {
     apiFetch<{ ok: boolean }>(`/api/favorites?slokaId=${slokaId}`, {
       method: "DELETE",
     }),
-  journal: () => apiFetch<{ entries: JournalEntry[] }>("/api/journal"),
-  addJournal: (slokaId: number, reflection: string) =>
-    apiFetch<{ id: string }>("/api/journal", {
+  journal: (kind?: string) =>
+    apiFetch<{ entries: JournalEntry[] }>(
+      `/api/journal${kind ? `?kind=${encodeURIComponent(kind)}` : ""}`
+    ),
+  addJournal: (
+    slokaIdOrReflection: number | string,
+    reflectionOrOpts?: string | { slokaId?: number; kind?: string }
+  ) => {
+    // Back-compat: addJournal(slokaId, text) OR addJournal(text, opts)
+    if (typeof slokaIdOrReflection === "number") {
+      return apiFetch<{ id: string; kind?: string }>("/api/journal", {
+        method: "POST",
+        body: JSON.stringify({
+          slokaId: slokaIdOrReflection,
+          reflection: String(reflectionOrOpts ?? ""),
+          kind: "verse",
+        }),
+      });
+    }
+    const opts =
+      typeof reflectionOrOpts === "object" && reflectionOrOpts
+        ? reflectionOrOpts
+        : {};
+    return apiFetch<{ id: string; kind?: string }>("/api/journal", {
       method: "POST",
-      body: JSON.stringify({ slokaId, reflection }),
-    }),
+      body: JSON.stringify({
+        reflection: slokaIdOrReflection,
+        slokaId: opts.slokaId,
+        kind: opts.kind ?? (opts.slokaId != null ? "verse" : "reflection"),
+      }),
+    });
+  },
   streak: () => apiFetch<Streak>("/api/account/streak"),
   recordVisit: (timezone?: string) =>
     apiFetch<Streak>("/api/account/streak", {
@@ -108,6 +134,58 @@ export const userApi = {
   exportData: () => apiFetch<Record<string, unknown>>("/api/account/export"),
   deleteAccount: () =>
     apiFetch<{ ok: boolean }>("/api/account/delete", { method: "POST" }),
+  completeOnboarding: (body: Record<string, unknown>) =>
+    apiFetch<{
+      ok: boolean;
+      goals?: string[];
+      onboardingCompletedAt?: string;
+    }>("/api/account/onboarding/complete", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  achievements: () =>
+    apiFetch<{
+      seeker: {
+        rankKey: string;
+        level: number;
+        labelEn: string;
+        labelHi: string;
+      };
+      achievements: Array<{
+        id: string;
+        progress: number;
+        target: number;
+        unlocked: boolean;
+        unlockedAt: string | null;
+        motif: string;
+        nameEn: string;
+        nameHi: string;
+        lineEn: string;
+        lineHi: string;
+      }>;
+    }>("/api/account/achievements"),
+  progressSummary: (range: "daily" | "weekly" | "monthly" | "yearly" = "monthly") =>
+    apiFetch<{
+      range: string;
+      sessions: number;
+      durationMinutes: number;
+      mantras: number;
+      versesCompleted: number;
+      journalEntries: number;
+      distribution: {
+        meditation: number;
+        japa: number;
+        reading: number;
+        other: number;
+      };
+      visitStreak: { current: number; longest: number };
+      seeker?: {
+        rankKey: string;
+        level: number;
+        labelEn: string;
+        labelHi: string;
+      };
+    }>(`/api/account/progress-summary?range=${range}`),
 };
 
 export const accountApi = {
