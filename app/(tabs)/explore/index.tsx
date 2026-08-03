@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -6,7 +6,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -22,6 +22,7 @@ import { progressApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useFocusRefresh } from "@/hooks/useFocusRefresh";
 import { getGuestProgress } from "@/storage/local";
 import { radii, spacing } from "@/theme/tokens";
 
@@ -48,21 +49,18 @@ export default function ExploreScreen() {
     );
   }, [q]);
 
-  useFocusEffect(
-    useCallback(() => {
-      let alive = true;
-      (async () => {
-        try {
-          const data = isSignedIn ? await progressApi.get() : await getGuestProgress();
-          if (alive) setContinueCursor(data.cursor ?? null);
-        } catch {
-          if (alive) setContinueCursor(null);
-        }
-      })();
-      return () => {
-        alive = false;
-      };
-    }, [isSignedIn])
+  useFocusRefresh(
+    "progress",
+    async (isActive) => {
+      try {
+        const data = isSignedIn ? await progressApi.get() : await getGuestProgress();
+        if (isActive()) setContinueCursor(data.cursor ?? null);
+      } catch (e) {
+        if (isActive()) setContinueCursor(null);
+        throw e;
+      }
+    },
+    { resetKey: String(isSignedIn) }
   );
 
   return (
