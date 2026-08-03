@@ -3,13 +3,12 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "reac
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { Panel } from "@/components/Panel";
 import { Hairline } from "@/components/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { userApi } from "@/api/endpoints";
-import { spacing } from "@/theme/tokens";
+import { radii, spacing } from "@/theme/tokens";
 
 type AchievementsResponse = Awaited<ReturnType<typeof userApi.achievements>>;
 
@@ -74,11 +73,11 @@ export default function AchievementsScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.pad}>
+      <ScrollView contentContainerStyle={styles.pad} showsVerticalScrollIndicator={false}>
         <Text variant="eyebrow" color={colors.brassSoft}>
           {L === "hi" ? "साधक मार्ग" : "SEEKER PATH"}
         </Text>
-        <Text variant="display" style={{ marginTop: spacing.xs }}>
+        <Text variant="display" color={colors.brassSoft} style={styles.pageTitle}>
           {seeker
             ? `${L === "hi" ? seeker.labelHi : seeker.labelEn} · ${
                 L === "hi" ? "स्तर" : "Level"
@@ -95,50 +94,106 @@ export default function AchievementsScreen() {
 
         <Hairline style={{ marginVertical: spacing.lg }} />
 
-        {(data?.achievements ?? []).map((a) => (
-          <Panel key={a.id} style={{ marginBottom: spacing.sm }}>
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text variant="title">{L === "hi" ? a.nameHi : a.nameEn}</Text>
-                <Text variant="soft" style={{ marginTop: 4 }}>
-                  {L === "hi" ? a.lineHi : a.lineEn}
-                </Text>
-                <Text variant="muted" style={{ marginTop: 6 }}>
-                  {a.progress}/{a.target}
-                  {a.unlocked
-                    ? L === "hi"
-                      ? " · प्राप्त"
-                      : " · unlocked"
-                    : ""}
-                </Text>
-              </View>
-            </View>
-            <View
-              style={[
-                styles.barTrack,
-                { backgroundColor: colors.hairline ?? "rgba(255,255,255,0.08)" },
-              ]}
-            >
+        <View style={styles.grid}>
+          {(data?.achievements ?? []).map((a) => {
+            const progress = Math.min(100, (a.progress / a.target) * 100);
+            return (
               <View
+                key={a.id}
                 style={[
-                  styles.barFill,
+                  styles.card,
                   {
-                    width: `${Math.min(100, (a.progress / a.target) * 100)}%`,
-                    backgroundColor: colors.brass,
+                    borderColor: colors.line,
+                    backgroundColor: colors.panel,
+                    opacity: a.unlocked ? 1 : 0.72,
                   },
                 ]}
-              />
-            </View>
-          </Panel>
-        ))}
+              >
+                <View
+                  style={[
+                    styles.badge,
+                    {
+                      borderColor: a.unlocked ? colors.brass : colors.line,
+                      backgroundColor: a.unlocked ? colors.surfaceHover : colors.field,
+                    },
+                  ]}
+                >
+                  <Text
+                    variant="display"
+                    color={a.unlocked ? colors.brassSoft : colors.textMuted}
+                    style={styles.badgeGlyph}
+                  >
+                    {a.motif.toLowerCase().includes("lotus") ? "❖" : "◇"}
+                  </Text>
+                </View>
+                <Text variant="title" style={styles.cardTitle}>
+                  {L === "hi" ? a.nameHi : a.nameEn}
+                </Text>
+                <Text variant="muted" style={styles.cardLine}>
+                  {L === "hi" ? a.lineHi : a.lineEn}
+                </Text>
+                <View style={styles.progressMeta}>
+                  <Text variant="eyebrow">
+                    {a.unlocked
+                      ? L === "hi" ? "पूर्ण" : "COMPLETE"
+                      : L === "hi" ? "प्रगति में" : "IN PROGRESS"}
+                  </Text>
+                  <Text variant="muted">{a.progress}/{a.target}</Text>
+                </View>
+                <View style={[styles.barTrack, { backgroundColor: colors.hairline }]}>
+                  <View
+                    style={[
+                      styles.barFill,
+                      {
+                        width: `${progress}%`,
+                        backgroundColor: a.unlocked ? colors.brass : colors.brassSoft,
+                        opacity: a.unlocked ? 1 : 0.55,
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+            );
+          })}
+        </View>
       </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  pad: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  row: { flexDirection: "row", gap: spacing.md },
-  barTrack: { height: 4, borderRadius: 2, marginTop: spacing.sm, overflow: "hidden" },
+  pad: { paddingTop: spacing.md, paddingBottom: spacing.xxl },
+  pageTitle: { marginTop: spacing.xs },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  card: {
+    width: "48.5%",
+    minHeight: 280,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    alignItems: "center",
+  },
+  badge: {
+    width: 72,
+    height: 72,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: 22,
+    transform: [{ rotate: "45deg" }],
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: spacing.md,
+  },
+  badgeGlyph: { transform: [{ rotate: "-45deg" }], fontSize: 32 },
+  cardTitle: { fontSize: 17, lineHeight: 22, textAlign: "center" },
+  cardLine: { textAlign: "center", marginTop: spacing.xs, flex: 1 },
+  progressMeta: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginTop: spacing.md,
+    gap: spacing.xs,
+  },
+  barTrack: { width: "100%", height: 4, borderRadius: 2, marginTop: spacing.sm, overflow: "hidden" },
   barFill: { height: 4, borderRadius: 2 },
 });

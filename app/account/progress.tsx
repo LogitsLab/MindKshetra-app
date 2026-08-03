@@ -3,12 +3,11 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "reac
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { Panel } from "@/components/Panel";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { userApi } from "@/api/endpoints";
-import { spacing } from "@/theme/tokens";
+import { radii, spacing } from "@/theme/tokens";
 
 type Range = "daily" | "weekly" | "monthly" | "yearly";
 
@@ -63,16 +62,21 @@ export default function ProgressScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.pad}>
-        <Text variant="display">{L === "hi" ? "प्रगति" : "Progress"}</Text>
+      <ScrollView contentContainerStyle={styles.pad} showsVerticalScrollIndicator={false}>
+        <Text variant="eyebrow" color={colors.brassSoft}>
+          {L === "hi" ? "निजी पहचान" : "PRIVATE RECOGNITION"}
+        </Text>
+        <Text variant="display" color={colors.brassSoft} style={styles.pageTitle}>
+          {L === "hi" ? "मेरी प्रगति" : "My Progress"}
+        </Text>
         {data?.seeker ? (
-          <Text variant="soft" style={{ marginTop: spacing.sm }}>
+          <Text variant="soft" style={styles.seekerLine}>
             {L === "hi" ? data.seeker.labelHi : data.seeker.labelEn} · Level{" "}
             {data.seeker.level}
           </Text>
         ) : null}
 
-        <View style={styles.chips}>
+        <View style={[styles.chips, { backgroundColor: colors.field, borderColor: colors.line }]}>
           {(["daily", "weekly", "monthly", "yearly"] as Range[]).map((r) => (
             <Pressable
               key={r}
@@ -80,8 +84,7 @@ export default function ProgressScreen() {
               style={[
                 styles.chip,
                 {
-                  borderColor: range === r ? colors.brass : colors.line,
-                  backgroundColor: colors.field,
+                  backgroundColor: range === r ? colors.surfaceHover : "transparent",
                 },
               ]}
             >
@@ -96,7 +99,7 @@ export default function ProgressScreen() {
           <ActivityIndicator color={colors.brass} style={{ marginTop: spacing.xl }} />
         ) : data ? (
           <>
-            <View style={styles.stats}>
+            <View style={[styles.stats, { borderColor: colors.line }]}>
               <Stat
                 label={L === "hi" ? "सत्र" : "Sessions"}
                 value={String(data.sessions)}
@@ -114,20 +117,37 @@ export default function ProgressScreen() {
               />
             </View>
 
-            <Panel style={{ marginTop: spacing.lg }}>
-              <Text variant="eyebrow">{L === "hi" ? "स्ट्रिक" : "STREAK"}</Text>
-              <Text variant="title" style={{ marginTop: spacing.sm }}>
-                {data.visitStreak.current}{" "}
-                {L === "hi" ? "दिन वर्तमान" : "days current"}
+            <View style={styles.streakSection}>
+              <View style={[styles.streakRing, { borderColor: colors.brass }]}>
+                <View style={[styles.streakInner, { borderColor: colors.line }]}>
+                  <Text variant="display" color={colors.brassSoft} style={styles.streakNumber}>
+                    {data.visitStreak.current}
+                  </Text>
+                  <Text variant="eyebrow">{L === "hi" ? "दिन" : "DAYS"}</Text>
+                </View>
+              </View>
+              <View style={styles.streakPair}>
+                <View style={styles.streakMetric}>
+                  <Text variant="eyebrow">{L === "hi" ? "वर्तमान" : "CURRENT"}</Text>
+                  <Text variant="title" color={colors.brassSoft}>
+                    {data.visitStreak.current} {L === "hi" ? "दिन" : "days"}
+                  </Text>
+                </View>
+                <View style={[styles.streakMetric, styles.streakMetricBorder, { borderColor: colors.hairline }]}>
+                  <Text variant="eyebrow">{L === "hi" ? "सर्वश्रेष्ठ" : "BEST"}</Text>
+                  <Text variant="title">
+                    {data.visitStreak.longest} {L === "hi" ? "दिन" : "days"}
+                  </Text>
+                </View>
+              </View>
+              <Text variant="soft" style={styles.graceCopy}>
+                Return when ready — grace days exist.
               </Text>
-              <Text variant="soft">
-                {L === "hi" ? "सबसे लंबी" : "Longest"}: {data.visitStreak.longest}
-              </Text>
-            </Panel>
+            </View>
 
-            <Panel style={{ marginTop: spacing.md }}>
-              <Text variant="eyebrow">
-                {L === "hi" ? "वितरण" : "DISTRIBUTION"}
+            <View style={styles.distribution}>
+              <Text variant="title" color={colors.brassSoft}>
+                {L === "hi" ? "अभ्यास वितरण" : "Practice distribution"}
               </Text>
               {(
                 [
@@ -137,14 +157,25 @@ export default function ProgressScreen() {
                   ["other", data.distribution.other],
                 ] as const
               ).map(([k, v]) => (
-                <View key={k} style={styles.distRow}>
-                  <Text variant="body" style={{ flex: 1 }}>
-                    {k}
-                  </Text>
-                  <Text variant="muted">{v}%</Text>
+                <View key={k} style={styles.distBlock}>
+                  <View style={styles.distRow}>
+                    <Text variant="eyebrow" style={styles.distLabel}>{k}</Text>
+                    <Text variant="muted">{v}%</Text>
+                  </View>
+                  <View style={[styles.barTrack, { backgroundColor: colors.hairline }]}>
+                    <View style={[styles.barFill, { width: `${v}%`, backgroundColor: colors.brass }]} />
+                  </View>
                 </View>
               ))}
-            </Panel>
+            </View>
+
+            <Pressable
+              onPress={() => router.push("/account/achievements")}
+              style={[styles.linkRow, { borderColor: colors.line }]}
+            >
+              <Text variant="eyebrow">{L === "hi" ? "उपलब्धियाँ" : "ACHIEVEMENTS"}</Text>
+              <Text color={colors.brassSoft}>→</Text>
+            </Pressable>
           </>
         ) : (
           <Text variant="soft" style={{ marginTop: spacing.lg }}>
@@ -167,12 +198,9 @@ function Stat({
 }) {
   return (
     <View
-      style={[
-        styles.stat,
-        { borderColor: colors.line, backgroundColor: colors.field },
-      ]}
+      style={styles.stat}
     >
-      <Text variant="title" color={colors.brass}>
+      <Text variant="display" color={colors.brass} style={styles.statValue}>
         {value}
       </Text>
       <Text variant="muted">{label}</Text>
@@ -181,25 +209,75 @@ function Stat({
 }
 
 const styles = StyleSheet.create({
-  pad: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: spacing.lg },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth * 2,
+  pad: { paddingTop: spacing.md, paddingBottom: spacing.xxl },
+  pageTitle: { marginTop: spacing.xs },
+  seekerLine: { marginTop: spacing.xs },
+  chips: {
+    flexDirection: "row",
+    marginTop: spacing.lg,
+    padding: 4,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  stats: { flexDirection: "row", gap: 8, marginTop: spacing.lg },
+  chip: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: spacing.sm,
+    borderRadius: radii.sm,
+  },
+  stats: {
+    flexDirection: "row",
+    marginTop: spacing.lg,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   stat: {
     flex: 1,
-    padding: spacing.md,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth * 2,
     alignItems: "center",
   },
+  statValue: { fontSize: 25 },
+  streakSection: { alignItems: "center", marginTop: spacing.xl },
+  streakRing: {
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  streakInner: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  streakNumber: { fontSize: 46, lineHeight: 52 },
+  streakPair: { flexDirection: "row", width: "100%", marginTop: spacing.xl },
+  streakMetric: { flex: 1, alignItems: "center", gap: spacing.xs },
+  streakMetricBorder: { borderLeftWidth: StyleSheet.hairlineWidth },
+  graceCopy: {
+    textAlign: "center",
+    fontStyle: "italic",
+    marginTop: spacing.xl,
+  },
+  distribution: { marginTop: spacing.xxl },
+  distBlock: { marginTop: spacing.lg },
   distRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: spacing.sm,
+    justifyContent: "space-between",
+  },
+  distLabel: { textTransform: "uppercase" },
+  barTrack: { height: 3, marginTop: spacing.sm, overflow: "hidden" },
+  barFill: { height: 3 },
+  linkRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: spacing.lg,
+    marginTop: spacing.xl,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
 });

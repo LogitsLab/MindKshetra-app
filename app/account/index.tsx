@@ -379,26 +379,36 @@ export default function AccountScreen() {
         contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
         keyboardShouldPersistTaps="handled"
       >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: spacing.sm,
-          }}
-        >
-          <BrandMark size={28} />
-          <Text variant="eyebrow">{t("account")}</Text>
+        <View style={styles.accountHeader}>
+          <BrandMark size={24} />
+          <Text variant="eyebrow" color={colors.brassSoft}>{t("account")}</Text>
         </View>
-        <Text variant="display" style={{ marginTop: spacing.sm }}>
-          {isSignedIn && !isAnonymous ? t("welcomeBack") : t("signInTitle")}
-        </Text>
-        <Text variant="soft" style={{ marginTop: spacing.sm }}>
-          {isAnonymous
-            ? t("upgradeAccountBlurb")
-            : isSignedIn
-              ? user?.email ?? t("libraryBlurb")
-              : t("accountSignInBlurb")}
-        </Text>
+        <View style={styles.profileHero}>
+          <View style={[styles.avatar, { borderColor: colors.line, backgroundColor: colors.field }]}>
+            <Text variant="display" color={colors.brassSoft}>
+              {(displayName || user?.email || "S").trim().charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <Text variant="display" color={colors.brassSoft} style={styles.profileName}>
+            {isSignedIn && !isAnonymous
+              ? displayName || t("welcomeBack")
+              : t("signInTitle")}
+          </Text>
+          <Text variant="soft" style={styles.profileSubtitle}>
+            {isAnonymous
+              ? t("upgradeAccountBlurb")
+              : isSignedIn
+                ? user?.email ?? t("libraryBlurb")
+                : t("accountSignInBlurb")}
+          </Text>
+          {isSignedIn && !isAnonymous ? (
+            <View style={[styles.seekerChip, { borderColor: colors.line, backgroundColor: colors.surface }]}>
+              <Text variant="eyebrow" color={colors.brassSoft}>
+                {lang === "hi" ? "निजी साधक" : "PRIVATE SEEKER"}
+              </Text>
+            </View>
+          ) : null}
+        </View>
 
         {!configured ? (
           <Text
@@ -409,13 +419,22 @@ export default function AccountScreen() {
           </Text>
         ) : null}
 
-        {isSignedIn && !isAnonymous && streak > 0 ? (
-          <Panel style={{ marginTop: spacing.lg }}>
-            <Text variant="eyebrow">{t("streakLabel")}</Text>
-            <Text variant="title" style={{ marginTop: spacing.xs }}>
-              {streak} {t("streakDays")}
-            </Text>
-          </Panel>
+        {isSignedIn && !isAnonymous ? (
+          <View style={[styles.accountStats, { borderColor: colors.line }]}>
+            <Pressable style={styles.accountStat} onPress={() => router.push("/account/progress")}>
+              <Text variant="display" color={colors.brassSoft} style={styles.accountStatValue}>
+                {streak}
+              </Text>
+              <Text variant="eyebrow">{t("streakDays")}</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.accountStat, styles.accountStatBorder, { borderColor: colors.hairline }]}
+              onPress={() => router.push("/account/achievements")}
+            >
+              <Text variant="display" color={colors.brassSoft} style={styles.accountStatValue}>◇</Text>
+              <Text variant="eyebrow">{lang === "hi" ? "उपलब्धियाँ" : "BADGES"}</Text>
+            </Pressable>
+          </View>
         ) : null}
 
         {isSignedIn && !isAnonymous ? (
@@ -618,32 +637,24 @@ export default function AccountScreen() {
             </Text>
           </View>
         ) : (
-          <View style={{ gap: spacing.sm }}>
-            <Button
-              label={t("myReflections")}
-              variant="ghost"
-              onPress={() => router.push("/account/reflections")}
-            />
-            <Button
+          <View>
+            <Text variant="eyebrow" color={colors.brassSoft} style={styles.sectionLabel}>
+              {lang === "hi" ? "आपकी यात्रा" : "YOUR JOURNEY"}
+            </Text>
+            <AccountRow
               label={lang === "hi" ? "उपलब्धियाँ" : "Achievements"}
-              variant="ghost"
               onPress={() => router.push("/account/achievements")}
             />
-            <Button
-              label={lang === "hi" ? "प्रगति" : "Progress"}
-              variant="ghost"
+            <AccountRow
+              label={lang === "hi" ? "प्रगति और स्ट्रिक" : "Progress & streak"}
               onPress={() => router.push("/account/progress")}
             />
-            <Button
-              label={lang === "hi" ? "जर्नल" : "Journal"}
-              variant="ghost"
-              onPress={() => router.push("/journal")}
+            <AccountRow
+              label={lang === "hi" ? "जर्नल और चिंतन" : "Journal & reflections"}
+              onPress={() => router.push("/account/reflections")}
             />
-            <Button
-              label={t("favorites")}
-              variant="ghost"
-              onPress={() => router.push("/favorites")}
-            />
+            <AccountRow label={t("favorites")} onPress={() => router.push("/favorites")} />
+            <View style={styles.utilityActions}>
             <Button
               label={t("exportData")}
               variant="ghost"
@@ -664,6 +675,7 @@ export default function AccountScreen() {
               loading={busy}
               onPress={() => void run(signOut)}
             />
+            </View>
 
             {deleteStage === "idle" ? (
               <Pressable
@@ -1109,7 +1121,69 @@ function ToggleSwitch({
   );
 }
 
+function AccountRow({ label, onPress }: { label: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.accountRow, { borderColor: colors.hairline }]}
+    >
+      <Text variant="body">{label}</Text>
+      <Text color={colors.brassSoft}>›</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  accountHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  profileHero: {
+    alignItems: "center",
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  avatar: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileName: { marginTop: spacing.md, textAlign: "center" },
+  profileSubtitle: { marginTop: spacing.xs, textAlign: "center" },
+  seekerChip: {
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.xl,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.md,
+  },
+  accountStats: {
+    flexDirection: "row",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: spacing.lg,
+  },
+  accountStat: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: spacing.md,
+  },
+  accountStatBorder: { borderLeftWidth: StyleSheet.hairlineWidth },
+  accountStatValue: { fontSize: 24, lineHeight: 30 },
+  sectionLabel: { marginBottom: spacing.sm },
+  accountRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  utilityActions: { gap: spacing.sm, marginTop: spacing.lg },
   input: {
     minHeight: 48,
     borderWidth: StyleSheet.hairlineWidth * 2,

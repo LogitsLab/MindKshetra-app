@@ -87,7 +87,7 @@ type TabIconProps = { focused: boolean; size?: number };
 
 export function TabHomeIcon({ focused, size = 22 }: TabIconProps) {
   const { colors } = useTheme();
-  const c = focused ? colors.brassSoft : colors.textMuted;
+  const c = focused ? colors.brass : colors.textMuted;
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
@@ -101,7 +101,7 @@ export function TabHomeIcon({ focused, size = 22 }: TabIconProps) {
 
 export function TabExploreIcon({ focused, size = 22 }: TabIconProps) {
   const { colors } = useTheme();
-  const c = focused ? colors.brassSoft : colors.textMuted;
+  const c = focused ? colors.brass : colors.textMuted;
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle cx="12" cy="12" r="8" stroke={c} strokeWidth="1.5" />
@@ -112,7 +112,7 @@ export function TabExploreIcon({ focused, size = 22 }: TabIconProps) {
 
 export function TabMoodIcon({ focused, size = 22 }: TabIconProps) {
   const { colors } = useTheme();
-  const c = focused ? colors.brassSoft : colors.textMuted;
+  const c = focused ? colors.brass : colors.textMuted;
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle cx="12" cy="12" r="8" stroke={c} strokeWidth="1.5" />
@@ -130,7 +130,7 @@ export function TabMoodIcon({ focused, size = 22 }: TabIconProps) {
 
 export function TabAstrologyIcon({ focused, size = 22 }: TabIconProps) {
   const { colors } = useTheme();
-  const c = focused ? colors.brassSoft : colors.textMuted;
+  const c = focused ? colors.brass : colors.textMuted;
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle cx="12" cy="12" r="7" stroke={c} strokeWidth="1.5" />

@@ -1,31 +1,34 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   BackHandler,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
   View,
+  type ImageSourcePropType,
 } from "react-native";
-import { useRouter, Redirect } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
+import Svg, { Circle, Path } from "react-native-svg";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { BrandMark } from "@/components/BrandMark";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
+import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import {
   OnboardingAuthStep,
   type AuthAction,
 } from "@/components/onboarding/OnboardingAuthStep";
-import {
-  OnboardingBackdrop,
-  useReadingVeil,
-} from "@/components/onboarding/OnboardingBackdrop";
+import { OnboardingBackdrop } from "@/components/onboarding/OnboardingBackdrop";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useTheme } from "@/context/ThemeContext";
-import { spacing, radii } from "@/theme/tokens";
+import { images } from "@/theme/assets";
+import { radii, spacing, type ThemeColors } from "@/theme/tokens";
 import { userApi } from "@/api/endpoints";
 import {
   DAILY_TIME_OPTIONS,
@@ -41,7 +44,6 @@ import {
   type InspirationId,
   type PersonalizationDraft,
 } from "@/data/personalization";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STEPS = [
   "welcome",
@@ -53,9 +55,31 @@ const STEPS = [
 ] as const;
 type Step = (typeof STEPS)[number];
 
+const INSPIRATION_IMAGES: Record<InspirationId, ImageSourcePropType> = {
+  krishna: images.madhavPortrait,
+  shiva: images.pathMeditation,
+  rama: images.pathExplore,
+  devi: images.pathMood,
+  hanuman: images.pathSadhana,
+  buddha: images.pathCommunity,
+};
+
+const GOAL_ICONS: Record<GoalId, string> = {
+  inner_peace: "⌁",
+  stress_relief: "≋",
+  self_realization: "◉",
+  devotion: "♧",
+  purpose: "◈",
+  healing: "⌁",
+  knowledge: "▤",
+  relationships: "∞",
+  other: "•••",
+};
+
 export default function OnboardingScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { lang, setLang } = useLanguage();
   const { markComplete, complete } = useOnboarding();
   const {
@@ -80,10 +104,6 @@ export default function OnboardingScreen() {
   const [guestFailed, setGuestFailed] = useState(false);
 
   const stepIndex = STEPS.indexOf(step);
-  const flowStep = stepIndex;
-  const flowTotal = STEPS.length;
-  const onPoster = step === "welcome";
-  const reading = useReadingVeil(!onPoster);
   const copy = ONBOARDING_COPY;
   const L = lang === "hi" ? "hi" : "en";
 
@@ -106,20 +126,20 @@ export default function OnboardingScreen() {
   }
 
   function toggleGoal(id: GoalId) {
-    setDraft((d) => ({
-      ...d,
-      goals: d.goals.includes(id)
-        ? d.goals.filter((g) => g !== id)
-        : [...d.goals, id],
+    setDraft((current) => ({
+      ...current,
+      goals: current.goals.includes(id)
+        ? current.goals.filter((goal) => goal !== id)
+        : [...current.goals, id],
     }));
   }
 
   function toggleInspiration(id: InspirationId) {
-    setDraft((d) => ({
-      ...d,
-      inspirations: d.inspirations.includes(id)
-        ? d.inspirations.filter((g) => g !== id)
-        : [...d.inspirations, id],
+    setDraft((current) => ({
+      ...current,
+      inspirations: current.inspirations.includes(id)
+        ? current.inspirations.filter((inspiration) => inspiration !== id)
+        : [...current.inspirations, id],
     }));
   }
 
@@ -142,7 +162,7 @@ export default function OnboardingScreen() {
         });
       }
     } catch {
-      // Local draft is enough for guests / offline.
+      // The local draft remains the source of truth for guests and offline use.
     }
   }
 
@@ -158,86 +178,83 @@ export default function OnboardingScreen() {
     setPending(action);
     try {
       if (action === "guest") {
-        const ok = await signInAnonymously();
-        if (!ok) {
-          setGuestFailed(true);
-          setMessage(
-            lang === "hi"
-              ? "अतिथि साइन-इन नहीं हो सका। फिर भी जारी रखें।"
-              : "Guest sign-in failed. You can continue anyway."
-          );
-          return;
-        }
+        await signInAnonymously();
         await finish(false);
         return;
       }
       if (action === "google") {
-        await signInWithGoogle();
-        await finish(false);
+        const completed = await signInWithGoogle();
+        if (completed) await finish(false);
         return;
       }
-      if (action === "email") {
-        const ok = await signInWithEmail(email.trim());
-        if (ok) setLinkSent(true);
-        else
-          setMessage(
-            lang === "hi" ? "ईमेल नहीं भेजा जा सका।" : "Could not send email."
-          );
+      await signInWithEmail(email.trim());
+      setLinkSent(true);
+    } catch (error) {
+      if (action === "guest") {
+        setGuestFailed(true);
+        setMessage(
+          lang === "hi"
+            ? "अतिथि साइन-इन नहीं हो सका। फिर भी जारी रखें।"
+            : "Guest sign-in failed. You can continue anyway."
+        );
+      } else {
+        setMessage(error instanceof Error ? error.message : "Something went wrong");
       }
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setPending(null);
     }
   }
 
-  const selectStyle = useMemo(
-    () => ({
-      borderColor: colors.line,
-      backgroundColor: colors.field,
-    }),
-    [colors]
-  );
+  const header = step !== "welcome" ? (
+    <OnboardingHeader
+      step={stepIndex}
+      total={STEPS.length}
+      onBack={goBack}
+      onSkip={
+        step === "inspirations"
+          ? () => {
+              setDraft((current) => ({ ...current, inspirations: [] }));
+              setStep("time");
+            }
+          : undefined
+      }
+    />
+  ) : null;
 
   return (
-    <Screen atmosphere="hero" edges={["top", "bottom"]}>
-      <OnboardingBackdrop reading={reading} />
+    <Screen
+      atmosphere="none"
+      padded={false}
+      edges={["top", "bottom"]}
+      style={styles.screen}
+    >
+      {step === "welcome" ? <OnboardingBackdrop reading={0} /> : null}
       <View style={styles.wrap}>
-        {step !== "welcome" ? (
-          <OnboardingHeader
-            step={flowStep + 1}
-            total={flowTotal}
-            onBack={() => goBack()}
-          />
-        ) : null}
+        {header}
 
         {step === "welcome" ? (
-          <View style={styles.hero}>
-            <BrandMark size={56} />
-            <Text variant="display" style={{ color: colors.onMedia, marginTop: spacing.md }}>
-              {copy.welcome.title[L]}
+          <View style={styles.welcome}>
+            <View style={styles.welcomeBrand}>
+              <BrandMark size={64} />
+              <Text variant="display" color={colors.brassSoft} style={styles.brandTitle}>
+                {copy.welcome.title[L]}
+              </Text>
+              <Text variant="eyebrow" color={colors.onMedia} style={styles.brandSubtitle}>
+                {copy.welcome.subtitle[L]}
+              </Text>
+            </View>
+            <Text variant="title" color={colors.onMedia} style={styles.tagline}>
+              “{copy.welcome.tagline[L]}”
             </Text>
-            <Text variant="soft" style={{ color: colors.onMediaMuted, marginTop: spacing.xs }}>
-              {copy.welcome.subtitle[L]}
-            </Text>
-            <Text
-              variant="body"
-              style={{
-                color: colors.onMediaMuted,
-                textAlign: "center",
-                marginTop: spacing.lg,
-                paddingHorizontal: spacing.lg,
-              }}
-            >
-              {copy.welcome.tagline[L]}
-            </Text>
-            <View style={styles.ctaCol}>
+            <View style={styles.welcomeActions}>
+              <OnboardingProgress step={0} total={STEPS.length} />
               <Button
-                label={copy.welcome.continue[L]}
+                label={`${copy.welcome.continue[L]}  →`}
                 onPress={() => setStep("goals")}
+                style={styles.primaryButton}
               />
-              <Pressable onPress={() => finish(true)} hitSlop={12}>
-                <Text variant="muted" style={{ color: colors.onMediaMuted, textAlign: "center" }}>
+              <Pressable onPress={() => finish(true)} hitSlop={12} style={styles.skipLink}>
+                <Text variant="eyebrow" color={colors.onMediaMuted}>
                   {copy.welcome.skip[L]}
                 </Text>
               </Pressable>
@@ -246,196 +263,261 @@ export default function OnboardingScreen() {
         ) : null}
 
         {step === "goals" ? (
-          <ScrollView contentContainerStyle={styles.pad}>
-            <Text variant="display">{copy.goals.title[L]}</Text>
-            <Text variant="soft" style={{ marginTop: spacing.sm }}>
+          <ScrollView contentContainerStyle={styles.page}>
+            <Text variant="display" style={styles.pageTitle}>
+              {copy.goals.title[L]}
+            </Text>
+            <Text variant="soft" style={styles.centeredBody}>
               {copy.goals.body[L]}
             </Text>
-            <View style={styles.grid}>
-              {GOALS.map((g) => {
-                const on = draft.goals.includes(g.id);
+            <View style={styles.goalGrid}>
+              {GOALS.map((goal) => {
+                const selected = draft.goals.includes(goal.id);
                 return (
                   <Pressable
-                    key={g.id}
-                    onPress={() => toggleGoal(g.id)}
-                    style={[
-                      styles.tile,
-                      selectStyle,
-                      on && { borderColor: colors.brass },
+                    key={goal.id}
+                    onPress={() => toggleGoal(goal.id)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                    style={({ pressed }) => [
+                      styles.goalTile,
+                      selected && styles.selectedTile,
+                      pressed && styles.pressed,
                     ]}
                   >
-                    <Text variant="body">{g[L]}</Text>
+                    {selected ? <SelectionCheck compact /> : null}
+                    <Text color={colors.brass} style={styles.goalIcon}>
+                      {GOAL_ICONS[goal.id]}
+                    </Text>
+                    <Text variant="muted" color={colors.text} style={styles.goalLabel}>
+                      {goal[L]}
+                    </Text>
                   </Pressable>
                 );
               })}
             </View>
-            <Button
-              label={copy.goals.next[L]}
-              onPress={() => setStep("inspirations")}
-              style={{ marginTop: spacing.lg }}
-            />
-            <Pressable onPress={() => finish(true)} style={{ marginTop: spacing.md }}>
-              <Text variant="muted" style={{ textAlign: "center" }}>
-                {copy.welcome.skip[L]}
-              </Text>
-            </Pressable>
+            <View style={styles.bottomActions}>
+              <Button
+                label={copy.goals.next[L]}
+                onPress={() => setStep("inspirations")}
+                style={styles.primaryButton}
+              />
+              <Pressable onPress={() => finish(true)} style={styles.skipLink}>
+                <Text variant="eyebrow">{copy.welcome.skip[L]}</Text>
+              </Pressable>
+            </View>
           </ScrollView>
         ) : null}
 
         {step === "inspirations" ? (
-          <ScrollView contentContainerStyle={styles.pad}>
-            <Text variant="display">{copy.inspirations.title[L]}</Text>
-            <Text variant="soft" style={{ marginTop: spacing.sm }}>
+          <ScrollView contentContainerStyle={styles.page}>
+            <Text variant="title" color={colors.brassSoft}>
+              {copy.inspirations.title[L]}
+            </Text>
+            <Text variant="soft" style={styles.inspirationBody}>
               {copy.inspirations.body[L]}
             </Text>
-            <View style={styles.grid}>
-              {INSPIRATIONS.map((g) => {
-                const on = draft.inspirations.includes(g.id);
+            <View style={styles.inspirationGrid}>
+              {INSPIRATIONS.map((inspiration) => {
+                const selected = draft.inspirations.includes(inspiration.id);
                 return (
                   <Pressable
-                    key={g.id}
-                    onPress={() => toggleInspiration(g.id)}
-                    style={[
-                      styles.tile,
-                      selectStyle,
-                      on && { borderColor: colors.brass },
+                    key={inspiration.id}
+                    onPress={() => toggleInspiration(inspiration.id)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                    style={({ pressed }) => [
+                      styles.inspirationTile,
+                      selected && styles.selectedTile,
+                      pressed && styles.pressed,
                     ]}
                   >
-                    <Text variant="body">{g[L]}</Text>
+                    <Image
+                      source={INSPIRATION_IMAGES[inspiration.id]}
+                      style={styles.inspirationImage}
+                      resizeMode="cover"
+                    />
+                    {selected ? <SelectionCheck /> : null}
+                    <View style={styles.imageScrim} />
+                    <Text variant="title" color={colors.onMedia} style={styles.inspirationName}>
+                      {inspiration[L]}
+                    </Text>
                   </Pressable>
                 );
               })}
             </View>
             <Button
-              label={copy.inspirations.none[L]}
-              variant="ghost"
-              onPress={() => {
-                setDraft((d) => ({ ...d, inspirations: [] }));
-                setStep("time");
-              }}
-              style={{ marginTop: spacing.lg }}
-            />
-            <Button
               label={copy.inspirations.next[L]}
               onPress={() => setStep("time")}
-              style={{ marginTop: spacing.sm }}
+              style={styles.sectionButton}
             />
           </ScrollView>
         ) : null}
 
         {step === "time" ? (
-          <ScrollView contentContainerStyle={styles.pad}>
-            <Text variant="display">{copy.time.title[L]}</Text>
-            <Text variant="soft" style={{ marginTop: spacing.sm }}>
+          <ScrollView contentContainerStyle={styles.page}>
+            <Text variant="display" color={colors.brassSoft} style={styles.pageTitle}>
+              {copy.time.title[L]}
+            </Text>
+            <Text variant="soft" style={styles.centeredBody}>
               {copy.time.body[L]}
             </Text>
-            <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
-              {DAILY_TIME_OPTIONS.map((o) => {
-                const on = draft.dailyTimeMinutes === o.minutes;
+            <View style={styles.timeList}>
+              {DAILY_TIME_OPTIONS.map((option) => {
+                const selected = draft.dailyTimeMinutes === option.minutes;
                 return (
                   <Pressable
-                    key={o.minutes}
+                    key={option.minutes}
                     onPress={() =>
-                      setDraft((d) => ({ ...d, dailyTimeMinutes: o.minutes }))
+                      setDraft((current) => ({
+                        ...current,
+                        dailyTimeMinutes: option.minutes,
+                      }))
                     }
-                    style={[
-                      styles.row,
-                      selectStyle,
-                      on && { borderColor: colors.brass },
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    style={({ pressed }) => [
+                      styles.choiceRow,
+                      selected && styles.selectedRow,
+                      pressed && styles.pressed,
                     ]}
                   >
-                    <Text variant="body">{o[L]}</Text>
+                    <ClockIcon color={colors.brass} />
+                    <Text variant="muted" color={colors.text} style={styles.choiceLabel}>
+                      {option[L]}
+                    </Text>
+                    {selected ? (
+                      <SelectionCheck inline />
+                    ) : (
+                      <View style={styles.emptyRadio} />
+                    )}
                   </Pressable>
                 );
               })}
             </View>
-            <Button
-              label={copy.time.next[L]}
-              onPress={() => setStep("setup")}
-              style={{ marginTop: spacing.lg }}
-            />
+            <View style={styles.bottomActions}>
+              <Button
+                label={copy.time.next[L]}
+                onPress={() => setStep("setup")}
+                style={styles.primaryButton}
+              />
+              <Pressable onPress={() => setStep("setup")} style={styles.skipLink}>
+                <Text variant="muted">{copy.welcome.skip[L]}</Text>
+              </Pressable>
+            </View>
           </ScrollView>
         ) : null}
 
         {step === "setup" ? (
-          <ScrollView contentContainerStyle={styles.pad} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={styles.page}
+            keyboardShouldPersistTaps="handled"
+          >
             <Text variant="display">{copy.setup.title[L]}</Text>
-            <Text variant="eyebrow" style={{ marginTop: spacing.lg }}>
+            <Text variant="soft" style={styles.setupIntro}>
+              {copy.setup.creating[L]}
+            </Text>
+
+            <Text variant="eyebrow" color={colors.brassSoft} style={styles.fieldLabel}>
               {copy.setup.language[L]}
             </Text>
-            <View style={styles.rowPair}>
-              {(["en", "hi"] as const).map((code) => (
-                <Pressable
-                  key={code}
-                  onPress={() => {
-                    setLang(code);
-                    setDraft((d) => ({ ...d, preferredLanguage: code }));
-                  }}
-                  style={[
-                    styles.half,
-                    selectStyle,
-                    draft.preferredLanguage === code && {
-                      borderColor: colors.brass,
-                    },
-                  ]}
-                >
-                  <Text variant="body">{code === "en" ? "English" : "हिंदी"}</Text>
-                </Pressable>
-              ))}
+            <View style={styles.languageRow}>
+              {(["en", "hi"] as const).map((code) => {
+                const selected = draft.preferredLanguage === code;
+                return (
+                  <Pressable
+                    key={code}
+                    onPress={() => {
+                      setLang(code);
+                      setDraft((current) => ({
+                        ...current,
+                        preferredLanguage: code,
+                      }));
+                    }}
+                    style={({ pressed }) => [
+                      styles.languageChoice,
+                      selected && styles.selectedTile,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text
+                      variant="muted"
+                      color={selected ? colors.brassSoft : colors.textSoft}
+                      style={styles.choiceText}
+                    >
+                      {code === "en" ? "English" : "हिंदी"}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
-            <Text variant="eyebrow" style={{ marginTop: spacing.lg }}>
+
+            <Text variant="eyebrow" color={colors.brassSoft} style={styles.fieldLabel}>
               {copy.setup.guidance[L]}
             </Text>
-            {GUIDANCE_STYLES.map((g) => {
-              const on = draft.guidanceStyle === g.id;
-              return (
-                <Pressable
-                  key={g.id}
-                  onPress={() =>
-                    setDraft((d) => ({
-                      ...d,
-                      guidanceStyle: g.id as GuidanceStyleId,
-                    }))
-                  }
-                  style={[
-                    styles.row,
-                    selectStyle,
-                    { marginTop: spacing.sm },
-                    on && { borderColor: colors.brass },
-                  ]}
-                >
-                  <Text variant="body">{g[L]}</Text>
-                </Pressable>
-              );
-            })}
-            <Text variant="eyebrow" style={{ marginTop: spacing.lg }}>
+            <View style={styles.guidanceList}>
+              {GUIDANCE_STYLES.map((guidance) => {
+                const selected = draft.guidanceStyle === guidance.id;
+                return (
+                  <Pressable
+                    key={guidance.id}
+                    onPress={() =>
+                      setDraft((current) => ({
+                        ...current,
+                        guidanceStyle: guidance.id as GuidanceStyleId,
+                      }))
+                    }
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    style={({ pressed }) => [
+                      styles.choiceRow,
+                      selected && styles.selectedRow,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text
+                      variant="muted"
+                      color={selected ? colors.brassSoft : colors.textSoft}
+                      style={[styles.choiceLabel, styles.choiceText]}
+                    >
+                      {guidance[L]}
+                    </Text>
+                    {selected ? <SelectionCheck inline /> : <View style={styles.emptyRadio} />}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text variant="eyebrow" color={colors.brassSoft} style={styles.fieldLabel}>
               {copy.setup.name[L]}
             </Text>
             <TextInput
               value={draft.displayName}
               onChangeText={(displayName) =>
-                setDraft((d) => ({ ...d, displayName }))
+                setDraft((current) => ({ ...current, displayName }))
               }
               placeholder={copy.setup.namePlaceholder[L]}
               placeholderTextColor={colors.textMuted}
-              style={[
-                styles.input,
-                { color: colors.text, borderColor: colors.line, backgroundColor: colors.field },
-              ]}
+              style={styles.input}
             />
-            <Text variant="soft" style={{ marginTop: spacing.md, textAlign: "center" }}>
-              {copy.setup.creating[L]}
-            </Text>
             <Button
               label={copy.setup.start[L]}
               onPress={() => setStep("account")}
-              style={{ marginTop: spacing.lg }}
+              style={styles.setupButton}
             />
+            <Pressable onPress={() => setStep("account")} style={styles.skipLink}>
+              <Text variant="muted">
+                {L === "hi" ? "अभी के लिए छोड़ें" : "Skip for now"}
+              </Text>
+            </Pressable>
+            <View style={styles.setupMark}>
+              <BrandMark size={30} />
+            </View>
           </ScrollView>
         ) : null}
 
         {step === "account" ? (
-          <ScrollView contentContainerStyle={styles.pad}>
+          <ScrollView contentContainerStyle={styles.page}>
             <OnboardingAuthStep
               configured={configured}
               pending={pending}
@@ -459,50 +541,292 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { flex: 1 },
-  hero: {
-    flex: 1,
+function SelectionCheck({
+  compact = false,
+  inline = false,
+}: {
+  compact?: boolean;
+  inline?: boolean;
+}) {
+  return (
+    <View
+      style={[
+        sharedStyles.check,
+        compact && sharedStyles.checkCompact,
+        inline ? sharedStyles.checkInline : sharedStyles.checkCorner,
+      ]}
+    >
+      <Svg width={compact ? 8 : 10} height={compact ? 8 : 10} viewBox="0 0 12 12">
+        <Path
+          d="M2.5 6.2l2.1 2.1 4.9-5"
+          fill="none"
+          stroke="#07090f"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    </View>
+  );
+}
+
+function ClockIcon({ color }: { color: string }) {
+  return (
+    <Svg width={17} height={17} viewBox="0 0 20 20" fill="none">
+      <Circle cx="10" cy="10" r="6.5" stroke={color} strokeWidth="1.4" />
+      <Path
+        d="M10 6.5V10l2.5 1.7"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+const sharedStyles = StyleSheet.create({
+  check: {
+    width: 19,
+    height: 19,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: spacing.lg,
+    backgroundColor: "#e2c45a",
   },
-  ctaCol: { marginTop: spacing.xxl, width: "100%", gap: spacing.md },
-  pad: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    marginTop: spacing.lg,
+  checkCompact: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
   },
-  tile: {
-    width: "47%",
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radii.md,
+  checkCorner: {
+    position: "absolute",
+    top: spacing.sm,
+    right: spacing.sm,
+    zIndex: 3,
   },
-  row: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radii.md,
-  },
-  rowPair: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
-  half: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    alignItems: "center",
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radii.md,
-  },
-  input: {
-    marginTop: spacing.sm,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontFamily: "Sora_400Regular",
-    fontSize: 16,
+  checkInline: {
+    position: "relative",
   },
 });
+
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    screen: {
+      backgroundColor: colors.void,
+    },
+    wrap: {
+      flex: 1,
+    },
+    page: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xl,
+    },
+    welcome: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.xl,
+      paddingBottom: spacing.lg,
+    },
+    welcomeBrand: {
+      alignItems: "center",
+      marginTop: spacing.xl,
+    },
+    brandTitle: {
+      marginTop: spacing.md,
+      fontSize: 27,
+    },
+    brandSubtitle: {
+      marginTop: spacing.xs,
+      letterSpacing: 2.4,
+    },
+    tagline: {
+      maxWidth: 310,
+      textAlign: "center",
+      fontFamily: "Fraunces_600SemiBold",
+      fontStyle: "italic",
+      lineHeight: 30,
+    },
+    welcomeActions: {
+      width: "100%",
+      gap: spacing.md,
+      alignItems: "center",
+    },
+    primaryButton: {
+      width: "100%",
+      minHeight: 54,
+    },
+    pageTitle: {
+      textAlign: "center",
+    },
+    centeredBody: {
+      marginTop: spacing.sm,
+      textAlign: "center",
+    },
+    goalGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+      marginTop: spacing.lg,
+    },
+    goalTile: {
+      width: "31.7%",
+      aspectRatio: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: spacing.xs,
+      borderWidth: 1,
+      borderColor: colors.line,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+    },
+    selectedTile: {
+      borderColor: colors.brass,
+      backgroundColor: "rgba(201,162,39,0.06)",
+    },
+    goalIcon: {
+      fontFamily: "Sora_600SemiBold",
+      fontSize: 22,
+      lineHeight: 26,
+    },
+    goalLabel: {
+      marginTop: spacing.xs,
+      textAlign: "center",
+      fontSize: 10,
+      lineHeight: 13,
+    },
+    bottomActions: {
+      marginTop: "auto",
+      paddingTop: spacing.xl,
+      gap: spacing.md,
+    },
+    skipLink: {
+      minHeight: 30,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    inspirationBody: {
+      marginTop: spacing.sm,
+      maxWidth: 330,
+    },
+    inspirationGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+      marginTop: spacing.lg,
+    },
+    inspirationTile: {
+      width: "48.7%",
+      height: 190,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.line,
+      borderRadius: radii.sm,
+      backgroundColor: colors.field,
+    },
+    inspirationImage: {
+      width: "100%",
+      height: "100%",
+    },
+    imageScrim: {
+      ...StyleSheet.absoluteFillObject,
+      top: "48%",
+      backgroundColor: "rgba(7,9,15,0.58)",
+    },
+    inspirationName: {
+      position: "absolute",
+      left: spacing.sm,
+      bottom: spacing.sm,
+      fontSize: 18,
+      lineHeight: 22,
+    },
+    sectionButton: {
+      marginTop: spacing.lg,
+    },
+    timeList: {
+      gap: spacing.sm,
+      marginTop: spacing.xl,
+    },
+    choiceRow: {
+      minHeight: 52,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.line,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+    },
+    selectedRow: {
+      borderColor: colors.brass,
+      backgroundColor: colors.field,
+    },
+    choiceLabel: {
+      flex: 1,
+      marginLeft: spacing.sm,
+      fontSize: 13,
+    },
+    emptyRadio: {
+      width: 17,
+      height: 17,
+      borderRadius: 9,
+      borderWidth: 1,
+      borderColor: colors.textMuted,
+    },
+    setupIntro: {
+      marginTop: spacing.xs,
+      fontStyle: "italic",
+    },
+    fieldLabel: {
+      marginTop: spacing.lg,
+    },
+    languageRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    languageChoice: {
+      flex: 1,
+      minHeight: 48,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: colors.line,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+    },
+    guidanceList: {
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    choiceText: {
+      fontFamily: "Sora_600SemiBold",
+    },
+    input: {
+      minHeight: 48,
+      marginTop: spacing.sm,
+      paddingHorizontal: spacing.md,
+      color: colors.text,
+      borderWidth: 1,
+      borderColor: colors.line,
+      borderRadius: radii.sm,
+      backgroundColor: colors.inputBg,
+      fontFamily: "Sora_400Regular",
+      fontSize: 15,
+    },
+    setupButton: {
+      marginTop: spacing.md,
+    },
+    setupMark: {
+      alignItems: "center",
+      marginTop: spacing.sm,
+      opacity: 0.65,
+    },
+    pressed: {
+      opacity: 0.72,
+    },
+  });
+}

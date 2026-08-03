@@ -2,6 +2,8 @@
 
 Shipped design language for Expo SDK 54. Brand DNA from web `DESIGN.md`; atmosphere and compositions are mobile-native.
 
+**UI 2.0:** Stitch Flow v2 is the visual QA source (`docs/design/STITCH_V2.md` → web `docs/design-v2/references/`). Practice-first Home; tracking lives on Account. Nav lock unchanged below.
+
 ## Atmosphere
 
 Fixed stack behind every `Screen` (unless `atmosphere="none"`):
