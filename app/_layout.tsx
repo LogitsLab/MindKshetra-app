@@ -76,7 +76,7 @@ function RootNavigator() {
           name="madhav"
           options={{
             presentation: "modal",
-            title: "Ask Madhav",
+            headerShown: false,
             animation: "slide_from_bottom",
           }}
         />
@@ -121,10 +121,28 @@ function RootNavigator() {
           name="account/reflections"
           options={{ title: "Reflections", headerRight: () => null }}
         />
+        <Stack.Screen
+          name="account/achievements"
+          options={{ title: "Achievements", headerRight: () => null }}
+        />
+        <Stack.Screen
+          name="account/progress"
+          options={{ title: "Progress", headerRight: () => null }}
+        />
+        <Stack.Screen
+          name="journal/index"
+          options={{ title: "Journal", headerRight: () => null }}
+        />
         <Stack.Screen name="astrology/incognito" options={{ title: "Incognito chart" }} />
+        <Stack.Screen name="astrology/muhurat" options={{ title: "Muhurats" }} />
+        <Stack.Screen name="astrology/horoscope" options={{ title: "Horoscope" }} />
+        <Stack.Screen name="astrology/transits" options={{ title: "Transits" }} />
         <Stack.Screen name="astrology/members/index" options={{ title: "Members" }} />
         <Stack.Screen name="astrology/members/new" options={{ title: "Add member" }} />
-        <Stack.Screen name="astrology/members/[id]" options={{ title: "Chart" }} />
+        <Stack.Screen
+          name="astrology/members/[id]"
+          options={{ headerShown: false, animation: "slide_from_right" }}
+        />
         <Stack.Screen name="astrology/milan" options={{ title: "Kundli Milan" }} />
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
         <Stack.Screen name="privacy" options={{ title: "Privacy" }} />

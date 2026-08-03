@@ -12,6 +12,7 @@ import * as WebBrowser from "expo-web-browser";
 import { makeRedirectUri } from "expo-auth-session";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
 import { getAuthCallbackRedirect } from "@/auth/redirect";
 import { shouldMerge } from "@/auth/should-merge";
@@ -179,6 +180,25 @@ async function mergeOnUpgrade() {
     }
   } catch {
     /* ignore */
+  }
+  // Personalization draft from onboarding (guest device → account).
+  try {
+    const raw = await AsyncStorage.getItem("mindkshetra-personalization-draft");
+    if (raw) {
+      const draft = JSON.parse(raw) as Record<string, unknown>;
+      await userApi.completeOnboarding({
+        goals: draft.goals,
+        inspirations: draft.inspirations,
+        dailyTimeMinutes: draft.dailyTimeMinutes,
+        guidanceStyle: draft.guidanceStyle,
+        displayName: draft.displayName,
+        preferredLanguage: draft.preferredLanguage,
+        skipped: Boolean(draft.skipped),
+      });
+      await AsyncStorage.removeItem("mindkshetra-personalization-draft");
+    }
+  } catch {
+    /* keep draft */
   }
 }
 
