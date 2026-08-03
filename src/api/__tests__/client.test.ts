@@ -14,6 +14,9 @@ jest.mock("@/auth/supabase", () => ({
   supabase: {
     auth: {
       getSession: (...args: unknown[]) => mockGetSession(...args),
+      onAuthStateChange: () => ({
+        data: { subscription: { unsubscribe: () => undefined } },
+      }),
     },
   },
 }));
@@ -236,5 +239,40 @@ describe("apiFetch auth headers", () => {
       message: "Not your reflection",
     });
     await expect(apiFetch("/api/reflections/9")).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe("apiFetch 401 retry", () => {
+  it("re-reads the session and retries once after a 401 on an authed request", async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+        json: async () => ({ error: "Token expired" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true }),
+      });
+
+    await expect(apiFetch("/api/favorites")).resolves.toEqual({ ok: true });
+
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(mockGetSession).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry a 401 when the request carried no token", async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null } });
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 401,
+      statusText: "Unauthorized",
+      json: async () => ({ error: "Sign in required" }),
+    });
+
+    await expect(apiFetch("/api/favorites")).rejects.toMatchObject({ status: 401 });
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });

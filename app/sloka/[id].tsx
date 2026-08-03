@@ -25,6 +25,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
+import { bumpFocusVersion } from "@/hooks/useFocusRefresh";
 import {
   addJournalDraft,
   cacheVerse,
@@ -107,6 +108,9 @@ export default function SlokaScreen() {
     if (isSignedIn) {
       progressApi.setCursor(sloka.id).catch(() => undefined);
     }
+    // The cursor moved — "Continue reading" on explore must not serve its
+    // TTL-cached copy on the next focus.
+    bumpFocusVersion("progress");
     contentApi
       .story(sloka.id, lang)
       .then((r) => setStory(r.story))
@@ -152,6 +156,7 @@ export default function SlokaScreen() {
           try {
             if (next) await userApi.addFavorite(sloka.id);
             else await userApi.removeFavorite(sloka.id);
+            bumpFocusVersion("favorites");
           } catch {
             setFavorited(!next);
           }
@@ -208,6 +213,7 @@ export default function SlokaScreen() {
               /* ignore */
             }
           }
+          bumpFocusVersion("progress");
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }}
       />
@@ -292,6 +298,7 @@ export default function SlokaScreen() {
                 if (!text) return;
                 if (isSignedIn) {
                   await userApi.addJournal(sloka.id, text);
+                  bumpFocusVersion("journal");
                   setJournalNotice(null);
                   void Haptics.notificationAsync(
                     Haptics.NotificationFeedbackType.Success

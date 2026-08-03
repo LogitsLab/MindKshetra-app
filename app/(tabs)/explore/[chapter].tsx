@@ -1,6 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  View,
+} from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -18,6 +24,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useFocusRefresh } from "@/hooks/useFocusRefresh";
 import { getGuestProgress } from "@/storage/local";
 import { radii, spacing } from "@/theme/tokens";
 import type { Sloka } from "@/types";
@@ -35,8 +42,7 @@ export default function ChapterScreen() {
   const [cursorVerse, setCursorVerse] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const scrollRef = useRef<ScrollView | null>(null);
-  const verseY = useRef<Record<number, number>>({});
+  const listRef = useRef<FlatList<Sloka> | null>(null);
 
   const title = chapterTitle(meta, lang, `${t("chapter")} ${chapterNum}`);
   const subtitle = chapterSubtitle(meta, lang);
@@ -69,35 +75,135 @@ export default function ChapterScreen() {
     };
   }, [chapterNum]);
 
-  useFocusEffect(
-    useCallback(() => {
-      let alive = true;
-      (async () => {
-        try {
-          const data = isSignedIn ? await progressApi.get() : await getGuestProgress();
-          if (!alive) return;
-          setCompleted(data.completed ?? []);
-          setCursorVerse(
-            data.cursor?.chapter === chapterNum ? data.cursor.verse ?? null : null
-          );
-        } catch {
-          if (!alive) return;
+  useFocusRefresh(
+    "progress",
+    async (isActive) => {
+      try {
+        const data = isSignedIn ? await progressApi.get() : await getGuestProgress();
+        if (!isActive()) return;
+        setCompleted(data.completed ?? []);
+        setCursorVerse(
+          data.cursor?.chapter === chapterNum ? data.cursor.verse ?? null : null
+        );
+      } catch (e) {
+        if (isActive()) {
           setCompleted([]);
           setCursorVerse(null);
         }
-      })();
-      return () => {
-        alive = false;
-      };
-    }, [chapterNum, isSignedIn])
+        throw e;
+      }
+    },
+    { resetKey: `${chapterNum}:${isSignedIn}` }
   );
 
   const jumpToVerse = (verse: number) => {
-    const y = verseY.current[verse];
-    if (y != null) {
-      scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
-    }
+    const index = slokas.findIndex((sloka) => sloka.verse_number === verse);
+    if (index < 0) return;
+    listRef.current?.scrollToIndex({ index, viewOffset: 12, animated: true });
   };
+
+  const listHeader = (
+    <>
+      {moral ? (
+        <Panel style={{ marginBottom: spacing.sm }}>
+          <Text variant="eyebrow" color={colors.brassSoft}>
+            {t("chapterMoral")}
+          </Text>
+          <Text variant="soft" style={{ marginTop: spacing.xs }}>
+            {moral}
+          </Text>
+        </Panel>
+      ) : null}
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: spacing.sm,
+          marginBottom: spacing.sm,
+        }}
+      >
+        <Panel
+          style={{
+            flex: 1,
+            minWidth: 140,
+            paddingVertical: spacing.sm,
+            paddingHorizontal: spacing.md,
+          }}
+        >
+          <Text variant="eyebrow" color={colors.brassSoft}>
+            {t("readingProgress")}
+          </Text>
+          <Text variant="title" style={{ marginTop: 6, fontSize: 18 }}>
+            {completed.filter((id) => slokas.some((sloka) => sloka.id === id))
+              .length}
+            /{slokas.length}
+          </Text>
+          <Text variant="muted" style={{ marginTop: 2 }}>
+            {t("progressComplete")}
+          </Text>
+        </Panel>
+        {continueSloka ? (
+          <View style={{ flex: 1, minWidth: 180, justifyContent: "center" }}>
+            <Button
+              label={`${t("continueReading")} · ${continueSloka.chapter}.${continueSloka.verse_number}`}
+              onPress={() => router.push(`/sloka/${continueSloka.id}`)}
+            />
+          </View>
+        ) : null}
+      </View>
+      {showJump ? (
+        <View style={{ marginBottom: spacing.md }}>
+          <Text variant="eyebrow" color={colors.textMuted}>
+            {t("jumpToVerse")}
+          </Text>
+          <ScrollView
+            horizontal
+            nestedScrollEnabled
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              gap: spacing.xs,
+              paddingTop: spacing.xs,
+            }}
+          >
+            {slokas.map((sloka) => {
+              const done = completedSet.has(sloka.id);
+              return (
+                <Pressable
+                  key={sloka.id}
+                  onPress={() => jumpToVerse(sloka.verse_number)}
+                  style={({ pressed }) => ({
+                    minWidth: 38,
+                    minHeight: 38,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: radii.md,
+                    borderWidth: 1.5,
+                    borderColor: done ? colors.brass : colors.line,
+                    backgroundColor: pressed
+                      ? colors.surfaceHover
+                      : done
+                        ? colors.surface
+                        : "transparent",
+                    paddingHorizontal: spacing.sm,
+                  })}
+                >
+                  <Text
+                    style={{
+                      color: done ? colors.brassSoft : colors.textMuted,
+                      fontFamily: "Sora_600SemiBold",
+                      fontSize: 12,
+                    }}
+                  >
+                    {sloka.verse_number}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : null}
+    </>
+  );
 
   return (
     <Screen>
@@ -120,124 +226,14 @@ export default function ChapterScreen() {
       ) : error ? (
         <EmptyState title="Couldn’t load" body={error} />
       ) : (
-        <ScrollView
-          ref={scrollRef}
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 120 }}
-          showsVerticalScrollIndicator={false}
-          nestedScrollEnabled
-        >
-          {moral ? (
-            <Panel style={{ marginBottom: spacing.sm }}>
-              <Text variant="eyebrow" color={colors.brassSoft}>
-                {t("chapterMoral")}
-              </Text>
-              <Text variant="soft" style={{ marginTop: spacing.xs }}>
-                {moral}
-              </Text>
-            </Panel>
-          ) : null}
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              gap: spacing.sm,
-              marginBottom: spacing.sm,
-            }}
-          >
-            <Panel
-              style={{
-                flex: 1,
-                minWidth: 140,
-                paddingVertical: spacing.sm,
-                paddingHorizontal: spacing.md,
-              }}
-            >
-              <Text variant="eyebrow" color={colors.brassSoft}>
-                {t("readingProgress")}
-              </Text>
-              <Text variant="title" style={{ marginTop: 6, fontSize: 18 }}>
-                {completed.filter((id) => slokas.some((sloka) => sloka.id === id))
-                  .length}
-                /{slokas.length}
-              </Text>
-              <Text variant="muted" style={{ marginTop: 2 }}>
-                {t("progressComplete")}
-              </Text>
-            </Panel>
-            {continueSloka ? (
-              <View style={{ flex: 1, minWidth: 180, justifyContent: "center" }}>
-                <Button
-                  label={`${t("continueReading")} · ${continueSloka.chapter}.${continueSloka.verse_number}`}
-                  onPress={() => router.push(`/sloka/${continueSloka.id}`)}
-                />
-              </View>
-            ) : null}
-          </View>
-          {showJump ? (
-            <View style={{ marginBottom: spacing.md }}>
-              <Text variant="eyebrow" color={colors.textMuted}>
-                {t("jumpToVerse")}
-              </Text>
-              <ScrollView
-                horizontal
-                nestedScrollEnabled
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{
-                  gap: spacing.xs,
-                  paddingTop: spacing.xs,
-                }}
-              >
-                {slokas.map((sloka) => {
-                  const done = completedSet.has(sloka.id);
-                  return (
-                    <Pressable
-                      key={sloka.id}
-                      onPress={() => jumpToVerse(sloka.verse_number)}
-                      style={({ pressed }) => ({
-                        minWidth: 38,
-                        minHeight: 38,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderRadius: radii.md,
-                        borderWidth: 1.5,
-                        borderColor: done ? colors.brass : colors.line,
-                        backgroundColor: pressed
-                          ? colors.surfaceHover
-                          : done
-                            ? colors.surface
-                            : "transparent",
-                        paddingHorizontal: spacing.sm,
-                      })}
-                    >
-                      <Text
-                        style={{
-                          color: done ? colors.brassSoft : colors.textMuted,
-                          fontFamily: "Sora_600SemiBold",
-                          fontSize: 12,
-                        }}
-                      >
-                        {sloka.verse_number}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          ) : null}
-
-          {slokas.length ? (
-            slokas.map((item) => (
-              <View
-                key={item.id}
-                onLayout={(event) => {
-                  verseY.current[item.verse_number] = event.nativeEvent.layout.y;
-                }}
-              >
-                <SlokaCard sloka={item} lang={lang} />
-              </View>
-            ))
-          ) : (
+        <FlatList
+          ref={listRef}
+          data={slokas}
+          keyExtractor={(sloka) => String(sloka.id)}
+          initialNumToRender={8}
+          renderItem={({ item }) => <SlokaCard sloka={item} lang={lang} />}
+          ListHeaderComponent={listHeader}
+          ListEmptyComponent={
             <EmptyState
               title={lang === "hi" ? "कोई श्लोक नहीं" : "No verses"}
               body={
@@ -246,8 +242,26 @@ export default function ChapterScreen() {
                   : "No verses returned from the API."
               }
             />
-          )}
-        </ScrollView>
+          }
+          onScrollToIndexFailed={(info) => {
+            // Target not measured yet — estimate, let it render, retry.
+            listRef.current?.scrollToOffset({
+              offset: info.averageItemLength * info.index,
+              animated: true,
+            });
+            setTimeout(() => {
+              listRef.current?.scrollToIndex({
+                index: info.index,
+                viewOffset: 12,
+                animated: true,
+              });
+            }, 250);
+          }}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
+        />
       )}
     </Screen>
   );
