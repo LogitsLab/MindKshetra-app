@@ -1,4 +1,4 @@
-import { apiFetch } from "@/api/client";
+import { apiFetch, getApiUrl } from "@/api/client";
 import type { Milestone } from "@/data/milestones";
 import type {
   AstrologyMember,
@@ -361,6 +361,51 @@ export const chatApi = {
     }),
 };
 
+/**
+ * Failure detail apiFetch cannot carry: the Retry-After header on 429 and the
+ * `recoverable` flag a 404 body sets when the chart session expired but can be
+ * rebuilt from a stored birth payload. usePredictions maps these to UX.
+ */
+export class PredictionsError extends Error {
+  status: number;
+  retryAfterSec: number | null;
+  recoverable: boolean;
+  constructor(
+    status: number,
+    message: string,
+    retryAfterSec: number | null = null,
+    recoverable = false
+  ) {
+    super(message);
+    this.name = "PredictionsError";
+    this.status = status;
+    this.retryAfterSec = retryAfterSec;
+    this.recoverable = recoverable;
+  }
+}
+
+/**
+ * Auth header for the one endpoint below that must read response headers and
+ * error bodies itself. Lazy import so test environments that never call this
+ * do not pay for the supabase module's configuration check.
+ */
+async function predictionsAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+  try {
+    const { supabase, supabaseConfigured } = await import("@/auth/supabase");
+    if (!supabaseConfigured) return headers;
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } catch {
+    // Fall through to an unauthenticated request, same as apiFetch.
+  }
+  return headers;
+}
+
 export const astrologyApi = {
   members: () => apiFetch<{ members: AstrologyMember[] }>("/api/astrology/members"),
   createMember: (body: Record<string, unknown>) =>
@@ -417,6 +462,58 @@ export const astrologyApi = {
       method: "POST",
       body: JSON.stringify(body),
     });
+    const predictionsText = extractPredictionsText(data);
+    return {
+      chart: data.chart as Record<string, unknown> | undefined,
+      predictionsText: predictionsText as PredictionsText | null,
+      source: predictionsText?.source ?? data.source,
+      cached: data.cached,
+    };
+  },
+  /**
+   * predictions() with the latency-UX extras: AbortSignal support, the
+   * Retry-After header on 429, and the body's `recoverable` flag on 404.
+   * Same request/response contract as predictions() otherwise.
+   */
+  predictionsDetailed: async (
+    body: Record<string, unknown>,
+    signal?: AbortSignal
+  ) => {
+    const res = await fetch(`${getApiUrl()}/api/astrology/predictions`, {
+      method: "POST",
+      headers: await predictionsAuthHeaders(),
+      body: JSON.stringify(body),
+      signal,
+    });
+    if (!res.ok) {
+      let message = res.statusText;
+      let recoverable = false;
+      try {
+        const errBody = (await res.json()) as {
+          error?: string;
+          message?: string;
+          recoverable?: boolean;
+        };
+        message = errBody.error ?? errBody.message ?? message;
+        recoverable = Boolean(errBody.recoverable);
+      } catch {
+        /* non-JSON error body */
+      }
+      const header = res.headers?.get?.("retry-after");
+      const parsed = header ? Number.parseInt(header, 10) : Number.NaN;
+      throw new PredictionsError(
+        res.status,
+        message,
+        Number.isFinite(parsed) && parsed >= 0 ? parsed : null,
+        recoverable
+      );
+    }
+    const data = (await res.json()) as {
+      chart?: { predictionsText?: unknown };
+      predictionsText?: unknown;
+      source?: "llm" | "rules";
+      cached?: boolean;
+    };
     const predictionsText = extractPredictionsText(data);
     return {
       chart: data.chart as Record<string, unknown> | undefined,
