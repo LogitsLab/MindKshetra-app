@@ -14,12 +14,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
+import { BrandMark } from "@/components/BrandMark";
+import { Rise } from "@/components/Rise";
 import { siteUrl } from "@/api/client";
 import { meditationApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { sessionTranscript, type MeditationSession, type SittingMilestone } from "@/data/meditation";
+import { POST_MOOD_CHOICES } from "@/data/meditationCompletion";
 import {
   GUEST_QUEUE_KEY,
   markSittingGuestDay,
@@ -30,17 +33,18 @@ import { radii, spacing } from "@/theme/tokens";
 const SUPPORT_URL = siteUrl("/support");
 
 type Stage = "moodBefore" | "play" | "moodAfter" | "done";
-const POST_MOODS = [
-  { value: 4, label: "Great" },
-  { value: 3, label: "Good" },
-  { value: 2, label: "Neutral" },
-  { value: 1, label: "Low" },
-] as const;
 
 function formatClock(sec: number) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function fill(template: string, vars: Record<string, string | number>) {
+  return Object.entries(vars).reduce(
+    (copy, [key, value]) => copy.replace(`{${key}}`, String(value)),
+    template
+  );
 }
 
 async function queueGuest(row: Record<string, unknown>) {
@@ -226,7 +230,9 @@ export function MeditationPlayer({
           <View>
             <Text variant="title" color={colors.brassSoft}>{title}</Text>
             <Text variant="eyebrow" color={colors.brassSoft}>
-              {session.tier === "daily" ? t("medDailiesTitle") : `Day ${session.day_number}`} ·{" "}
+              {session.tier === "daily"
+                ? t("medDailiesTitle")
+                : fill(t("medDayLabel"), { n: session.day_number })} ·{" "}
               {session.duration_minutes} {t("sadhanaMin")}
             </Text>
           </View>
@@ -242,7 +248,9 @@ export function MeditationPlayer({
 
         {stage === "moodBefore" ? (
           <View style={styles.checkIn}>
-            <Text variant="eyebrow" color={colors.brassSoft}>BEFORE YOU BEGIN</Text>
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {t("medBeforeEyebrow")}
+            </Text>
             <Text variant="title" style={styles.checkInTitle}>
               {t("medMoodBefore")}
             </Text>
@@ -253,6 +261,9 @@ export function MeditationPlayer({
               {[1, 2, 3, 4, 5].map((n) => (
                 <Pressable
                   key={n}
+                  accessibilityRole="radio"
+                  accessibilityLabel={fill(t("medMoodBeforeChoice"), { value: n })}
+                  accessibilityState={{ selected: moodBefore === n }}
                   onPress={() => setMoodBefore(n)}
                   style={[
                     styles.numberChip,
@@ -304,6 +315,9 @@ export function MeditationPlayer({
                 return (
                   <Pressable
                     key={String(value)}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`${t("medRateLabel")}: ${label}`}
+                    accessibilityState={{ selected: active }}
                     onPress={() => setRate(value)}
                     style={[
                       styles.rateChip,
@@ -331,6 +345,8 @@ export function MeditationPlayer({
                 </Text>
                 </View>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={speaking ? t("medStopVoice") : t("medReadAloud")}
                   onPress={speaking ? stopVoice : readAloud}
                   style={styles.playerAction}
                 >
@@ -339,6 +355,8 @@ export function MeditationPlayer({
                   </Text>
                 </Pressable>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t("medSkipSpeak")}
                   onPress={() => {
                     autoAdvance.current = false;
                     stopNarration();
@@ -358,6 +376,8 @@ export function MeditationPlayer({
                 </Text>
                 </View>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t("medNextPhase")}
                   onPress={advancePhase}
                   style={styles.playerAction}
                 >
@@ -366,6 +386,11 @@ export function MeditationPlayer({
               </View>
             )}
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                showTranscript ? t("medHideTranscript") : t("medTranscript")
+              }
+              accessibilityState={{ expanded: showTranscript }}
               onPress={() => setShowTranscript((v) => !v)}
               style={styles.transcriptToggle}
             >
@@ -382,55 +407,85 @@ export function MeditationPlayer({
         ) : null}
 
         {stage === "moodAfter" ? (
-          <View style={styles.completeStage}>
-            <View style={[styles.lotusMark, { borderColor: colors.line }]}>
-              <Text variant="display" color={colors.brassSoft}>◇</Text>
+          <Rise style={styles.completeStage}>
+            <View
+              accessible
+              accessibilityLabel={t("medCompletionLotus")}
+              style={[
+                styles.lotusMark,
+                {
+                  borderColor: colors.brass,
+                  backgroundColor: colors.atmosphereBrass,
+                },
+              ]}
+            >
+              <BrandMark size={68} />
             </View>
-            <Text variant="eyebrow" color={colors.brassSoft}>SESSION COMPLETE</Text>
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {t("medSessionComplete")}
+            </Text>
             <Text variant="display" color={colors.brassSoft} style={styles.completeTitle}>
-              {lang === "hi" ? "बहुत अच्छा" : "Well done"}
+              {t("medWellDone")}
             </Text>
             <Text variant="soft" style={styles.centerText}>
               {title} · {session.duration_minutes} {t("sadhanaMin")}
             </Text>
             <View style={[styles.sessionStats, { borderColor: colors.line, backgroundColor: colors.panel }]}>
               <View style={styles.statCell}>
-                <Text variant="eyebrow">{lang === "hi" ? "अवधि" : "DURATION"}</Text>
-                <Text variant="title">{session.duration_minutes}m</Text>
+                <Text variant="eyebrow">{t("medDurationLabel")}</Text>
+                <Text variant="title">
+                  {fill(t("medMinuteShort"), { n: session.duration_minutes })}
+                </Text>
               </View>
               <View style={[styles.statCell, styles.statDivider, { borderColor: colors.hairline }]}>
-                <Text variant="eyebrow">{lang === "hi" ? "अभ्यास" : "PRACTICE"}</Text>
-                <Text variant="title">{session.tier === "daily" ? "Daily" : `Day ${session.day_number}`}</Text>
+                <Text variant="eyebrow">{t("medPracticeLabel")}</Text>
+                <Text variant="title">
+                  {session.tier === "daily"
+                    ? t("medDailyLabel")
+                    : fill(t("medDayLabel"), { n: session.day_number })}
+                </Text>
               </View>
             </View>
             <Text variant="soft" style={styles.moodPrompt}>
               {t("medMoodAfter")}
             </Text>
             <View style={styles.postMoodGrid}>
-              {POST_MOODS.map(({ value, label }) => (
-                <Pressable
-                  key={value}
-                  onPress={() => setMoodAfter(value)}
-                  style={[
-                    styles.postMoodChip,
-                    {
-                      borderColor: moodAfter === value ? colors.brass : colors.line,
-                      backgroundColor: moodAfter === value ? colors.surfaceHover : colors.field,
-                    },
-                  ]}
-                >
-                  <Text
-                    variant="eyebrow"
-                    color={moodAfter === value ? colors.brassSoft : colors.textSoft}
+              {POST_MOOD_CHOICES.map(({ value, labelKey }) => {
+                const label = t(labelKey);
+                return (
+                  <Pressable
+                    key={value}
+                    accessibilityRole="radio"
+                    accessibilityLabel={fill(t("medMoodChoice"), {
+                      label,
+                      value,
+                    })}
+                    accessibilityState={{ selected: moodAfter === value }}
+                    onPress={() => setMoodAfter(value)}
+                    style={[
+                      styles.postMoodChip,
+                      {
+                        borderColor: moodAfter === value ? colors.brass : colors.line,
+                        backgroundColor: moodAfter === value ? colors.surfaceHover : colors.field,
+                      },
+                    ]}
                   >
-                    {label}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text
+                      variant="eyebrow"
+                      color={moodAfter === value ? colors.brassSoft : colors.textSoft}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
             <View style={{ marginTop: spacing.lg }}>
               {saving ? (
-                <ActivityIndicator color={colors.brass} />
+                <ActivityIndicator
+                  accessibilityLabel={t("medSaving")}
+                  color={colors.brass}
+                />
               ) : (
                 <Button
                   label={t("medComplete")}
@@ -439,16 +494,30 @@ export function MeditationPlayer({
                 />
               )}
             </View>
-          </View>
+          </Rise>
         ) : null}
 
         {stage === "done" ? (
-          <View style={styles.doneStage}>
-            <View style={[styles.lotusMark, { borderColor: colors.line }]}>
-              <Text variant="display" color={colors.brassSoft}>◇</Text>
+          <Rise style={styles.doneStage}>
+            <View
+              accessible
+              accessibilityLabel={t("medCompletionLotus")}
+              style={[
+                styles.lotusMark,
+                {
+                  borderColor: colors.brass,
+                  backgroundColor: colors.atmosphereBrass,
+                },
+              ]}
+            >
+              <BrandMark size={68} />
             </View>
             <Text variant="title" color={colors.brassSoft} style={styles.doneTitle}>
-              {milestone ? t("medMilestoneTitle") : t("medDoneTitle")}
+              {milestone
+                ? t("medMilestoneTitle")
+                : session.tier === "daily"
+                  ? t("medSessionDoneTitle")
+                  : t("medDoneTitle")}
             </Text>
             <Text variant="soft" style={{ marginTop: spacing.sm }}>
               {milestone === 7
@@ -457,7 +526,9 @@ export function MeditationPlayer({
                   ? t("medMilestone21")
                   : milestone === 45
                     ? t("medMilestone45")
-                    : t("medDoneBody")}
+                    : session.tier === "daily"
+                      ? t("medSessionDoneBody")
+                      : t("medDoneBody")}
             </Text>
             {guestSaved ? (
               <Text
@@ -470,15 +541,19 @@ export function MeditationPlayer({
             ) : null}
             {nextDay && milestone !== 45 ? (
               <Pressable
-                onPress={() => router.push(`/meditation/${nextDay}`)}
+                accessibilityRole="button"
+                accessibilityLabel={fill(t("medNextDay"), { n: nextDay })}
+                onPress={() => router.replace(`/meditation/${nextDay}`)}
                 style={{ marginTop: spacing.lg }}
               >
                 <Text color={colors.brassSoft}>
-                  {t("medContinue").replace("{n}", String(nextDay))} →
+                  {fill(t("medNextDay"), { n: nextDay })} →
                 </Text>
               </Pressable>
             ) : (
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("medBack")}
                 onPress={() => router.push("/meditation")}
                 style={{ marginTop: spacing.lg }}
               >
@@ -486,24 +561,30 @@ export function MeditationPlayer({
               </Pressable>
             )}
             <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={t("medBridgeSadhana")}
               onPress={() => router.push("/sadhana")}
               style={{ marginTop: spacing.sm }}
             >
               <Text color={colors.brassSoft}>{t("medBridgeSadhana")} →</Text>
             </Pressable>
             <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={t("medBridgePaths")}
               onPress={() => router.push("/paths")}
               style={{ marginTop: spacing.sm }}
             >
               <Text color={colors.brassSoft}>{t("medBridgePaths")} →</Text>
             </Pressable>
             <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={t("medBridgeSupport")}
               onPress={() => void Linking.openURL(SUPPORT_URL)}
               style={{ marginTop: spacing.sm }}
             >
               <Text color={colors.brassSoft}>{t("medBridgeSupport")} →</Text>
             </Pressable>
-          </View>
+          </Rise>
         ) : null}
       </ScrollView>
     </Screen>

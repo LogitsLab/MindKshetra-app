@@ -95,13 +95,21 @@ export default function MeditationHubScreen() {
             {t("medEyebrow")}
           </Text>
           <Text variant="display" color={colors.brassSoft} style={styles.heading}>
-            {lang === "hi" ? "अंतर मंदिर" : "The inner temple"}
+            {t("medInnerTemple")}
           </Text>
           <Text variant="soft" style={styles.intro}>
             {lang === "hi" ? program.intro_hi : program.intro_en}
           </Text>
 
-          <Pressable onPress={() => router.push(`/meditation/${continueDay}`)}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={fill(t("medDayA11y"), {
+              n: continueDay,
+              title: lang === "hi" ? program.title_hi : program.title_en,
+              minutes: program.days[continueDay - 1]?.duration_minutes ?? "",
+            })}
+            onPress={() => router.push(`/meditation/${continueDay}`)}
+          >
             <ImageBackground
               source={images.pathMeditation}
               imageStyle={styles.heroImage}
@@ -109,7 +117,9 @@ export default function MeditationHubScreen() {
             >
               <View style={[styles.heroScrim, { backgroundColor: colors.scrim }]}>
                 <Text variant="eyebrow" color={colors.brassSoft}>
-                  {completedDays.length === 0 ? "BEGIN YOUR PATH" : "CONTINUE YOUR PATH"}
+                  {completedDays.length === 0
+                    ? t("medHeroBegin")
+                    : t("medHeroContinue")}
                 </Text>
                 <Text variant="title" color={colors.onMedia} style={styles.heroTitle}>
                   {lang === "hi" ? program.title_hi : program.title_en}
@@ -119,7 +129,7 @@ export default function MeditationHubScreen() {
                     done: completedDays.length,
                     total: program.days_count,
                   })}{" "}
-                  · Day {continueDay}
+                  · {fill(t("medDayLabel"), { n: continueDay })}
                 </Text>
               </View>
             </ImageBackground>
@@ -127,23 +137,45 @@ export default function MeditationHubScreen() {
 
           <View style={styles.sectionHeader}>
             <Text variant="eyebrow" color={colors.brassSoft}>
-              {lang === "hi" ? "त्वरित अभ्यास" : "QUICK JOURNEY"}
+              {t("medQuickTitle")}
             </Text>
             <Text variant="muted" color={colors.brassSoft}>
               {streak > 0 ? fill(t("medStreak"), { n: streak }) : t("medStreakNone")}
             </Text>
           </View>
           <View style={styles.quickRow}>
-            {[5, 7, 10, 15].map((mins) => (
-              <Pressable
-                key={mins}
-                onPress={() => router.push(`/meditation/${continueDay}`)}
-                style={[styles.quickTile, { borderColor: colors.line, backgroundColor: colors.field }]}
-              >
-                <Text variant="title" color={colors.brassSoft}>{mins}</Text>
-                <Text variant="eyebrow">MIN</Text>
-              </Pressable>
-            ))}
+            {dailySitsCatalog.sessions.map((session) => {
+              const sessionTitle =
+                lang === "hi" ? session.title_hi : session.title_en;
+              return (
+                <Pressable
+                  key={session.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={fill(t("medOpenSession"), {
+                    title: sessionTitle,
+                    minutes: session.duration_minutes,
+                  })}
+                  onPress={() =>
+                    router.push(`/meditation/daily/${session.id}`)
+                  }
+                  style={[
+                    styles.quickTile,
+                    {
+                      borderColor: colors.line,
+                      backgroundColor: colors.field,
+                    },
+                  ]}
+                >
+                  <Text variant="title" color={colors.brassSoft}>
+                    {session.duration_minutes}
+                  </Text>
+                  <Text variant="eyebrow">{t("sadhanaMin")}</Text>
+                  <Text variant="muted" style={styles.quickTitle}>
+                    {sessionTitle}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </Rise>
 
@@ -163,6 +195,19 @@ export default function MeditationHubScreen() {
               return (
                 <Rise key={day.id}>
                   <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={fill(t("medDayA11y"), {
+                      n: day.day_number,
+                      title,
+                      minutes: day.duration_minutes,
+                    }) + `, ${
+                      done
+                        ? t("medDayComplete")
+                        : unlocked
+                          ? t("medDayAvailable")
+                          : t("medDayLocked")
+                    }`}
+                    accessibilityState={{ disabled: !unlocked }}
                     disabled={!unlocked}
                     onPress={() =>
                       router.push(`/meditation/${day.day_number}`)
@@ -200,43 +245,17 @@ export default function MeditationHubScreen() {
           </View>
         ))}
 
-        <Rise style={styles.dailySection}>
-          <Text variant="title" style={{ fontSize: 22 }}>
-            {lang === "hi"
-              ? dailySitsCatalog.title_hi
-              : dailySitsCatalog.title_en}
-          </Text>
-          <Text variant="muted" style={{ marginTop: spacing.xs }}>
-            {lang === "hi"
-              ? dailySitsCatalog.intro_hi
-              : dailySitsCatalog.intro_en}
-          </Text>
-          {dailySitsCatalog.sessions.map((s) => (
-            <Pressable
-              key={s.id}
-              onPress={() => router.push(`/meditation/daily/${s.id}`)}
-              style={styles.dailyPressable}
-            >
-              <View style={[styles.dailyCard, { borderColor: colors.line, backgroundColor: colors.panel }]}>
-                <Text variant="eyebrow" color={colors.brassSoft}>
-                  {s.duration_minutes} {t("sadhanaMin")}
-                </Text>
-                <Text variant="title" style={styles.dailyTitle}>
-                  {lang === "hi" ? s.title_hi : s.title_en}
-                </Text>
-                <Text variant="muted">{lang === "hi" ? s.theme_hi : s.theme_en}</Text>
-              </View>
-            </Pressable>
-          ))}
-        </Rise>
-
         <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={t("medBridgePaths")}
           onPress={() => router.push("/paths")}
           style={styles.footerLink}
         >
           <Text color={colors.brassSoft}>{t("medBridgePaths")} →</Text>
         </Pressable>
         <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={t("medBridgeSupport")}
           onPress={() => void Linking.openURL(SUPPORT_URL)}
           style={styles.supportLink}
         >
@@ -270,12 +289,14 @@ const styles = StyleSheet.create({
   quickRow: { flexDirection: "row", gap: spacing.sm },
   quickTile: {
     flex: 1,
-    aspectRatio: 1,
+    minHeight: 132,
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderRadius: radii.sm,
     alignItems: "center",
     justifyContent: "center",
+    padding: spacing.sm,
   },
+  quickTitle: { marginTop: spacing.xs, textAlign: "center" },
   programSection: { marginTop: spacing.xl, gap: spacing.sm },
   sessionRow: {
     flexDirection: "row",
@@ -294,14 +315,6 @@ const styles = StyleSheet.create({
   },
   sessionCopy: { flex: 1, marginHorizontal: spacing.md },
   sessionTitle: { fontSize: 18, lineHeight: 23, marginBottom: spacing.xs },
-  dailySection: { marginTop: spacing.xl },
-  dailyPressable: { marginTop: spacing.sm },
-  dailyCard: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radii.md,
-    padding: spacing.lg,
-  },
-  dailyTitle: { marginTop: spacing.xs, marginBottom: spacing.xs, fontSize: 19 },
   footerLink: { marginTop: spacing.xl },
   supportLink: { marginTop: spacing.md },
 });
