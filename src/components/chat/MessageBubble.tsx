@@ -44,47 +44,62 @@ export const MessageBubble = React.memo(function MessageBubble({
 }: Props) {
   const crisis = !isUser && mentionsCrisisResource(content);
 
-  return (
-    <View
-      style={[
-        styles.bubble,
-        {
-          alignSelf: isUser ? "flex-end" : "flex-start",
-          backgroundColor: isUser ? colors.surface : colors.panel,
-          borderColor: crisis ? colors.danger : colors.line,
-        },
-      ]}
-    >
-      <Text variant="eyebrow" style={{ color: colors.brassSoft }}>
-        {label}
-      </Text>
-      {chartEpigraph ? (
-        <Text
-          variant="title"
-          style={{
-            marginTop: spacing.sm,
-            fontFamily: "Fraunces_500Medium",
-            fontSize: 16 * multiplier,
-            lineHeight: 24 * multiplier,
-            borderLeftWidth: 2,
-            borderLeftColor: colors.line,
-            paddingLeft: spacing.sm,
-          }}
-        >
-          {chartEpigraph}
-        </Text>
-      ) : null}
-      <Text
-        variant="body"
-        style={{
-          marginTop: spacing.sm,
-          color: crisis ? colors.danger : colors.text,
-        }}
+  if (isUser) {
+    return (
+      <View
+        style={[
+          styles.userBubble,
+          { backgroundColor: colors.panelStrong, borderColor: colors.hairline },
+        ]}
       >
-        {content || (loading ? "…" : "")}
-      </Text>
+        <Text variant="body">{content}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.response}>
+      <View style={styles.responseLabel}>
+        <View style={[styles.responseDot, { backgroundColor: colors.brass }]} />
+        <Text variant="eyebrow" style={{ color: colors.textMuted }}>
+          {label}
+        </Text>
+      </View>
+      {chartEpigraph ? (
+        <View style={styles.epigraph}>
+          <Text
+            variant="title"
+            style={{
+              color: colors.brassSoft,
+              fontFamily: "Fraunces_500Medium",
+              fontStyle: "italic",
+              fontSize: 17 * multiplier,
+              lineHeight: 25 * multiplier,
+            }}
+          >
+            “{chartEpigraph}”
+          </Text>
+          <View style={[styles.epigraphRule, { backgroundColor: colors.line }]} />
+        </View>
+      ) : null}
+      <View
+        style={[
+          styles.teaching,
+          {
+            backgroundColor: colors.panelStrong,
+            borderColor: crisis ? colors.danger : colors.line,
+          },
+        ]}
+      >
+        <Text
+          variant="body"
+          style={{ color: crisis ? colors.danger : colors.textSoft }}
+        >
+          {content || (loading ? "…" : "")}
+        </Text>
+      </View>
       {citations && citations.length > 0 ? (
-        <View style={[styles.cites, { borderTopColor: colors.hairline }]}>
+        <View style={styles.cites}>
           {citations.slice(0, 4).map((c) => {
             const snippet = citationSnippet(c, lang);
             return (
@@ -129,16 +144,48 @@ export const MessageBubble = React.memo(function MessageBubble({
 });
 
 const styles = StyleSheet.create({
-  bubble: {
-    maxWidth: "92%",
+  userBubble: {
+    maxWidth: "85%",
+    alignSelf: "flex-end",
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
+    padding: spacing.md,
+  },
+  response: {
+    alignSelf: "stretch",
+    marginTop: spacing.sm,
+  },
+  responseLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  responseDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    opacity: 0.7,
+  },
+  epigraph: {
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  epigraphRule: {
+    width: 48,
+    height: StyleSheet.hairlineWidth * 2,
+    marginTop: spacing.sm,
+  },
+  teaching: {
+    marginLeft: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderRadius: radii.md,
     padding: spacing.md,
   },
   cites: {
+    marginLeft: spacing.lg,
     marginTop: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth * 2,
-    paddingTop: spacing.sm,
     gap: 2,
   },
   citeRow: {

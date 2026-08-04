@@ -7,6 +7,8 @@
  */
 export const en = {
   homeTagline: "Clarity from the Gita, for the battlefield of the mind.",
+  homeInvite:
+    "Meet the mind where it is — with a verse, a chart, or a quiet sit.",
   homeBody: "Browse all 701 verses, find the ones that meet how you feel, cast a real Vedic chart, or speak with Madhav about the Gita.",
   homeCtaMadhav: "Ask Madhav",
   homeCtaExplore: "Explore verses",
@@ -157,6 +159,7 @@ export const en = {
 
 export const hi: Record<keyof typeof en, string> = {
   homeTagline: "गीता से स्पष्टता — मन के कुरुक्षेत्र के लिए।",
+  homeInvite: "मन जहाँ है वहीं मिलें — श्लोक, कुंडली, या मौन बैठक से।",
   homeBody: "सभी 701 श्लोक पढ़ें, अपनी मनोदशा से मेल खाते श्लोक पाएँ, वास्तविक वैदिक कुंडली बनाएँ, या गीता पर माधव से बात करें।",
   homeCtaMadhav: "माधव से पूछें",
   homeCtaExplore: "श्लोक देखें",

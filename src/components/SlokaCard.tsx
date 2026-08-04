@@ -183,8 +183,8 @@ export type PathMarkKind =
   | "paths";
 
 /**
- * Path card for the home 2×2 grid. Landscape web photos use cover;
- * keep tiles near-square so the scene stays recognizable.
+ * Path card for Home. Default near-square grid tile; `layout="wide"` is the
+ * UI 2.0 / Stitch full-bleed cinematic row (title + chevron).
  */
 export function PathTile({
   title,
@@ -193,6 +193,7 @@ export function PathTile({
   index,
   onPress,
   mark = "explore",
+  layout = "tile",
   style,
 }: {
   title: string;
@@ -201,64 +202,107 @@ export function PathTile({
   index: string;
   onPress: () => void;
   mark?: PathMarkKind;
+  layout?: "tile" | "wide";
   style?: StyleProp<ViewStyle>;
 }) {
   const { colors } = useTheme();
+  const wide = layout === "wide";
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        styles.path,
+        wide ? styles.pathWide : styles.path,
         style,
         { opacity: pressed ? 0.94 : 1, borderColor: colors.line },
       ]}
     >
       <Image source={image} style={styles.pathImage} resizeMode="cover" />
       <LinearGradient
-        colors={[
-          "rgba(7,9,15,0.1)",
-          "rgba(7,9,15,0.35)",
-          "rgba(7,9,15,0.9)",
-        ]}
-        locations={[0, 0.45, 1]}
+        colors={
+          wide
+            ? [
+                "rgba(7,9,15,0.55)",
+                "rgba(7,9,15,0.35)",
+                "rgba(7,9,15,0.72)",
+              ]
+            : [
+                "rgba(7,9,15,0.1)",
+                "rgba(7,9,15,0.35)",
+                "rgba(7,9,15,0.9)",
+              ]
+        }
+        locations={wide ? [0, 0.5, 1] : [0, 0.45, 1]}
+        start={wide ? { x: 0, y: 0.5 } : { x: 0.5, y: 0 }}
+        end={wide ? { x: 1, y: 0.5 } : { x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFillObject}
       />
-      <View style={styles.pathFooter}>
-        <View style={styles.pathMark}>
-          {mark === "madhav" ? (
-            <Image
-              source={images.madhavMark}
-              style={styles.madhavMark}
-              resizeMode="cover"
-            />
-          ) : mark === "mood" ? (
-            <MoodPathMark size={28} />
-          ) : mark === "meditation" ? (
-            <MeditationPathMark size={28} />
-          ) : (
-            <ExplorePathMark size={28} />
-          )}
+      {wide ? (
+        <View style={styles.pathWideRow}>
+          <View style={{ flex: 1 }}>
+            <Text
+              variant="title"
+              color={colors.onMedia}
+              numberOfLines={1}
+              style={styles.pathWideTitle}
+            >
+              {title}
+            </Text>
+            {body ? (
+              <Text
+                variant="soft"
+                color={colors.onMediaMuted}
+                numberOfLines={1}
+                style={{ marginTop: 2 }}
+              >
+                {body}
+              </Text>
+            ) : null}
+          </View>
+          <Text
+            color={colors.brassSoft}
+            style={{ fontFamily: "Sora_600SemiBold", fontSize: 22 }}
+          >
+            ›
+          </Text>
         </View>
-        <Text variant="eyebrow" color={colors.brassSoft} numberOfLines={1}>
-          {index}
-        </Text>
-        <Text
-          variant="title"
-          color={colors.onMedia}
-          numberOfLines={1}
-          style={styles.pathTitle}
-        >
-          {title}
-        </Text>
-        <Text
-          variant="soft"
-          color={colors.onMediaMuted}
-          numberOfLines={1}
-          style={styles.pathBody}
-        >
-          {body}
-        </Text>
-      </View>
+      ) : (
+        <View style={styles.pathFooter}>
+          <View style={styles.pathMark}>
+            {mark === "madhav" ? (
+              <Image
+                source={images.madhavMark}
+                style={styles.madhavMark}
+                resizeMode="cover"
+              />
+            ) : mark === "mood" ? (
+              <MoodPathMark size={28} />
+            ) : mark === "meditation" ? (
+              <MeditationPathMark size={28} />
+            ) : (
+              <ExplorePathMark size={28} />
+            )}
+          </View>
+          <Text variant="eyebrow" color={colors.brassSoft} numberOfLines={1}>
+            {index}
+          </Text>
+          <Text
+            variant="title"
+            color={colors.onMedia}
+            numberOfLines={1}
+            style={styles.pathTitle}
+          >
+            {title}
+          </Text>
+          <Text
+            variant="soft"
+            color={colors.onMediaMuted}
+            numberOfLines={1}
+            style={styles.pathBody}
+          >
+            {body}
+          </Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -286,6 +330,27 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2,
     justifyContent: "flex-end",
     backgroundColor: "#0e1420",
+  },
+  pathWide: {
+    width: "100%",
+    minHeight: 92,
+    borderRadius: radii.lg,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    justifyContent: "center",
+    backgroundColor: "#0e1420",
+    marginBottom: spacing.sm,
+  },
+  pathWideRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+  },
+  pathWideTitle: {
+    fontSize: 22,
+    lineHeight: 28,
   },
   pathImage: {
     ...StyleSheet.absoluteFillObject,

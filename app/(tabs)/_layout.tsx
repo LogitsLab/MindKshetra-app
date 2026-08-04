@@ -54,7 +54,7 @@ export default function TabsLayout() {
                 />
               )
             : undefined,
-        tabBarActiveTintColor: colors.brassSoft,
+        tabBarActiveTintColor: colors.brass,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarShowLabel: true,
         tabBarLabelStyle: {
