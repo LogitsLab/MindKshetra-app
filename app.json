@@ -60,6 +60,7 @@
           "enableBackgroundRemoteNotifications": false
         }
       ],
+      "expo-asset",
       "expo-audio",
       "@react-native-community/datetimepicker"
     ],
