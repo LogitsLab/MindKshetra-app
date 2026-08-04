@@ -16,10 +16,12 @@ export function usePanchang(): {
   panchang: PanchangDay | null;
   loading: boolean;
   error: string | null;
+  stale: boolean;
 } {
   const [panchang, setPanchang] = useState<PanchangDay | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -38,8 +40,11 @@ export function usePanchang(): {
         if (alive) setPanchang(fresh);
       } catch (e) {
         if (alive) {
-          if (stored) setPanchang(stored.payload);
-          else setError((e as Error).message);
+          if (stored) {
+            setPanchang(stored.payload);
+            setStale(true);
+          }
+          setError((e as Error).message || "offline");
         }
       } finally {
         if (alive) setLoading(false);
@@ -50,5 +55,5 @@ export function usePanchang(): {
     };
   }, []);
 
-  return { panchang, loading, error };
+  return { panchang, loading, error, stale };
 }

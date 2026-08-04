@@ -56,7 +56,6 @@ export default function ExploreScreen() {
         const data = isSignedIn ? await progressApi.get() : await getGuestProgress();
         if (isActive()) setContinueCursor(data.cursor ?? null);
       } catch (e) {
-        if (isActive()) setContinueCursor(null);
         throw e;
       }
     },

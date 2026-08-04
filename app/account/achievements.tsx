@@ -19,6 +19,7 @@ export default function AchievementsScreen() {
   const router = useRouter();
   const [data, setData] = useState<AchievementsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const L = lang === "hi" ? "hi" : "en";
 
   const load = useCallback(async () => {
@@ -26,10 +27,12 @@ export default function AchievementsScreen() {
       setLoading(false);
       return;
     }
+    setLoading(true);
+    setError(false);
     try {
       setData(await userApi.achievements());
     } catch {
-      setData(null);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -70,6 +73,31 @@ export default function AchievementsScreen() {
   }
 
   const seeker = data?.seeker;
+
+  if (error && !data) {
+    return (
+      <Screen>
+        <View accessibilityRole="alert" style={styles.pad}>
+          <Text variant="title">
+            {L === "hi" ? "उपलब्धियाँ लोड नहीं हुईं" : "Couldn’t load achievements"}
+          </Text>
+          <Text variant="soft" style={{ marginTop: spacing.sm }}>
+            {L === "hi"
+              ? "कनेक्शन जाँचें और फिर कोशिश करें।"
+              : "Check your connection and try again."}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={L === "hi" ? "फिर कोशिश करें" : "Retry achievements"}
+            onPress={() => void load()}
+            style={{ marginTop: spacing.lg }}
+          >
+            <Text color={colors.brassSoft}>{L === "hi" ? "फिर कोशिश करें" : "Retry"}</Text>
+          </Pressable>
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>

@@ -27,6 +27,10 @@ const KEYS = {
   pushToken: "mindkshetra-push-token",
   notifPrompt: "mindkshetra-notif-prompt",
   milestonesSeen: "mindkshetra-milestones-seen",
+  pendingProgress: "mindkshetra-pending-progress",
+  personalization: "mindkshetra-personalization-draft",
+  meditationQueue: "mindkshetra-meditation-queue",
+  meditationRun: "mindkshetra-meditation-run-foundation-7",
 } as const;
 
 export async function getStoredTheme(): Promise<"dark" | "light" | null> {
@@ -125,6 +129,31 @@ export async function setGuestCursor(
   await setGuestProgress(p);
 }
 
+export async function getPendingProgress(): Promise<number[]> {
+  const raw = await AsyncStorage.getItem(KEYS.pendingProgress);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((id): id is number => Number.isInteger(id) && id > 0)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function queuePendingProgress(slokaId: number): Promise<void> {
+  const pending = await getPendingProgress();
+  await AsyncStorage.setItem(
+    KEYS.pendingProgress,
+    JSON.stringify(Array.from(new Set([...pending, slokaId])))
+  );
+}
+
+export async function clearPendingProgress(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.pendingProgress);
+}
+
 /**
  * Wipes account-scoped local state after account deletion. Preferences
  * (theme, language, text scale, onboarding) survive — they belong to the
@@ -139,6 +168,11 @@ export async function clearUserLocalState(): Promise<void> {
     KEYS.timezoneSynced,
     KEYS.sadhanaLog,
     KEYS.pushToken,
+    KEYS.pendingProgress,
+    KEYS.personalization,
+    KEYS.meditationQueue,
+    KEYS.meditationRun,
+    KEYS.milestonesSeen,
   ]);
   // Journey runs are one key per journey, so they are swept by prefix.
   await clearAllGuestJourneys();

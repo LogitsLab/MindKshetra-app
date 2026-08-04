@@ -86,10 +86,6 @@ export default function ChapterScreen() {
           data.cursor?.chapter === chapterNum ? data.cursor.verse ?? null : null
         );
       } catch (e) {
-        if (isActive()) {
-          setCompleted([]);
-          setCursorVerse(null);
-        }
         throw e;
       }
     },

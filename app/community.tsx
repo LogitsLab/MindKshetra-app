@@ -22,13 +22,21 @@ export default function CommunityScreen() {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const [attended, setAttended] = useState(false);
+  const [attendanceBusy, setAttendanceBusy] = useState(false);
+  const [attendanceError, setAttendanceError] = useState(false);
 
-  function markAttended() {
+  async function markAttended() {
     // The Sangha → Community rename is UI-only. The event name (and its
     // mobile_sangha source) must stay: the G2 gate queries and all recorded
     // attendance history key on "sangha_attended".
-    void eventsApi.send("sangha_attended", { source: "mobile_sangha" });
-    setAttended(true);
+    setAttendanceBusy(true);
+    setAttendanceError(false);
+    const result = await eventsApi.send("sangha_attended", {
+      source: "mobile_sangha",
+    });
+    if (result.ok) setAttended(true);
+    else setAttendanceError(true);
+    setAttendanceBusy(false);
   }
 
   return (
@@ -56,12 +64,20 @@ export default function CommunityScreen() {
             </Text>
             <View style={styles.linkRow}>
               {WHATSAPP ? (
-                <Pressable onPress={() => void Linking.openURL(WHATSAPP)}>
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel="Open WhatsApp community"
+                  onPress={() => void Linking.openURL(WHATSAPP)}
+                >
                   <Text color={colors.brassSoft}>WhatsApp →</Text>
                 </Pressable>
               ) : null}
               {TELEGRAM ? (
-                <Pressable onPress={() => void Linking.openURL(TELEGRAM)}>
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel="Open Telegram community"
+                  onPress={() => void Linking.openURL(TELEGRAM)}
+                >
                   <Text color={colors.brassSoft}>Telegram →</Text>
                 </Pressable>
               ) : null}
@@ -73,9 +89,20 @@ export default function CommunityScreen() {
               <Button
                 label={attended ? t("sanghaAttendedDone") : t("sanghaAttended")}
                 variant={attended ? "ghost" : "primary"}
-                onPress={markAttended}
-                disabled={attended}
+                onPress={() => void markAttended()}
+                disabled={attended || attendanceBusy}
+                loading={attendanceBusy}
               />
+              {attendanceError ? (
+                <Text
+                  accessibilityRole="alert"
+                  variant="soft"
+                  color={colors.danger}
+                  style={{ marginTop: spacing.sm }}
+                >
+                  {t("sanghaAttendanceFailed")}
+                </Text>
+              ) : null}
             </View>
           </Panel>
         </Rise>

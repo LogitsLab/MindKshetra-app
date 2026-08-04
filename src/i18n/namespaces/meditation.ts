@@ -80,6 +80,10 @@ export const en = {
   medRateFast: "Faster",
   medBack: "Course home",
   medGuestSaved: "Saved on this device for now.",
+  medSaveFailedMember:
+    "Your sit was not saved to your account. Check your connection and retry.",
+  medSaveFailedGuest: "Could not save this sit on your device. Please retry.",
+  medRetrySave: "Retry saving",
   medHomeContinue: "Continue sitting · day {n}",
   medHomeStart: "Begin the sitting course",
 } as const;
@@ -163,6 +167,10 @@ export const hi: Record<keyof typeof en, string> = {
   medRateFast: "तेज़",
   medBack: "पाठ्यक्रम होम",
   medGuestSaved: "अभी इसी डिवाइस पर सहेजा गया।",
+  medSaveFailedMember:
+    "आपकी बैठक खाते में सहेजी नहीं गई। कनेक्शन जाँचें और फिर कोशिश करें।",
+  medSaveFailedGuest: "यह बैठक डिवाइस पर सहेजी नहीं जा सकी। फिर कोशिश करें।",
+  medRetrySave: "फिर सहेजें",
   medHomeContinue: "बैठक जारी · दिन {n}",
   medHomeStart: "बैठने का पाठ्यक्रम आरंभ करें",
 };

@@ -27,6 +27,10 @@ export const en = {
   libraryBlurb: "Pick up where you left the field.",
   preferencesTitle: "Preferences",
   preferencesBlurb: "Email, notifications, and data for this account.",
+  preferencesHydrationFailed:
+    "Some account preferences could not be loaded. Existing choices are shown; retry when online.",
+  preferencesPatchFailed:
+    "That notification change did not save. Your previous setting was restored.",
   notifTitle: "Notifications",
   notifBlurb: "Choose which reminders reach this account.",
   notifDailyVerse: "Daily verse push",
@@ -155,6 +159,10 @@ export const hi: Record<keyof typeof en, string> = {
   libraryBlurb: "जहाँ छोड़ा था, वहीं से फिर चलें।",
   preferencesTitle: "प्राथमिकताएँ",
   preferencesBlurb: "इस खाते के लिए ईमेल, सूचनाएँ और डेटा।",
+  preferencesHydrationFailed:
+    "कुछ खाता प्राथमिकताएँ लोड नहीं हुईं। मौजूदा विकल्प दिख रहे हैं; ऑनलाइन होकर फिर कोशिश करें।",
+  preferencesPatchFailed:
+    "सूचना बदलाव सहेजा नहीं गया। पिछली सेटिंग वापस कर दी गई है।",
   notifTitle: "सूचनाएँ",
   notifBlurb: "इस खाते तक कौन-सी याद दिलाने वाली सूचनाएँ पहुँचें, चुनें।",
   notifDailyVerse: "दैनिक श्लोक पुश",

@@ -73,6 +73,7 @@ export default function AccountScreen() {
   const [votdTestingMode, setVotdTestingMode] = useState(false);
   const [votdEnabled, setVotdEnabled] = useState(true);
   const [prefsBusy, setPrefsBusy] = useState(false);
+  const [prefsHydrationError, setPrefsHydrationError] = useState(false);
 
   // Push notifications: device state (permission + registered token) plus
   // the server's notification-preferences row for signed-in members.
@@ -101,6 +102,7 @@ export default function AccountScreen() {
       return;
     }
     let alive = true;
+    setPrefsHydrationError(false);
     void profileApi
       .get()
       .then((data) => {
@@ -148,6 +150,7 @@ export default function AccountScreen() {
       userApi.preferences().catch(() => null),
     ]).then(([status, prefs]) => {
       if (!alive) return;
+      if (!status || !prefs) setPrefsHydrationError(true);
       if (status) {
         setVotdConfigured(Boolean(status.configured));
         setVotdTestingMode(Boolean(status.testingMode));
@@ -198,7 +201,9 @@ export default function AccountScreen() {
         setNotifStreakReminder(prefs.streakReminder);
         setSendHourLocal(prefs.sendHourLocal);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (alive) setPrefsHydrationError(true);
+      });
     return () => {
       alive = false;
     };
@@ -275,6 +280,7 @@ export default function AccountScreen() {
     if (pushBusy) return;
     setPushBusy(true);
     setMessage(null);
+    const previousPushEnabled = pushEnabled;
     try {
       if (pushMasterOn) {
         await unregisterPush();
@@ -286,7 +292,10 @@ export default function AccountScreen() {
             });
             setPushEnabled(data.pushEnabled);
           } catch {
-            setPushEnabled(false);
+            const restoredToken = await registerPush();
+            setPushRegistered(Boolean(restoredToken));
+            setPushEnabled(previousPushEnabled);
+            setMessage(t("preferencesPatchFailed"));
           }
         }
         return;
@@ -315,7 +324,10 @@ export default function AccountScreen() {
           });
           setPushEnabled(data.pushEnabled);
         } catch {
-          setPushEnabled(true);
+          await unregisterPush();
+          setPushRegistered(false);
+          setPushEnabled(previousPushEnabled);
+          setMessage(t("preferencesPatchFailed"));
         }
       }
     } finally {
@@ -761,6 +773,16 @@ export default function AccountScreen() {
             <Text variant="soft" style={{ marginTop: spacing.xs }}>
               {t("preferencesBlurb")}
             </Text>
+            {prefsHydrationError ? (
+              <Text
+                accessibilityRole="alert"
+                variant="soft"
+                color={colors.danger}
+                style={{ marginTop: spacing.sm }}
+              >
+                {t("preferencesHydrationFailed")}
+              </Text>
+            ) : null}
             <Panel style={{ marginTop: spacing.md }}>
               <View style={styles.votdRow}>
                 <View style={{ flex: 1, paddingRight: spacing.md }}>

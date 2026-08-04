@@ -77,14 +77,29 @@ export default function ReflectionsScreen() {
           contentContainerStyle={{ paddingTop: spacing.md, paddingBottom: 120 }}
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => router.push(`/sloka/${item.sloka_id}`)}
+              accessibilityRole={item.sloka_id == null ? "text" : "button"}
+              accessibilityLabel={
+                item.sloka_id == null
+                  ? lang === "hi"
+                    ? "सामान्य चिंतन"
+                    : "General reflection"
+                  : `${lang === "hi" ? "श्लोक" : "Verse"} ${item.sloka_id}`
+              }
+              disabled={item.sloka_id == null}
+              onPress={() => {
+                if (item.sloka_id != null) router.push(`/sloka/${item.sloka_id}`);
+              }}
               style={[
                 styles.card,
                 { backgroundColor: colors.surface, borderColor: colors.line },
               ]}
             >
               <Text variant="eyebrow">
-                {lang === "hi" ? "श्लोक" : "Verse"} {item.sloka_id}
+                {item.sloka_id == null
+                  ? lang === "hi"
+                    ? "सामान्य चिंतन"
+                    : "General reflection"
+                  : `${lang === "hi" ? "श्लोक" : "Verse"} ${item.sloka_id}`}
               </Text>
               <Text variant="soft" style={{ marginTop: spacing.sm }}>
                 {item.reflection}

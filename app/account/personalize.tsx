@@ -135,7 +135,7 @@ export default function PersonalizeSettingsScreen() {
         JSON.stringify(payload)
       );
       if (isSignedIn && !isAnonymous) {
-        await userApi.completeOnboarding(payload);
+        await userApi.updatePreferences(payload);
       }
       setStatus(L === "hi" ? "सहेजा गया" : "Saved");
       router.back();

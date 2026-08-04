@@ -34,7 +34,15 @@ export default function PathDetailScreen() {
   // Per journey: the themed weeks stay open, the 21-day arc chains.
   const run = useJourneyRun(path?.id, path?.days_count ?? 0, path?.unlock ?? "open");
   const refs = useMemo(() => path?.days.map((d) => d.ref) ?? [], [path]);
-  const slokaIds = useSlokaRefs(refs);
+  const {
+    ids: slokaIds,
+    failedRefs,
+    loading: refsLoading,
+  } = useSlokaRefs(refs);
+  const failedRefKeys = useMemo(
+    () => new Set(failedRefs.map(refKey)),
+    [failedRefs]
+  );
 
   if (!path) {
     return (
@@ -94,6 +102,7 @@ export default function PathDetailScreen() {
             const marked = run.completedDays.includes(day.day);
             const unlocked = marked || run.canMark(day.day);
             const slokaId = slokaIds[refKey(day.ref)];
+            const refUnavailable = !refsLoading && failedRefKeys.has(refKey(day.ref));
             return (
               <Rise key={day.day} delay={40 * (i + 1)}>
                 <Panel style={{ opacity: unlocked ? 1 : 0.55 }}>
@@ -112,12 +121,24 @@ export default function PathDetailScreen() {
                   </Text>
                   <Pressable
                     disabled={!slokaId}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      slokaId
+                        ? `${day.ref.chapter}.${day.ref.verse} · ${t("pathOpenVerse")}`
+                        : refUnavailable
+                          ? t("pathVerseUnavailable")
+                          : `${day.ref.chapter}.${day.ref.verse}`
+                    }
                     onPress={() => router.push(`/sloka/${slokaId}`)}
                     style={{ marginTop: spacing.sm }}
                   >
                     <Text variant="muted" color={colors.brassSoft}>
                       {day.ref.chapter}.{day.ref.verse}
-                      {slokaId ? ` · ${t("pathOpenVerse")} →` : ""}
+                      {slokaId
+                        ? ` · ${t("pathOpenVerse")} →`
+                        : refUnavailable
+                          ? ` · ${t("pathVerseUnavailable")}`
+                          : ""}
                     </Text>
                   </Pressable>
                   <Pressable

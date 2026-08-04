@@ -26,16 +26,19 @@ import {
 import { registerPush, unregisterPush } from "@/notifications/push";
 import {
   clearAllGuestJourneys,
+  clearPendingProgress,
   clearSadhanaLog,
   getAllGuestJourneys,
   getChatSessionId,
   getGuestProgress,
   getJournalDrafts,
+  getPendingProgress,
   getSadhanaLog,
   getTimezoneSynced,
   removeJournalDrafts,
   setTimezoneSynced,
 } from "@/storage/local";
+import { flushMeditationGuestQueue } from "@/storage/meditationQueue";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -123,9 +126,19 @@ async function mergeOnUpgrade() {
   }
   try {
     const guest = await getGuestProgress();
-    if (guest.completed.length) await progressApi.merge(guest.completed);
+    const pending = await getPendingProgress();
+    const completed = Array.from(new Set([...guest.completed, ...pending]));
+    if (completed.length) {
+      await progressApi.merge(completed);
+      await clearPendingProgress();
+    }
   } catch {
     /* ignore */
+  }
+  try {
+    await flushMeditationGuestQueue();
+  } catch {
+    /* keep the queue for the next upgrade */
   }
   // Practice sessions logged with no session replay through the idempotent
   // merge endpoint (clientRef dedupes). The server caps one request at 200
@@ -310,6 +323,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await setTimezoneSynced(stamp);
       } catch {
         // Offline — retried on the next auth state change or launch.
+      }
+    })();
+  }, [user]);
+
+  // A signed-in verse completion that failed offline is queued locally. Replay
+  // it on the next authenticated launch/state change and clear only on success.
+  useEffect(() => {
+    if (!user || user.is_anonymous) return;
+    void (async () => {
+      try {
+        const pending = await getPendingProgress();
+        if (!pending.length) return;
+        await progressApi.merge(pending);
+        await clearPendingProgress();
+      } catch {
+        /* keep queued */
       }
     })();
   }, [user]);

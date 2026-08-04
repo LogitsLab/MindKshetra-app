@@ -10,7 +10,6 @@ import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 import { playOrSpeak, stopNarration } from "@/audio/narration";
 import { useKeepAwake } from "expo-keep-awake";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
@@ -24,8 +23,8 @@ import { useTheme } from "@/context/ThemeContext";
 import { sessionTranscript, type MeditationSession, type SittingMilestone } from "@/data/meditation";
 import { POST_MOOD_CHOICES } from "@/data/meditationCompletion";
 import {
-  GUEST_QUEUE_KEY,
   markSittingGuestDay,
+  queueMeditationGuestCompletion,
 } from "@/hooks/useMeditationProgress";
 import { uuidv4 } from "@/utils/uuid";
 import { radii, spacing } from "@/theme/tokens";
@@ -47,13 +46,6 @@ function fill(template: string, vars: Record<string, string | number>) {
   );
 }
 
-async function queueGuest(row: Record<string, unknown>) {
-  const raw = await AsyncStorage.getItem(GUEST_QUEUE_KEY);
-  const list = raw ? JSON.parse(raw) : [];
-  const next = Array.isArray(list) ? [...list, row].slice(-90) : [row];
-  await AsyncStorage.setItem(GUEST_QUEUE_KEY, JSON.stringify(next));
-}
-
 export function MeditationPlayer({
   session,
   daysCount = 45,
@@ -73,6 +65,7 @@ export function MeditationPlayer({
   const [silenceLeft, setSilenceLeft] = useState<number | null>(null);
   const [showTranscript, setShowTranscript] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [guestSaved, setGuestSaved] = useState(false);
   const [milestone, setMilestone] = useState<SittingMilestone | null>(null);
   const [rate, setRate] = useState(1);
@@ -176,6 +169,7 @@ export function MeditationPlayer({
 
   const finish = async () => {
     setSaving(true);
+    setSaveError(false);
     const clientRef = uuidv4();
     const durationSec = Math.max(
       1,
@@ -201,7 +195,7 @@ export function MeditationPlayer({
         setMilestone(res.milestone ?? null);
       } else {
         await markSittingGuestDay(session.day_number, daysCount);
-        await queueGuest(body);
+        await queueMeditationGuestCompletion(body);
         if (
           session.day_number === 7 ||
           session.day_number === 21 ||
@@ -212,9 +206,9 @@ export function MeditationPlayer({
         setGuestSaved(true);
       }
     } catch {
-      await markSittingGuestDay(session.day_number, daysCount);
-      await queueGuest(body);
-      setGuestSaved(true);
+      setSaveError(true);
+      setSaving(false);
+      return;
     }
     setSaving(false);
     setStage("done");
@@ -494,6 +488,25 @@ export function MeditationPlayer({
                 />
               )}
             </View>
+            {saveError ? (
+              <View
+                accessibilityRole="alert"
+                testID="meditation-completion-error"
+                style={{ marginTop: spacing.md, alignItems: "center" }}
+              >
+                <Text variant="soft" color={colors.danger} style={styles.centerText}>
+                  {isSignedIn ? t("medSaveFailedMember") : t("medSaveFailedGuest")}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t("medRetrySave")}
+                  onPress={() => void finish()}
+                  style={{ marginTop: spacing.sm }}
+                >
+                  <Text color={colors.brassSoft}>{t("medRetrySave")}</Text>
+                </Pressable>
+              </View>
+            ) : null}
           </Rise>
         ) : null}
 

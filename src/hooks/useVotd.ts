@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { contentApi, votdApi } from "@/api/endpoints";
 import {
+  cacheVerse,
   getStoredVotd,
+  getCachedVerse,
   localDayStamp,
   setStoredVotd,
 } from "@/storage/local";
@@ -17,6 +19,7 @@ export function useVotd(): {
   votd: Sloka | null;
   loading: boolean;
   error: string | null;
+  stale: boolean;
   /** Set when the day's verse was moon-driven — context, never causation. */
   nakshatra: string | null;
 } {
@@ -24,6 +27,7 @@ export function useVotd(): {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nakshatra, setNakshatra] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -39,8 +43,9 @@ export function useVotd(): {
             ...(fresh.nakshatra ? { nakshatra: fresh.nakshatra } : {}),
           };
           await setStoredVotd(meta);
-        } catch {
+        } catch (e) {
           // Offline — a stale cached verse beats an empty panel.
+          if (alive) setError((e as Error).message || "offline");
         }
       }
       if (!meta) {
@@ -50,10 +55,17 @@ export function useVotd(): {
         }
         return;
       }
+      if (alive) setStale(meta.date !== localDayStamp());
       if (alive) setNakshatra(meta.nakshatra ?? null);
+      const cached = await getCachedVerse<Sloka>(meta.id);
+      if (cached && alive) setVotd(cached);
       try {
         const sloka = await contentApi.sloka(meta.id);
-        if (alive) setVotd(sloka);
+        if (alive) {
+          setVotd(sloka);
+          if (meta.date === localDayStamp()) setError(null);
+        }
+        await cacheVerse(meta.id, sloka);
       } catch (e) {
         if (alive) setError((e as Error).message);
       } finally {
@@ -65,5 +77,5 @@ export function useVotd(): {
     };
   }, []);
 
-  return { votd, loading, error, nakshatra };
+  return { votd, loading, error, stale, nakshatra };
 }

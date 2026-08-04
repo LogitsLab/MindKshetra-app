@@ -62,7 +62,7 @@ export type AstrologyMember = {
 
 export type JournalEntry = {
   id: string;
-  sloka_id: number;
+  sloka_id: number | null;
   reflection: string;
   created_at: string;
 };

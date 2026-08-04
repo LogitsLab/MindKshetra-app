@@ -34,6 +34,8 @@ export default function JournalScreen() {
   );
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   const load = useCallback(async () => {
     if (!isSignedIn || isAnonymous) {
@@ -41,11 +43,12 @@ export default function JournalScreen() {
       return;
     }
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await userApi.journal(filter === "all" ? undefined : filter);
       setEntries(res.entries ?? []);
     } catch {
-      setEntries([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -58,10 +61,13 @@ export default function JournalScreen() {
   async function save() {
     if (!text.trim()) return;
     setBusy(true);
+    setSaveError(false);
     try {
       await userApi.addJournal(text.trim(), { kind: writeKind });
       setText("");
       await load();
+    } catch {
+      setSaveError(true);
     } finally {
       setBusy(false);
     }
@@ -89,6 +95,9 @@ export default function JournalScreen() {
               {(["reflection", "gratitude", "insight"] as const).map((k) => (
                 <Pressable
                   key={k}
+                  accessibilityRole="radio"
+                  accessibilityLabel={k}
+                  accessibilityState={{ selected: writeKind === k }}
                   onPress={() => setWriteKind(k)}
                   style={[
                     styles.chip,
@@ -106,6 +115,7 @@ export default function JournalScreen() {
               value={text}
               onChangeText={setText}
               multiline
+              accessibilityLabel={L === "hi" ? "जर्नल प्रविष्टि" : "Journal entry"}
               placeholder={L === "hi" ? "आज की पंक्ति…" : "An honest line…"}
               placeholderTextColor={colors.textMuted}
               style={[
@@ -117,6 +127,18 @@ export default function JournalScreen() {
                 },
               ]}
             />
+            {saveError ? (
+              <Text
+                accessibilityRole="alert"
+                variant="soft"
+                color={colors.danger}
+                style={{ marginTop: spacing.sm }}
+              >
+                {L === "hi"
+                  ? "प्रविष्टि सहेजी नहीं गई। कनेक्शन जाँचें और फिर कोशिश करें।"
+                  : "Entry was not saved. Check your connection and retry."}
+              </Text>
+            ) : null}
             <Button
               label={L === "hi" ? "सहेजें" : "Save entry"}
               loading={busy}
@@ -129,6 +151,9 @@ export default function JournalScreen() {
                 (k) => (
                   <Pressable
                     key={k}
+                    accessibilityRole="radio"
+                    accessibilityLabel={k}
+                    accessibilityState={{ selected: filter === k }}
                     onPress={() => setFilter(k)}
                     style={[
                       styles.chip,
@@ -148,6 +173,25 @@ export default function JournalScreen() {
               <ActivityIndicator color={colors.brass} style={{ marginTop: spacing.lg }} />
             ) : (
               <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
+                {loadError ? (
+                  <View accessibilityRole="alert">
+                    <Text variant="soft" color={colors.danger}>
+                      {L === "hi"
+                        ? "जर्नल लोड नहीं हुआ। नीचे पिछली प्रविष्टियाँ दिख सकती हैं।"
+                        : "Journal could not refresh. Earlier entries may still appear below."}
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={L === "hi" ? "फिर लोड करें" : "Retry loading"}
+                      onPress={() => void load()}
+                      style={{ marginTop: spacing.xs }}
+                    >
+                      <Text color={colors.brassSoft}>
+                        {L === "hi" ? "फिर कोशिश करें" : "Retry"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : null}
                 {entries.map((e) => (
                   <Panel key={String(e.id)}>
                     <Text variant="eyebrow">{e.kind ?? "entry"}</Text>

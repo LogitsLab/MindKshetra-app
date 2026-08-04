@@ -12,10 +12,14 @@ import {
   getGuestJourneyDays,
   setGuestJourneyDays,
 } from "@/storage/local";
+export {
+  GUEST_QUEUE_KEY,
+  flushMeditationGuestQueue,
+  queueMeditationGuestCompletion,
+} from "@/storage/meditationQueue";
 
 /** Legacy guest key — still read so nobody loses week-one progress. */
 export const GUEST_RUN_KEY = `mindkshetra-meditation-run-${FOUNDATION_PROGRAM_ID}`;
-export const GUEST_QUEUE_KEY = "mindkshetra-meditation-queue";
 
 export type MeditationProgress = {
   completedDays: number[];

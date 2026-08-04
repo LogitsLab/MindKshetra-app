@@ -39,6 +39,7 @@ import {
   cacheVerse,
   getCachedVerse,
   markGuestComplete,
+  queuePendingProgress,
   setGuestCursor,
 } from "@/storage/local";
 import { getApiUrl } from "@/api/client";
@@ -63,6 +64,8 @@ export default function SlokaScreen() {
   const [journal, setJournal] = useState("");
   const [showJournal, setShowJournal] = useState(false);
   const [journalNotice, setJournalNotice] = useState<string | null>(null);
+  const [journalBusy, setJournalBusy] = useState(false);
+  const [progressNotice, setProgressNotice] = useState<string | null>(null);
   const [notifPromptVisible, setNotifPromptVisible] = useState(false);
 
   // The pre-permission sheet appears only after the first meaningful action
@@ -261,9 +264,23 @@ export default function SlokaScreen() {
           if (isSignedIn) {
             try {
               await progressApi.complete(sloka.id);
+              setProgressNotice(
+                lang === "hi" ? "प्रगति खाते में सहेजी गई।" : "Progress saved to your account."
+              );
             } catch {
-              /* ignore */
+              await queuePendingProgress(sloka.id);
+              setProgressNotice(
+                lang === "hi"
+                  ? "डिवाइस पर कतार में है — ऑनलाइन होने पर खाते से सिंक होगा।"
+                  : "Queued on this device — it will sync to your account when online."
+              );
             }
+          } else {
+            setProgressNotice(
+              lang === "hi"
+                ? "प्रगति अभी इसी डिवाइस पर सहेजी गई।"
+                : "Progress saved on this device for now."
+            );
           }
           bumpFocusVersion("progress");
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -409,31 +426,49 @@ export default function SlokaScreen() {
               ]}
             />
             <Button
-              label={lang === "hi" ? "सहेजें" : "Save reflection"}
+              label={
+                journalBusy
+                  ? lang === "hi"
+                    ? "सहेज रहे हैं…"
+                    : "Saving…"
+                  : lang === "hi"
+                    ? "सहेजें"
+                    : "Save reflection"
+              }
               testID="sloka-journal-save"
+              disabled={journalBusy}
               onPress={async () => {
                 const text = journal.trim();
                 if (!text) return;
-                if (isSignedIn) {
-                  await userApi.addJournal(sloka.id, text);
-                  bumpFocusVersion("journal");
-                  setJournalNotice(null);
-                  void Haptics.notificationAsync(
-                    Haptics.NotificationFeedbackType.Success
-                  );
-                } else {
-                  // Guests used to lose the text silently — the input cleared
-                  // with a success haptic and nothing was stored anywhere.
-                  await addJournalDraft(sloka.id, text);
+                setJournalBusy(true);
+                try {
+                  if (isSignedIn) {
+                    await userApi.addJournal(sloka.id, text);
+                    bumpFocusVersion("journal");
+                    setJournalNotice(null);
+                    void Haptics.notificationAsync(
+                      Haptics.NotificationFeedbackType.Success
+                    );
+                  } else {
+                    await addJournalDraft(sloka.id, text);
+                    setJournalNotice(
+                      lang === "hi"
+                        ? "इस डिवाइस पर सहेजा गया — खाते में रखने के लिए साइन इन करें।"
+                        : "Saved on this device — sign in to keep it in your account."
+                    );
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                  setJournal("");
+                  setShowJournal(false);
+                } catch {
                   setJournalNotice(
                     lang === "hi"
-                      ? "इस डिवाइस पर सहेजा गया — खाते में रखने के लिए साइन इन करें।"
-                      : "Saved on this device — sign in to keep it in your account."
+                      ? "चिंतन सहेजा नहीं गया। कनेक्शन जाँचें और फिर कोशिश करें।"
+                      : "Reflection was not saved. Check your connection and retry."
                   );
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                } finally {
+                  setJournalBusy(false);
                 }
-                setJournal("");
-                setShowJournal(false);
               }}
             />
           </View>
@@ -453,6 +488,19 @@ export default function SlokaScreen() {
               </Text>
             </Panel>
           </Pressable>
+        ) : null}
+        {progressNotice ? (
+          <View
+            accessibilityRole="alert"
+            testID="sloka-progress-notice"
+            style={{ marginTop: spacing.md }}
+          >
+            <Panel>
+              <Text variant="soft" color={colors.brassSoft}>
+                {progressNotice}
+              </Text>
+            </Panel>
+          </View>
         ) : null}
       </ScrollView>
 

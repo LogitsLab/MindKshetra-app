@@ -38,9 +38,18 @@ export default function HomeScreen() {
   const { isSignedIn, session } = useAuth();
   const [streak, setStreak] = useState(0);
   const [sadhanaDone, setSadhanaDone] = useState(false);
-  const { votd, nakshatra: votdNakshatra } = useVotd();
+  const {
+    votd,
+    nakshatra: votdNakshatra,
+    error: votdError,
+    stale: votdStale,
+  } = useVotd();
   const med = useMeditationProgress();
-  const { panchang } = usePanchang();
+  const {
+    panchang,
+    error: panchangError,
+    stale: panchangStale,
+  } = usePanchang();
 
   const day = Math.floor(Date.now() / 86400000);
 
@@ -241,6 +250,8 @@ export default function HomeScreen() {
         {/* Featured verse — the day’s sit */}
         <Rise delay={motion.staggerMs * 2} style={{ marginTop: spacing.xl }}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("homeFeaturedCta")}
             onPress={() =>
               router.push(votd ? `/sloka/${votd.id}` : "/verse-of-the-day")
             }
@@ -302,6 +313,20 @@ export default function HomeScreen() {
             {votd && votdNakshatra ? (
               <Text variant="muted" style={{ marginTop: spacing.sm }}>
                 {t("votdNakshatraLine").replace("{nakshatra}", votdNakshatra)}
+              </Text>
+            ) : null}
+            {votdError ? (
+              <Text
+                accessibilityRole="alert"
+                variant="muted"
+                color={colors.brassSoft}
+                style={{ marginTop: spacing.xs }}
+              >
+                {votd
+                  ? votdStale
+                    ? t("homeVotdStale")
+                    : t("homeVotdOffline")
+                  : t("homeVotdUnavailable")}
               </Text>
             ) : null}
           </Pressable>
@@ -420,6 +445,8 @@ export default function HomeScreen() {
             </Pressable>
             <Pressable
               style={styles.practicePress}
+              accessibilityRole="button"
+              accessibilityLabel={t("homeBlockPanchangTitle")}
               onPress={() => router.push("/panchang")}
             >
               <Panel style={styles.practiceCard}>
@@ -433,6 +460,15 @@ export default function HomeScreen() {
                 >
                   {panchang ? panchang.tithi : t("homeBlockPanchangBody")}
                 </Text>
+                {panchangError ? (
+                  <Text variant="muted" color={colors.brassSoft} style={{ marginTop: 4 }}>
+                    {panchang
+                      ? panchangStale
+                        ? t("homePanchangStale")
+                        : t("homePanchangOffline")
+                      : t("homePanchangUnavailable")}
+                  </Text>
+                ) : null}
               </Panel>
             </Pressable>
           </View>
