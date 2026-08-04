@@ -10,6 +10,8 @@ import {
   Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Circle, Path } from "react-native-svg";
 import { playOrSpeak, stopNarration } from "@/audio/narration";
 import { resolveRecitationUrl } from "@/audio/manifest";
 import * as Haptics from "expo-haptics";
@@ -19,6 +21,8 @@ import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { Rise } from "@/components/Rise";
+import { MadhavMark } from "@/components/BrandMark";
+import { BackButton } from "@/components/ScreenHeader";
 import { EmptyState } from "@/components/SlokaCard";
 import {
   NotificationPrompt,
@@ -45,6 +49,7 @@ export default function SlokaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const slokaId = Number(id);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors, mode } = useTheme();
   const { lang } = useLanguage();
   const { isSignedIn } = useAuth();
@@ -53,6 +58,7 @@ export default function SlokaScreen() {
   const [story, setStory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showingOfflineCopy, setShowingOfflineCopy] = useState(false);
   const [favorited, setFavorited] = useState(false);
   const [journal, setJournal] = useState("");
   const [showJournal, setShowJournal] = useState(false);
@@ -101,9 +107,11 @@ export default function SlokaScreen() {
         const data = await contentApi.sloka(slokaId);
         if (!alive) return;
         setSloka(data);
+        setShowingOfflineCopy(false);
         await cacheVerse(slokaId, data);
       } catch (e) {
         if (alive && !cached) setError((e as Error).message);
+        if (alive && cached) setShowingOfflineCopy(true);
       } finally {
         if (alive) setLoading(false);
       }
@@ -134,15 +142,33 @@ export default function SlokaScreen() {
   if (loading && !sloka) {
     return (
       <Screen atmosphere="strong">
-        <ActivityIndicator color={colors.brass} style={{ marginTop: spacing.xl }} />
+        <View
+          accessible
+          accessibilityLabel={lang === "hi" ? "श्लोक लोड हो रहा है" : "Loading verse"}
+          testID="sloka-loading"
+          style={styles.centeredState}
+        >
+          <ActivityIndicator color={colors.brass} />
+          <Text variant="muted" style={{ marginTop: spacing.md }}>
+            {lang === "hi" ? "श्लोक लोड हो रहा है…" : "Loading verse…"}
+          </Text>
+        </View>
       </Screen>
     );
   }
 
   if (error || !sloka) {
     return (
-      <Screen>
-        <EmptyState title="Not found" body={error ?? "Verse missing"} />
+      <Screen atmosphere="strong">
+        <View style={styles.stateHeader}>
+          <BackButton fallback="/(tabs)/explore" />
+        </View>
+        <View testID="sloka-error" style={styles.centeredState}>
+          <EmptyState
+            title={lang === "hi" ? "श्लोक नहीं मिला" : "Verse not found"}
+            body={error ?? (lang === "hi" ? "श्लोक उपलब्ध नहीं है" : "Verse missing")}
+          />
+        </View>
       </Screen>
     );
   }
@@ -155,10 +181,16 @@ export default function SlokaScreen() {
       : sloka.english_meaning ?? sloka.hindi_meaning;
 
   const toolbar = (
-    <View style={styles.toolbarInner}>
+    <View
+      accessibilityRole="toolbar"
+      accessibilityLabel={lang === "hi" ? "श्लोक क्रियाएँ" : "Verse actions"}
+      style={styles.toolbarInner}
+    >
       <Tool
-        glyph={favorited ? "★" : "☆"}
+        icon="favorite"
         label={lang === "hi" ? "पसंद" : "Save"}
+        selected={favorited}
+        testID="sloka-favorite"
         onPress={async () => {
           if (!isSignedIn) {
             router.push("/account");
@@ -178,8 +210,9 @@ export default function SlokaScreen() {
         }}
       />
       <Tool
-        glyph="♪"
+        icon="speak"
         label={lang === "hi" ? "सुनें" : "Speak"}
+        testID="sloka-narration"
         onPress={() => {
           stopNarration();
           void (async () => {
@@ -194,8 +227,9 @@ export default function SlokaScreen() {
         }}
       />
       <Tool
-        glyph="↗"
+        icon="share"
         label={lang === "hi" ? "साझा" : "Share"}
+        testID="sloka-share"
         onPress={() => {
           void Share.share({
             message: `${sloka.chapter}.${sloka.verse_number}\n${sloka.sanskrit_devanagari}\n${translation}\n${getApiUrl()}/sloka/${sloka.id}`,
@@ -212,13 +246,16 @@ export default function SlokaScreen() {
         }}
       />
       <Tool
-        glyph="✎"
+        icon="journal"
         label={lang === "hi" ? "जर्नल" : "Journal"}
+        selected={showJournal}
+        testID="sloka-journal"
         onPress={() => setShowJournal((v) => !v)}
       />
       <Tool
-        glyph="✓"
-        label={lang === "hi" ? "पूर्ण" : "Done"}
+        icon="complete"
+        label={lang === "hi" ? "पूर्ण" : "Mark complete"}
+        testID="sloka-complete"
         onPress={async () => {
           await markGuestComplete(sloka.id);
           if (isSignedIn) {
@@ -234,8 +271,9 @@ export default function SlokaScreen() {
         }}
       />
       <Tool
-        glyph="M"
-        label={lang === "hi" ? "पूछें" : "Ask"}
+        icon="madhav"
+        label={lang === "hi" ? "पूछें" : "Ask Madhav"}
+        testID="sloka-ask-madhav"
         onPress={() => {
           askAboutVerse(
             sloka.id,
@@ -249,66 +287,130 @@ export default function SlokaScreen() {
 
   return (
     <Screen padded={false} atmosphere="strong">
+      <View style={styles.readerHeader}>
+        <BackButton fallback="/(tabs)/explore" />
+        <Text
+          variant="eyebrow"
+          color={colors.textMuted}
+          accessibilityLabel={`Bhagavad Gita ${sloka.chapter}.${sloka.verse_number}`}
+          testID="sloka-citation"
+          style={styles.headerCitation}
+        >
+          BG {sloka.chapter}.{sloka.verse_number}
+        </Text>
+      </View>
       <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: spacing.md,
-          paddingBottom: 150,
-          paddingTop: spacing.sm,
-        }}
+        testID="sloka-scroll"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: 88 + Math.max(insets.bottom, spacing.md) },
+        ]}
       >
+        {showingOfflineCopy ? (
+          <View
+            accessibilityRole="alert"
+            testID="sloka-offline-copy"
+            style={[styles.offlineBadge, { borderColor: colors.line }]}
+          >
+            <Text variant="muted" color={colors.brassSoft}>
+              {lang === "hi" ? "ऑफ़लाइन प्रति" : "Offline copy"}
+            </Text>
+          </View>
+        ) : null}
         <Rise>
-          <Text variant="eyebrow" color={colors.brassSoft}>
-            {sloka.chapter}.{sloka.verse_number}
+          <Text variant="eyebrow" color={colors.brass} style={styles.verseEyebrow}>
+            Chapter {String(sloka.chapter).padStart(2, "0")} · Verse{" "}
+            {String(sloka.verse_number).padStart(2, "0")}
           </Text>
           <Text
             variant="sanskrit"
-            style={{ marginTop: spacing.lg, fontSize: 26, lineHeight: 40 }}
+            accessibilityLanguage="sa"
+            testID="sloka-sanskrit"
+            style={styles.sanskrit}
           >
             {sloka.sanskrit_devanagari}
           </Text>
         </Rise>
         <View style={[styles.divider, { backgroundColor: colors.line }]} />
-        <Text variant="muted" style={{ marginTop: spacing.md, fontStyle: "italic" }}>
+        <Text
+          variant="soft"
+          accessibilityLanguage="sa-Latn"
+          testID="sloka-transliteration"
+          style={[styles.transliteration, { color: colors.textSoft }]}
+        >
           {sloka.transliteration_iast}
         </Text>
-        <Text variant="soft" style={{ marginTop: spacing.lg, fontSize: 17, lineHeight: 26 }}>
-          {translation}
+
+        <Text
+          variant="sanskrit"
+          accessibilityLanguage="hi"
+          testID="sloka-hindi-translation"
+          style={[styles.hindiTranslation, { color: colors.textSoft }]}
+        >
+          {sloka.hindi_translation}
+        </Text>
+
+        <Text
+          variant="display"
+          accessibilityLanguage="en"
+          testID="sloka-english-translation"
+          color={colors.brassSoft}
+          style={styles.englishTranslation}
+        >
+          ‘{sloka.english_translation}’
         </Text>
         {meaning ? (
-          <Text variant="body" style={{ marginTop: spacing.md, color: colors.textSoft }}>
-            {meaning}
-          </Text>
+          <Panel blur style={styles.reflectionPanel}>
+            <Text variant="eyebrow" color={colors.brass}>
+              {lang === "hi" ? "चिन्तन" : "Reflection"}
+            </Text>
+            <Text variant="soft" style={styles.panelCopy}>
+              {meaning}
+            </Text>
+          </Panel>
         ) : null}
         {story ? (
-          <Panel style={{ marginTop: spacing.xl }}>
-            <Text variant="eyebrow" color={colors.brassSoft}>
-              Story
+          <Panel blur style={styles.storyPanel}>
+            <Text variant="eyebrow" color={colors.brass}>
+              {lang === "hi" ? "कथा" : "Story"}
             </Text>
-            <Text variant="soft" style={{ marginTop: spacing.sm }}>
+            <Text variant="soft" style={styles.panelCopy}>
               {story}
             </Text>
           </Panel>
         ) : null}
 
         {showJournal ? (
-          <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
+          <View
+            testID="sloka-journal-editor"
+            style={[
+              styles.journalSection,
+              { borderTopColor: colors.hairline, borderBottomColor: colors.hairline },
+            ]}
+          >
+            <Text variant="eyebrow" color={colors.brass} style={styles.journalLabel}>
+              {lang === "hi" ? "निजी चिन्तन" : "Private reflection"}
+            </Text>
             <TextInput
               value={journal}
               onChangeText={setJournal}
               multiline
-              placeholder={lang === "hi" ? "आपका चिन्तन…" : "Your reflection…"}
+              accessibilityLabel={lang === "hi" ? "आपका निजी चिन्तन" : "Your private reflection"}
+              testID="sloka-journal-input"
+              placeholder={lang === "hi" ? "आपका चिन्तन…" : "A private note…"}
               placeholderTextColor={colors.textMuted}
               style={[
                 styles.input,
                 {
                   color: colors.text,
-                  borderColor: colors.line,
-                  backgroundColor: colors.inputBg,
+                  backgroundColor: "transparent",
                 },
               ]}
             />
             <Button
               label={lang === "hi" ? "सहेजें" : "Save reflection"}
+              testID="sloka-journal-save"
               onPress={async () => {
                 const text = journal.trim();
                 if (!text) return;
@@ -339,6 +441,9 @@ export default function SlokaScreen() {
 
         {journalNotice ? (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={journalNotice}
+            testID="sloka-journal-notice"
             onPress={() => router.push("/account")}
             style={{ marginTop: spacing.md }}
           >
@@ -355,7 +460,13 @@ export default function SlokaScreen() {
         <BlurView
           intensity={mode === "dark" ? 40 : 50}
           tint={mode === "dark" ? "dark" : "light"}
-          style={[styles.toolbar, { borderTopColor: colors.hairline }]}
+          style={[
+            styles.toolbar,
+            {
+              borderTopColor: colors.hairline,
+              paddingBottom: Math.max(insets.bottom, spacing.md),
+            },
+          ]}
         >
           {toolbar}
         </BlurView>
@@ -363,7 +474,11 @@ export default function SlokaScreen() {
         <View
           style={[
             styles.toolbar,
-            { backgroundColor: colors.navBg, borderTopColor: colors.hairline },
+            {
+              backgroundColor: colors.navBg,
+              borderTopColor: colors.hairline,
+              paddingBottom: Math.max(insets.bottom, spacing.md),
+            },
           ]}
         >
           {toolbar}
@@ -378,42 +493,198 @@ export default function SlokaScreen() {
   );
 }
 
+type ToolIcon = "favorite" | "complete" | "speak" | "share" | "journal" | "madhav";
+
 function Tool({
-  glyph,
+  icon,
   label,
   onPress,
+  selected = false,
+  testID,
 }: {
-  glyph: string;
+  icon: ToolIcon;
   label: string;
   onPress: () => void;
+  selected?: boolean;
+  testID: string;
 }) {
   const { colors } = useTheme();
   return (
-    <Pressable onPress={onPress} hitSlop={10} style={styles.tool}>
-      <Text
-        style={{
-          color: colors.brassSoft,
-          fontSize: 16,
-          fontFamily: "Fraunces_600SemiBold",
-        }}
-      >
-        {glyph}
-      </Text>
-      <Text
-        variant="muted"
-        style={{ color: colors.textMuted, fontSize: 10, marginTop: 2 }}
-      >
-        {label}
-      </Text>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
+      testID={testID}
+      onPress={onPress}
+      hitSlop={6}
+      style={({ pressed }) => [styles.tool, { opacity: pressed ? 0.58 : 1 }]}
+    >
+      {icon === "madhav" ? (
+        <MadhavMark size={26} />
+      ) : (
+        <ActionIcon icon={icon} color={colors.brassSoft} filled={selected} />
+      )}
     </Pressable>
   );
 }
 
+function ActionIcon({
+  icon,
+  color,
+  filled,
+}: {
+  icon: Exclude<ToolIcon, "madhav">;
+  color: string;
+  filled: boolean;
+}) {
+  if (icon === "favorite") {
+    return (
+      <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M20.8 4.7a5.5 5.5 0 00-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 00-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 00-.1-7.8z"
+          fill={filled ? color : "none"}
+          stroke={color}
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    );
+  }
+  if (icon === "complete") {
+    return (
+      <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+        <Circle cx={12} cy={12} r={8.5} stroke={color} strokeWidth={1.5} />
+        <Path
+          d="M8.2 12.2l2.4 2.4 5.3-5.4"
+          stroke={color}
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    );
+  }
+  if (icon === "speak") {
+    return (
+      <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M5 10v4h3l4 3.5v-11L8 10H5zM15.5 9a4.2 4.2 0 010 6M18 6.5a7.7 7.7 0 010 11"
+          stroke={color}
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    );
+  }
+  if (icon === "share") {
+    return (
+      <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+        <Circle cx={18} cy={5.5} r={2.25} stroke={color} strokeWidth={1.5} />
+        <Circle cx={6} cy={12} r={2.25} stroke={color} strokeWidth={1.5} />
+        <Circle cx={18} cy={18.5} r={2.25} stroke={color} strokeWidth={1.5} />
+        <Path d="M8 10.9l7.8-4.2M8 13.1l7.8 4.2" stroke={color} strokeWidth={1.5} />
+      </Svg>
+    );
+  }
+  return (
+    <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M5 4.5h10a2 2 0 012 2V11M5 4.5a2 2 0 00-2 2v11a2 2 0 002 2h8M5 4.5v15M14.5 17.8l4.8-4.8 1.7 1.7-4.8 4.8-2.7.8.8-2.7z"
+        stroke={color}
+        strokeWidth={1.45}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 const styles = StyleSheet.create({
-  divider: {
+  centeredState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: spacing.xxl,
+  },
+  stateHeader: {
+    minHeight: 56,
+    justifyContent: "center",
+  },
+  readerHeader: {
+    minHeight: 72,
+    paddingHorizontal: spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerCitation: {
+    letterSpacing: 1.8,
+  },
+  content: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  offlineBadge: {
+    alignSelf: "flex-start",
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  verseEyebrow: {
+    letterSpacing: 2.1,
+  },
+  sanskrit: {
     marginTop: spacing.lg,
+    fontSize: 24,
+    lineHeight: 38,
+    letterSpacing: 0.35,
+  },
+  divider: {
+    marginTop: spacing.xl,
     height: StyleSheet.hairlineWidth * 2,
-    width: 64,
+    width: "100%",
+  },
+  transliteration: {
+    marginTop: spacing.xl,
+    fontStyle: "italic",
+    lineHeight: 24,
+    opacity: 0.84,
+  },
+  hindiTranslation: {
+    marginTop: 40,
+    fontSize: 18,
+    lineHeight: 31,
+  },
+  englishTranslation: {
+    marginTop: 40,
+    fontSize: 28,
+    lineHeight: 36,
+    letterSpacing: -0.25,
+  },
+  reflectionPanel: {
+    marginTop: spacing.xxl,
+    padding: spacing.lg,
+  },
+  storyPanel: {
+    marginTop: spacing.lg,
+    padding: spacing.lg,
+  },
+  panelCopy: {
+    marginTop: spacing.md,
+    lineHeight: 24,
+  },
+  journalSection: {
+    marginTop: spacing.xxl,
+    paddingVertical: spacing.xl,
+    borderTopWidth: StyleSheet.hairlineWidth * 2,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+  },
+  journalLabel: {
+    marginBottom: spacing.sm,
   },
   toolbar: {
     position: "absolute",
@@ -421,21 +692,27 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderTopWidth: StyleSheet.hairlineWidth * 2,
-    paddingBottom: spacing.md,
   },
   toolbarInner: {
+    minHeight: 64,
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-around",
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.md,
   },
-  tool: { alignItems: "center", minWidth: 48 },
+  tool: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   input: {
-    minHeight: 100,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radii.md,
-    padding: spacing.md,
+    minHeight: 108,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: 0,
     textAlignVertical: "top",
     fontFamily: "Sora_400Regular",
+    fontSize: 15,
+    lineHeight: 23,
   },
 });
