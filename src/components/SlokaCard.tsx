@@ -32,6 +32,7 @@ export function SlokaCard({
 
   return (
     <Pressable
+      testID="verse-card"
       onPress={() => router.push(`/sloka/${sloka.id}`)}
       style={({ pressed }) => [
         styles.card,

@@ -141,7 +141,7 @@ export default function SlokaScreen() {
 
   if (loading && !sloka) {
     return (
-      <Screen atmosphere="strong">
+      <Screen testID="screen-sloka" atmosphere="strong">
         <View
           accessible
           accessibilityLabel={lang === "hi" ? "श्लोक लोड हो रहा है" : "Loading verse"}
@@ -159,7 +159,7 @@ export default function SlokaScreen() {
 
   if (error || !sloka) {
     return (
-      <Screen atmosphere="strong">
+      <Screen testID="screen-sloka" atmosphere="strong">
         <View style={styles.stateHeader}>
           <BackButton fallback="/(tabs)/explore" />
         </View>
@@ -286,7 +286,7 @@ export default function SlokaScreen() {
   );
 
   return (
-    <Screen padded={false} atmosphere="strong">
+    <Screen testID="screen-sloka" padded={false} atmosphere="strong">
       <View style={styles.readerHeader}>
         <BackButton fallback="/(tabs)/explore" />
         <Text

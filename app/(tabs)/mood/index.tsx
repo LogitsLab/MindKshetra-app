@@ -36,7 +36,7 @@ export default function MoodScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   return (
-    <Screen atmosphere="soft">
+    <Screen testID="screen-mood" atmosphere="soft">
       <View style={styles.heading}>
         <Text variant="display" style={styles.title}>
           {lang === "hi" ? "आप कैसा महसूस कर रहे हैं?" : "How are you feeling?"}
@@ -58,6 +58,7 @@ export default function MoodScreen() {
           const selected = selectedId === item.id;
           return (
             <Pressable
+              testID={`mood-${item.id}`}
               accessibilityRole="button"
               accessibilityState={{ selected }}
               onPress={() => {

@@ -9,6 +9,19 @@ export const PROMPT_COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000;
 /** After this many declines the sheet never appears again. */
 export const PROMPT_MAX_DECLINES = 2;
 
+/**
+ * Server-supported notification destinations. Dynamic segments intentionally
+ * use Expo Router file syntax so scripts/validate-routes.mjs can verify them
+ * against the app directory.
+ */
+export const NOTIFICATION_ROUTE_TARGETS = [
+  "/sloka/[id]",
+  "/verse-of-the-day",
+  "/sadhana",
+  "/meditation/[day]",
+  "/paths/[id]",
+] as const;
+
 export type PromptState = {
   /** Epoch ms of the last time the sheet was declined; null = never shown. */
   lastPromptAt: number | null;
@@ -47,10 +60,11 @@ export function notificationUrl(data: unknown): string | null {
     return null;
   }
 
+  let decodedPath: string;
   try {
     const parsed = new URL(url, "https://app.mindkshetra.invalid");
     const rawPath = url.split(/[?#]/, 1)[0];
-    const decodedPath = decodeURIComponent(rawPath);
+    decodedPath = decodeURIComponent(rawPath);
     const segments = decodedPath.split("/");
     if (
       parsed.origin !== "https://app.mindkshetra.invalid" ||
@@ -64,6 +78,20 @@ export function notificationUrl(data: unknown): string | null {
     return null;
   }
 
+  const pathname = decodedPath.replace(/\/+$/, "") || "/";
+  const segments = pathname.split("/");
+  const known = NOTIFICATION_ROUTE_TARGETS.some((target) => {
+    const targetSegments = target.split("/");
+    return (
+      targetSegments.length === segments.length &&
+      targetSegments.every(
+        (segment, index) =>
+          (/^\[[^\]]+\]$/.test(segment) && Boolean(segments[index])) ||
+          segment === segments[index]
+      )
+    );
+  });
+  if (!known) return null;
   return url;
 }
 

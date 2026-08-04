@@ -70,6 +70,7 @@ export function MadhavFab() {
       ]}
     >
       <Pressable
+        testID="madhav-fab"
         accessibilityRole="button"
         accessibilityLabel="Ask Madhav"
         onPress={() => {

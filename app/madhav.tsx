@@ -346,7 +346,12 @@ export default function MadhavScreen() {
   const composerPad = Math.max(insets.bottom, spacing.sm);
 
   return (
-    <Screen padded={false} edges={["top", "left", "right"]} atmosphere="soft">
+    <Screen
+      testID="screen-madhav"
+      padded={false}
+      edges={["top", "left", "right"]}
+      atmosphere="soft"
+    >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -372,6 +377,7 @@ export default function MadhavScreen() {
             </Text>
           </View>
           <Pressable
+            testID="madhav-close"
             accessibilityRole="button"
             accessibilityLabel="Close Madhav"
             onPress={() => router.back()}

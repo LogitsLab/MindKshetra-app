@@ -1,0 +1,15 @@
+appId: app.mindkshetra.mobile
+name: Onboarding guest reaches Home
+tags:
+  - core
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: onboarding-continue
+    timeout: 10000
+- runFlow:
+    file: ../helpers/complete-onboarding.yaml
+- assertVisible:
+    id: screen-home

@@ -68,7 +68,7 @@ export default function AstrologyHub() {
   ];
 
   return (
-    <Screen atmosphere="strong">
+    <Screen testID="screen-astrology" atmosphere="strong">
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

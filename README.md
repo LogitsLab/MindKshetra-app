@@ -39,6 +39,9 @@ This is an **open repository**. We welcome:
 Please read **[CONTRIBUTING.md](CONTRIBUTING.md)** before opening a PR.  
 Not ready to code? Open an issue with your idea and as much detail as you can — that helps maintainers prioritize.
 
+PR checks and local TypeScript/Jest/Expo/Maestro commands are documented in
+**[docs/QUALITY.md](docs/QUALITY.md)**.
+
 ## Architecture
 
 - Mobile structure & API usage: **[ARCHITECTURE.md](ARCHITECTURE.md)**  

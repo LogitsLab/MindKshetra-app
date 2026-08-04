@@ -157,7 +157,7 @@ export default function HomeScreen() {
   ];
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen testID="screen-home" atmosphere="soft" padded>
       <ScrollView
         contentContainerStyle={{
           paddingBottom: bottomPad,
@@ -309,7 +309,10 @@ export default function HomeScreen() {
 
         {/* Today's composed practice — one card, prominent but calm */}
         <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.md }}>
-          <Pressable onPress={() => router.push("/sadhana")}>
+          <Pressable
+            testID="home-practice-sadhana"
+            onPress={() => router.push("/sadhana")}
+          >
             <Panel>
               <View style={styles.sadhanaRow}>
                 <View style={{ flex: 1 }}>

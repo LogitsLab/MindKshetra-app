@@ -64,7 +64,7 @@ export default function ExploreScreen() {
   );
 
   return (
-    <Screen>
+    <Screen testID="screen-explore">
       <ScreenHeader
         title={lang === "hi" ? "अन्वेषण" : "Explore"}
         subtitle={
@@ -100,6 +100,7 @@ export default function ExploreScreen() {
         }}
         renderItem={({ item }) => (
           <Pressable
+            testID={`explore-chapter-${item.number}`}
             onPress={() => router.push(`/(tabs)/explore/${item.number}`)}
             style={({ pressed }) => [
               styles.tile,
