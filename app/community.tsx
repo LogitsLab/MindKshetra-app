@@ -7,17 +7,15 @@ import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
-import { siteLabel, siteUrl } from "@/api/client";
 import { eventsApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { COMMUNITY_ROUTE_TARGETS } from "@/data/community";
 import { images } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 
 const WHATSAPP = process.env.EXPO_PUBLIC_WHATSAPP_CHANNEL_URL;
 const TELEGRAM = process.env.EXPO_PUBLIC_TELEGRAM_URL;
-const CARE_WEB = siteUrl("/care");
-const SUPPORT_WEB = siteUrl("/support");
 
 export default function CommunityScreen() {
   const router = useRouter();
@@ -96,7 +94,7 @@ export default function CommunityScreen() {
         </Rise>
 
         <Rise delay={120} style={{ marginTop: spacing.md }}>
-          <Pressable onPress={() => void Linking.openURL(CARE_WEB)}>
+          <Pressable onPress={() => router.push(COMMUNITY_ROUTE_TARGETS.care)}>
             <Panel>
               <Text variant="title" style={{ fontSize: 18 }}>
                 {t("homeBlockCareTitle")}
@@ -109,7 +107,7 @@ export default function CommunityScreen() {
         </Rise>
 
         <Rise delay={160} style={{ marginTop: spacing.md }}>
-          <Pressable onPress={() => void Linking.openURL(SUPPORT_WEB)}>
+          <Pressable onPress={() => router.push(COMMUNITY_ROUTE_TARGETS.support)}>
             <Panel>
               <Text variant="title" style={{ fontSize: 18 }}>
                 {t("homeBlockSupportTitle")}
@@ -122,7 +120,7 @@ export default function CommunityScreen() {
                 color={colors.brassSoft}
                 style={{ marginTop: spacing.sm }}
               >
-                {siteLabel("/support")} →
+                {t("supportOpenDana")} →
               </Text>
             </Panel>
           </Pressable>

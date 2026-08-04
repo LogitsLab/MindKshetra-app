@@ -93,6 +93,14 @@ function RootNavigator() {
           name="community"
           options={{ title: t("homeBlockSanghaTitle") }}
         />
+        <Stack.Screen
+          name="care"
+          options={{ title: t("homeBlockCareTitle") }}
+        />
+        <Stack.Screen
+          name="support"
+          options={{ title: t("homeBlockSupportTitle") }}
+        />
         <Stack.Screen name="paths/index" options={{ title: "Paths" }} />
         <Stack.Screen name="paths/[id]" options={{ title: "Path" }} />
         {/* Unregistered until now, so all three fell back to expo-router's
