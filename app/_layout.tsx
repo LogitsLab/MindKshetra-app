@@ -130,6 +130,10 @@ function RootNavigator() {
           options={{ title: "Progress", headerRight: () => null }}
         />
         <Stack.Screen
+          name="account/personalize"
+          options={{ title: "Personalize", headerRight: () => null }}
+        />
+        <Stack.Screen
           name="journal/index"
           options={{ title: "Journal", headerRight: () => null }}
         />

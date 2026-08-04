@@ -642,6 +642,10 @@ export default function AccountScreen() {
               {lang === "hi" ? "आपकी यात्रा" : "YOUR JOURNEY"}
             </Text>
             <AccountRow
+              label={lang === "hi" ? "व्यक्तिगत करें" : "Personalize"}
+              onPress={() => router.push("/account/personalize")}
+            />
+            <AccountRow
               label={lang === "hi" ? "उपलब्धियाँ" : "Achievements"}
               onPress={() => router.push("/account/achievements")}
             />
