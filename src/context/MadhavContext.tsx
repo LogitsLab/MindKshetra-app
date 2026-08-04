@@ -37,7 +37,12 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
 
   const setVerseContext = useCallback((id: number | null) => {
     setSlokaId(id);
-    if (id != null) setContextLabel(`Verse ${id}`);
+    if (id != null) {
+      setMemberId(null);
+      setChartSessionId(null);
+      setBirthPayload(null);
+      setContextLabel(`Verse ${id}`);
+    }
   }, []);
 
   const setChartSession = useCallback(

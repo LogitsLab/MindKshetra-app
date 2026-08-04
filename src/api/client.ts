@@ -150,6 +150,93 @@ export type SseHandlers = {
   onChartEpigraph?: (text: string) => void;
 };
 
+export type ChatRequestMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+type ChatRequestBase = {
+  language: "en" | "hi";
+  sessionId?: string;
+  chatSessionId?: string;
+  messages: ChatRequestMessage[];
+};
+
+export type ChatRequestContext =
+  | {
+      slokaId: number;
+      memberId?: never;
+      chartSessionId?: never;
+      birth?: never;
+    }
+  | {
+      memberId: string;
+      slokaId?: never;
+      chartSessionId?: never;
+      birth?: never;
+    }
+  | {
+      chartSessionId: string;
+      birth?: Record<string, unknown>;
+      slokaId?: never;
+      memberId?: never;
+    }
+  | {
+      slokaId?: undefined;
+      memberId?: undefined;
+      chartSessionId?: undefined;
+      birth?: undefined;
+    };
+
+export type ChatRequestBody = ChatRequestBase & ChatRequestContext;
+
+export type ChatRequestInput = {
+  language: "en" | "hi";
+  sessionId?: string | null;
+  messages: ChatRequestMessage[];
+  slokaId?: number | null;
+  memberId?: string | null;
+  chartSessionId?: string | null;
+  birth?: Record<string, unknown> | null;
+};
+
+/**
+ * Build the chat payload at one boundary and reject impossible mixed context.
+ * This prevents stale verse/chart state from crossing into an unrelated request.
+ */
+export function buildChatRequestBody(input: ChatRequestInput): ChatRequestBody {
+  const activeContexts = [
+    input.slokaId != null,
+    Boolean(input.memberId),
+    Boolean(input.chartSessionId),
+  ].filter(Boolean).length;
+
+  if (activeContexts > 1) {
+    throw new Error("Madhav chat request contains conflicting context");
+  }
+  if (input.birth && !input.chartSessionId) {
+    throw new Error("Madhav birth context requires a chart session");
+  }
+
+  const base: ChatRequestBase = {
+    language: input.language,
+    sessionId: input.sessionId ?? undefined,
+    chatSessionId: input.sessionId ?? undefined,
+    messages: input.messages,
+  };
+
+  if (input.slokaId != null) return { ...base, slokaId: input.slokaId };
+  if (input.memberId) return { ...base, memberId: input.memberId };
+  if (input.chartSessionId) {
+    return {
+      ...base,
+      chartSessionId: input.chartSessionId,
+      birth: input.birth ?? undefined,
+    };
+  }
+  return base;
+}
+
 /**
  * Dispatch a single SSE block (the text between two blank lines) to handlers.
  *
@@ -229,7 +316,7 @@ function networkMessage(e: unknown): string {
  * throwing.
  */
 export async function streamChat(
-  body: Record<string, unknown>,
+  body: ChatRequestBody,
   handlers: SseHandlers,
   signal?: AbortSignal
 ): Promise<void> {

@@ -45,6 +45,23 @@ describe("contentApi.slokas", () => {
   });
 });
 
+describe("contentApi.moods", () => {
+  beforeEach(() => {
+    mockApiFetch.mockReset();
+  });
+
+  it("normalizes the backend's bare mood array", async () => {
+    mockApiFetch.mockResolvedValue([
+      { id: "anxious", label: "Anxious", labelHi: "चिंतित" },
+    ]);
+
+    await expect(contentApi.moods()).resolves.toEqual({
+      moods: [{ id: "anxious", label: "Anxious", labelHi: "चिंतित" }],
+    });
+    expect(mockApiFetch).toHaveBeenCalledWith("/api/moods");
+  });
+});
+
 describe("pushApi", () => {
   beforeEach(() => {
     mockApiFetch.mockReset();

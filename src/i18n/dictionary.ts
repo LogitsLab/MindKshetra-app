@@ -6,6 +6,7 @@ import * as chat from "@/i18n/namespaces/chat";
 import * as onboarding from "@/i18n/namespaces/onboarding";
 import * as sadhana from "@/i18n/namespaces/sadhana";
 import * as meditation from "@/i18n/namespaces/meditation";
+import * as community from "@/i18n/namespaces/community";
 
 export type AppLang = "en" | "hi";
 
@@ -19,6 +20,7 @@ export const dictionary = {
     ...onboarding.en,
     ...sadhana.en,
     ...meditation.en,
+    ...community.en,
     navHome: "Home",
   },
   hi: {
@@ -30,6 +32,7 @@ export const dictionary = {
     ...onboarding.hi,
     ...sadhana.hi,
     ...meditation.hi,
+    ...community.hi,
     navHome: "होम",
   },
 } as const;

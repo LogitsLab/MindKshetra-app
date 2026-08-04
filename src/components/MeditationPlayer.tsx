@@ -13,14 +13,16 @@ import { useKeepAwake } from "expo-keep-awake";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { Panel } from "@/components/Panel";
 import { Button } from "@/components/Button";
+import { BrandMark } from "@/components/BrandMark";
+import { Rise } from "@/components/Rise";
 import { siteUrl } from "@/api/client";
 import { meditationApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { sessionTranscript, type MeditationSession, type SittingMilestone } from "@/data/meditation";
+import { POST_MOOD_CHOICES } from "@/data/meditationCompletion";
 import {
   GUEST_QUEUE_KEY,
   markSittingGuestDay,
@@ -36,6 +38,13 @@ function formatClock(sec: number) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function fill(template: string, vars: Record<string, string | number>) {
+  return Object.entries(vars).reduce(
+    (copy, [key, value]) => copy.replace(`{${key}}`, String(value)),
+    template
+  );
 }
 
 async function queueGuest(row: Record<string, unknown>) {
@@ -212,54 +221,59 @@ export function MeditationPlayer({
   };
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen atmosphere="strong" padded>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: spacing.xxl }}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.push("/meditation")}>
-          <Text color={colors.brassSoft}>← {t("medBack")}</Text>
-        </Pressable>
-        <Text
-          variant="eyebrow"
-          color={colors.brassSoft}
-          style={{ marginTop: spacing.md }}
-        >
-          {session.tier === "daily"
-            ? t("medDailiesTitle")
-            : `Day ${session.day_number}`}{" "}
-          · {session.duration_minutes} {t("sadhanaMin")}
-        </Text>
-        <Text variant="title" style={{ marginTop: spacing.sm, fontSize: 26 }}>
-          {title}
-        </Text>
-        <Text variant="soft" style={{ marginTop: spacing.sm }}>
-          {theme}
-        </Text>
+        <View style={styles.topBar}>
+          <View>
+            <Text variant="title" color={colors.brassSoft}>{title}</Text>
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {session.tier === "daily"
+                ? t("medDailiesTitle")
+                : fill(t("medDayLabel"), { n: session.day_number })} ·{" "}
+              {session.duration_minutes} {t("sadhanaMin")}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("medBack")}
+            onPress={() => router.push("/meditation")}
+            style={[styles.closeButton, { borderColor: colors.line }]}
+          >
+            <Text color={colors.brassSoft}>×</Text>
+          </Pressable>
+        </View>
 
         {stage === "moodBefore" ? (
-          <View style={{ marginTop: spacing.xl }}>
-            <Text variant="title" style={{ fontSize: 20 }}>
+          <View style={styles.checkIn}>
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {t("medBeforeEyebrow")}
+            </Text>
+            <Text variant="title" style={styles.checkInTitle}>
               {t("medMoodBefore")}
             </Text>
             <Text variant="muted" style={{ marginTop: spacing.xs }}>
               {t("medMoodHint")}
             </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                gap: spacing.sm,
-                marginTop: spacing.md,
-              }}
-            >
+            <View style={styles.moodRow}>
               {[1, 2, 3, 4, 5].map((n) => (
-                <Pressable key={n} onPress={() => setMoodBefore(n)}>
-                  <Panel>
-                    <Text color={moodBefore === n ? colors.brassSoft : undefined}>
-                      {n}
-                    </Text>
-                  </Panel>
+                <Pressable
+                  key={n}
+                  accessibilityRole="radio"
+                  accessibilityLabel={fill(t("medMoodBeforeChoice"), { value: n })}
+                  accessibilityState={{ selected: moodBefore === n }}
+                  onPress={() => setMoodBefore(n)}
+                  style={[
+                    styles.numberChip,
+                    {
+                      borderColor: moodBefore === n ? colors.brass : colors.line,
+                      backgroundColor: moodBefore === n ? colors.surfaceHover : colors.field,
+                    },
+                  ]}
+                >
+                  <Text color={moodBefore === n ? colors.brassSoft : colors.textMuted}>{n}</Text>
                 </Pressable>
               ))}
             </View>
@@ -281,8 +295,8 @@ export function MeditationPlayer({
         ) : null}
 
         {stage === "play" && phase ? (
-          <View style={{ marginTop: spacing.xl }}>
-            <Text variant="eyebrow" color={colors.brassSoft}>
+          <View style={styles.player}>
+            <Text variant="eyebrow" color={colors.brassSoft} style={styles.centerText}>
               {phase.type === "speak"
                 ? t("medPhaseSpeak")
                 : t("medPhaseSilence")}{" "}
@@ -301,6 +315,9 @@ export function MeditationPlayer({
                 return (
                   <Pressable
                     key={String(value)}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`${t("medRateLabel")}: ${label}`}
+                    accessibilityState={{ selected: active }}
                     onPress={() => setRate(value)}
                     style={[
                       styles.rateChip,
@@ -321,45 +338,61 @@ export function MeditationPlayer({
               })}
             </View>
             {phase.type === "speak" ? (
-              <Panel style={{ marginTop: spacing.md }}>
-                <Text variant="soft">
+              <View style={[styles.breathRing, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+                <View style={[styles.innerRing, { borderColor: colors.line }]}>
+                <Text variant="title" color={colors.brassSoft} style={styles.guidance}>
                   {lang === "hi" ? phase.text_hi : phase.text_en}
                 </Text>
+                </View>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={speaking ? t("medStopVoice") : t("medReadAloud")}
                   onPress={speaking ? stopVoice : readAloud}
-                  style={{ marginTop: spacing.md }}
+                  style={styles.playerAction}
                 >
                   <Text color={colors.brassSoft}>
                     {speaking ? t("medStopVoice") : t("medReadAloud")}
                   </Text>
                 </Pressable>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t("medSkipSpeak")}
                   onPress={() => {
                     autoAdvance.current = false;
                     stopNarration();
                     advancePhase();
                   }}
-                  style={{ marginTop: spacing.sm }}
+                  style={styles.playerAction}
                 >
                   <Text color={colors.brassSoft}>{t("medSkipSpeak")} →</Text>
                 </Pressable>
-              </Panel>
+              </View>
             ) : (
-              <View style={{ marginTop: spacing.lg, alignItems: "center" }}>
-                <Text variant="title" style={{ fontSize: 40 }}>
+              <View style={[styles.breathRing, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+                <View style={[styles.innerRing, { borderColor: colors.line }]}>
+                <Text variant="eyebrow" color={colors.brassSoft}>{t("medPhaseSilence")}</Text>
+                <Text variant="display" color={colors.brassSoft} style={styles.clock}>
                   {formatClock(silenceLeft ?? phase.seconds)}
                 </Text>
+                </View>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t("medNextPhase")}
                   onPress={advancePhase}
-                  style={{ marginTop: spacing.md }}
+                  style={styles.playerAction}
                 >
                   <Text color={colors.brassSoft}>{t("medNextPhase")}</Text>
                 </Pressable>
               </View>
             )}
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                showTranscript ? t("medHideTranscript") : t("medTranscript")
+              }
+              accessibilityState={{ expanded: showTranscript }}
               onPress={() => setShowTranscript((v) => !v)}
-              style={{ marginTop: spacing.lg }}
+              style={styles.transcriptToggle}
             >
               <Text color={colors.brassSoft}>
                 {showTranscript ? t("medHideTranscript") : t("medTranscript")}
@@ -374,33 +407,85 @@ export function MeditationPlayer({
         ) : null}
 
         {stage === "moodAfter" ? (
-          <View style={{ marginTop: spacing.xl }}>
-            <Text variant="title" style={{ fontSize: 20 }}>
+          <Rise style={styles.completeStage}>
+            <View
+              accessible
+              accessibilityLabel={t("medCompletionLotus")}
+              style={[
+                styles.lotusMark,
+                {
+                  borderColor: colors.brass,
+                  backgroundColor: colors.atmosphereBrass,
+                },
+              ]}
+            >
+              <BrandMark size={68} />
+            </View>
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {t("medSessionComplete")}
+            </Text>
+            <Text variant="display" color={colors.brassSoft} style={styles.completeTitle}>
+              {t("medWellDone")}
+            </Text>
+            <Text variant="soft" style={styles.centerText}>
+              {title} · {session.duration_minutes} {t("sadhanaMin")}
+            </Text>
+            <View style={[styles.sessionStats, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+              <View style={styles.statCell}>
+                <Text variant="eyebrow">{t("medDurationLabel")}</Text>
+                <Text variant="title">
+                  {fill(t("medMinuteShort"), { n: session.duration_minutes })}
+                </Text>
+              </View>
+              <View style={[styles.statCell, styles.statDivider, { borderColor: colors.hairline }]}>
+                <Text variant="eyebrow">{t("medPracticeLabel")}</Text>
+                <Text variant="title">
+                  {session.tier === "daily"
+                    ? t("medDailyLabel")
+                    : fill(t("medDayLabel"), { n: session.day_number })}
+                </Text>
+              </View>
+            </View>
+            <Text variant="soft" style={styles.moodPrompt}>
               {t("medMoodAfter")}
             </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                gap: spacing.sm,
-                marginTop: spacing.md,
-              }}
-            >
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Pressable key={n} onPress={() => setMoodAfter(n)}>
-                  <Panel>
+            <View style={styles.postMoodGrid}>
+              {POST_MOOD_CHOICES.map(({ value, labelKey }) => {
+                const label = t(labelKey);
+                return (
+                  <Pressable
+                    key={value}
+                    accessibilityRole="radio"
+                    accessibilityLabel={fill(t("medMoodChoice"), {
+                      label,
+                      value,
+                    })}
+                    accessibilityState={{ selected: moodAfter === value }}
+                    onPress={() => setMoodAfter(value)}
+                    style={[
+                      styles.postMoodChip,
+                      {
+                        borderColor: moodAfter === value ? colors.brass : colors.line,
+                        backgroundColor: moodAfter === value ? colors.surfaceHover : colors.field,
+                      },
+                    ]}
+                  >
                     <Text
-                      color={moodAfter === n ? colors.brassSoft : undefined}
+                      variant="eyebrow"
+                      color={moodAfter === value ? colors.brassSoft : colors.textSoft}
                     >
-                      {n}
+                      {label}
                     </Text>
-                  </Panel>
-                </Pressable>
-              ))}
+                  </Pressable>
+                );
+              })}
             </View>
             <View style={{ marginTop: spacing.lg }}>
               {saving ? (
-                <ActivityIndicator color={colors.brass} />
+                <ActivityIndicator
+                  accessibilityLabel={t("medSaving")}
+                  color={colors.brass}
+                />
               ) : (
                 <Button
                   label={t("medComplete")}
@@ -409,13 +494,30 @@ export function MeditationPlayer({
                 />
               )}
             </View>
-          </View>
+          </Rise>
         ) : null}
 
         {stage === "done" ? (
-          <View style={{ marginTop: spacing.xl }}>
-            <Text variant="title" style={{ fontSize: 22 }}>
-              {milestone ? t("medMilestoneTitle") : t("medDoneTitle")}
+          <Rise style={styles.doneStage}>
+            <View
+              accessible
+              accessibilityLabel={t("medCompletionLotus")}
+              style={[
+                styles.lotusMark,
+                {
+                  borderColor: colors.brass,
+                  backgroundColor: colors.atmosphereBrass,
+                },
+              ]}
+            >
+              <BrandMark size={68} />
+            </View>
+            <Text variant="title" color={colors.brassSoft} style={styles.doneTitle}>
+              {milestone
+                ? t("medMilestoneTitle")
+                : session.tier === "daily"
+                  ? t("medSessionDoneTitle")
+                  : t("medDoneTitle")}
             </Text>
             <Text variant="soft" style={{ marginTop: spacing.sm }}>
               {milestone === 7
@@ -424,7 +526,9 @@ export function MeditationPlayer({
                   ? t("medMilestone21")
                   : milestone === 45
                     ? t("medMilestone45")
-                    : t("medDoneBody")}
+                    : session.tier === "daily"
+                      ? t("medSessionDoneBody")
+                      : t("medDoneBody")}
             </Text>
             {guestSaved ? (
               <Text
@@ -437,15 +541,19 @@ export function MeditationPlayer({
             ) : null}
             {nextDay && milestone !== 45 ? (
               <Pressable
-                onPress={() => router.push(`/meditation/${nextDay}`)}
+                accessibilityRole="button"
+                accessibilityLabel={fill(t("medNextDay"), { n: nextDay })}
+                onPress={() => router.replace(`/meditation/${nextDay}`)}
                 style={{ marginTop: spacing.lg }}
               >
                 <Text color={colors.brassSoft}>
-                  {t("medContinue").replace("{n}", String(nextDay))} →
+                  {fill(t("medNextDay"), { n: nextDay })} →
                 </Text>
               </Pressable>
             ) : (
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("medBack")}
                 onPress={() => router.push("/meditation")}
                 style={{ marginTop: spacing.lg }}
               >
@@ -453,24 +561,30 @@ export function MeditationPlayer({
               </Pressable>
             )}
             <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={t("medBridgeSadhana")}
               onPress={() => router.push("/sadhana")}
               style={{ marginTop: spacing.sm }}
             >
               <Text color={colors.brassSoft}>{t("medBridgeSadhana")} →</Text>
             </Pressable>
             <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={t("medBridgePaths")}
               onPress={() => router.push("/paths")}
               style={{ marginTop: spacing.sm }}
             >
               <Text color={colors.brassSoft}>{t("medBridgePaths")} →</Text>
             </Pressable>
             <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={t("medBridgeSupport")}
               onPress={() => void Linking.openURL(SUPPORT_URL)}
               style={{ marginTop: spacing.sm }}
             >
               <Text color={colors.brassSoft}>{t("medBridgeSupport")} →</Text>
             </Pressable>
-          </View>
+          </Rise>
         ) : null}
       </ScrollView>
     </Screen>
@@ -478,6 +592,94 @@ export function MeditationPlayer({
 }
 
 const styles = StyleSheet.create({
+  content: { paddingTop: spacing.sm, paddingBottom: spacing.xxl },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkIn: { marginTop: spacing.xxl, alignItems: "center" },
+  checkInTitle: { marginTop: spacing.sm, fontSize: 24 },
+  moodRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.lg },
+  numberChip: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  player: { marginTop: spacing.xl },
+  centerText: { textAlign: "center" },
+  breathRing: {
+    width: 286,
+    height: 286,
+    borderRadius: 143,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: spacing.xl,
+    padding: spacing.xl,
+  },
+  innerRing: {
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.md,
+  },
+  guidance: { fontSize: 19, lineHeight: 28, textAlign: "center" },
+  clock: { marginTop: spacing.sm, fontSize: 38 },
+  playerAction: { marginTop: spacing.md },
+  transcriptToggle: { marginTop: spacing.xl, alignSelf: "center" },
+  completeStage: { marginTop: spacing.xl, alignItems: "center" },
+  lotusMark: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.lg,
+  },
+  completeTitle: { marginTop: spacing.xs, marginBottom: spacing.xs },
+  sessionStats: {
+    width: "100%",
+    flexDirection: "row",
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
+    marginTop: spacing.xl,
+  },
+  statCell: { flex: 1, alignItems: "center", padding: spacing.md },
+  statDivider: { borderLeftWidth: StyleSheet.hairlineWidth },
+  moodPrompt: { textAlign: "center", marginTop: spacing.xl },
+  postMoodGrid: {
+    width: "100%",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  postMoodChip: {
+    width: "48%",
+    paddingVertical: spacing.md,
+    borderRadius: radii.sm,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+  },
+  doneStage: { marginTop: spacing.xxl, alignItems: "center" },
+  doneTitle: { textAlign: "center" },
   rateRow: {
     flexDirection: "row",
     alignItems: "center",

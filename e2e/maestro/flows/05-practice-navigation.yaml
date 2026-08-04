@@ -1,0 +1,21 @@
+appId: app.mindkshetra.mobile
+name: Home opens daily practice
+tags:
+  - core
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: onboarding-continue
+    file: ../helpers/complete-onboarding.yaml
+- tapOn:
+    id: tab-home
+- scrollUntilVisible:
+    element:
+      id: home-practice-sadhana
+    direction: DOWN
+- tapOn:
+    id: home-practice-sadhana
+- assertVisible:
+    id: screen-sadhana

@@ -655,6 +655,10 @@ export default function AccountScreen() {
             />
             <AccountRow
               label={lang === "hi" ? "जर्नल और चिंतन" : "Journal & reflections"}
+              onPress={() => router.push("/journal")}
+            />
+            <AccountRow
+              label={lang === "hi" ? "चिंतन संग्रह" : "Reflection archive"}
               onPress={() => router.push("/account/reflections")}
             />
             <AccountRow label={t("favorites")} onPress={() => router.push("/favorites")} />

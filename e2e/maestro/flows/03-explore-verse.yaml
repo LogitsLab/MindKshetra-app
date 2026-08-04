@@ -1,0 +1,25 @@
+appId: app.mindkshetra.mobile
+name: Explore chapter to verse
+tags:
+  - core
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: onboarding-continue
+    file: ../helpers/complete-onboarding.yaml
+- tapOn:
+    id: tab-explore
+- tapOn:
+    id: explore-chapter-1
+- assertVisible:
+    id: screen-chapter
+- extendedWaitUntil:
+    visible:
+      id: verse-card
+    timeout: 20000
+- tapOn:
+    id: verse-card
+- assertVisible:
+    id: screen-sloka

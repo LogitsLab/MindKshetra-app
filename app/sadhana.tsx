@@ -395,7 +395,7 @@ export default function SadhanaScreen() {
   };
 
   return (
-    <Screen>
+    <Screen testID="screen-sadhana">
       <ScrollView
         contentContainerStyle={{
           paddingBottom: spacing.contentBottom,

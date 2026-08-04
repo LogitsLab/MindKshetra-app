@@ -50,7 +50,9 @@ export function OnboardingHeader({ step, total, onBack, onSkip }: Props) {
         <View style={styles.slot} />
       )}
 
-      <OnboardingProgress step={step} total={total} />
+      <View style={styles.progressSlot}>
+        <OnboardingProgress step={step} total={total} />
+      </View>
 
       {/*
         Always rendered, hidden rather than removed. A spacer of some guessed
@@ -94,6 +96,10 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: "flex-start",
     justifyContent: "center",
+  },
+  progressSlot: {
+    flex: 1,
+    alignItems: "center",
   },
   skip: {
     height: 32,

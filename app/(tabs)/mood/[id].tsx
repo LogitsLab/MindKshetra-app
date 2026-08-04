@@ -39,7 +39,7 @@ export default function MoodDetailScreen() {
   }, [id]);
 
   return (
-    <Screen>
+    <Screen testID="screen-mood-detail">
       <ScreenHeader
         showBack
         backFallback="/(tabs)/mood"

@@ -188,6 +188,7 @@ export function OnboardingAuthStep({
             "another way in" from "no way in".
           */}
           <Pressable
+            testID="onboarding-guest"
             onPress={guestFailed ? onEnterAnyway : onGuest}
             disabled={blocked("guest")}
             accessibilityRole="link"

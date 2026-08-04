@@ -1,55 +1,90 @@
-import React from "react";
+import React, { useState } from "react";
 import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { ScreenHeader } from "@/components/ScreenHeader";
 import { moods } from "@/data/moods";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
-import { moodAccent } from "@/theme/assets";
 import { radii, spacing } from "@/theme/tokens";
+
+const moodSymbols: Record<string, string> = {
+  anxious: "◉",
+  sad: "◒",
+  angry: "△",
+  confused: "◇",
+  grieving: "◐",
+  lonely: "○",
+  overwhelmed: "≋",
+  guilty: "⌁",
+  jealous: "◈",
+  unmotivated: "⌛",
+  fearful: "✦",
+  hopeful: "☼",
+  grateful: "❋",
+  "big-decision": "⇄",
+  conflict: "⚖",
+  failure: "↘",
+  purpose: "⌖",
+  happy: "✺",
+};
 
 export default function MoodScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { lang } = useLanguage();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   return (
-    <Screen>
-      <ScreenHeader
-        title={lang === "hi" ? "मनोदशा" : "Mood"}
-        subtitle={
-          lang === "hi"
-            ? "आज कैसा अनुभव है — उसके लिए श्लोक।"
-            : "Choose how you feel. We’ll meet you with verses."
-        }
-        style={{ marginBottom: spacing.md }}
-      />
+    <Screen testID="screen-mood" atmosphere="soft">
+      <View style={styles.heading}>
+        <Text variant="display" style={styles.title}>
+          {lang === "hi" ? "आप कैसा महसूस कर रहे हैं?" : "How are you feeling?"}
+        </Text>
+        <Text variant="soft" style={styles.subtitle}>
+          {lang === "hi"
+            ? "जहाँ आप हैं, वहीं मिलने वाले श्लोक।"
+            : "Verses that meet you where you are."}
+        </Text>
+      </View>
       <FlatList
         data={moods}
         keyExtractor={(m) => m.id}
         numColumns={2}
-        columnWrapperStyle={{ gap: spacing.sm }}
-        contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.contentBottom }}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
-          const accent = moodAccent[item.id] ?? colors.brass;
+          const selected = selectedId === item.id;
           return (
             <Pressable
-              onPress={() => router.push(`/(tabs)/mood/${item.id}`)}
+              testID={`mood-${item.id}`}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              onPress={() => {
+                setSelectedId(item.id);
+                requestAnimationFrame(() =>
+                  router.push(`/(tabs)/mood/${item.id}`)
+                );
+              }}
               style={({ pressed }) => [
                 styles.tile,
                 {
-                  backgroundColor: pressed
-                    ? colors.surfaceHover
-                    : `${accent}18`,
-                  borderColor: `${accent}55`,
+                  backgroundColor:
+                    selected || pressed ? colors.panelStrong : colors.panel,
+                  borderColor: selected ? colors.brass : colors.line,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
                 },
               ]}
             >
-              <View style={[styles.dot, { backgroundColor: accent }]} />
-              <Text variant="title" style={{ fontSize: 15, marginTop: spacing.sm }}>
-                {lang === "hi" ? item.labelHi : item.label}
+              <Text style={[styles.symbol, { color: colors.brassSoft }]}>
+                {moodSymbols[item.id] ?? "✦"}
+              </Text>
+              <Text variant="body" style={styles.label}>
+                {item.label}
+              </Text>
+              <Text variant="sanskrit" style={[styles.hindi, { color: colors.textSoft }]}>
+                {item.labelHi}
               </Text>
             </Pressable>
           );
@@ -60,18 +95,55 @@ export default function MoodScreen() {
 }
 
 const styles = StyleSheet.create({
+  heading: {
+    alignItems: "center",
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  title: {
+    textAlign: "center",
+    fontFamily: "Fraunces_500Medium",
+    fontSize: 30,
+    lineHeight: 38,
+  },
+  subtitle: {
+    marginTop: spacing.sm,
+    textAlign: "center",
+    fontFamily: "Fraunces_500Medium",
+    fontStyle: "italic",
+  },
+  list: {
+    gap: spacing.md,
+    paddingBottom: spacing.contentBottom,
+  },
+  row: {
+    gap: spacing.md,
+  },
   tile: {
     flex: 1,
-    minHeight: 96,
+    minHeight: 132,
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth * 2,
-    padding: spacing.md,
-    justifyContent: "flex-end",
+    padding: spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    opacity: 0.9,
+  symbol: {
+    fontFamily: "Fraunces_500Medium",
+    fontSize: 28,
+    lineHeight: 34,
+  },
+  label: {
+    marginTop: spacing.sm,
+    textAlign: "center",
+    fontFamily: "Sora_600SemiBold",
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  hindi: {
+    marginTop: 2,
+    textAlign: "center",
+    fontSize: 14,
+    lineHeight: 22,
   },
 });

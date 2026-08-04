@@ -9,6 +9,19 @@ export const PROMPT_COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000;
 /** After this many declines the sheet never appears again. */
 export const PROMPT_MAX_DECLINES = 2;
 
+/**
+ * Server-supported notification destinations. Dynamic segments intentionally
+ * use Expo Router file syntax so scripts/validate-routes.mjs can verify them
+ * against the app directory.
+ */
+export const NOTIFICATION_ROUTE_TARGETS = [
+  "/sloka/[id]",
+  "/verse-of-the-day",
+  "/sadhana",
+  "/meditation/[day]",
+  "/paths/[id]",
+] as const;
+
 export type PromptState = {
   /** Epoch ms of the last time the sheet was declined; null = never shown. */
   lastPromptAt: number | null;
@@ -37,7 +50,48 @@ export function notificationUrl(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
   const url = (data as { url?: unknown }).url;
   if (typeof url !== "string") return null;
-  if (!url.startsWith("/") || url.startsWith("//")) return null;
+  if (
+    !url.startsWith("/") ||
+    url.startsWith("//") ||
+    url !== url.trim() ||
+    url.length > 2048 ||
+    /[\u0000-\u001f\u007f\\]/.test(url)
+  ) {
+    return null;
+  }
+
+  let decodedPath: string;
+  try {
+    const parsed = new URL(url, "https://app.mindkshetra.invalid");
+    const rawPath = url.split(/[?#]/, 1)[0];
+    decodedPath = decodeURIComponent(rawPath);
+    const segments = decodedPath.split("/");
+    if (
+      parsed.origin !== "https://app.mindkshetra.invalid" ||
+      decodedPath.startsWith("//") ||
+      /[\u0000-\u001f\u007f\\]/.test(decodedPath) ||
+      segments.some((segment) => segment === "." || segment === "..")
+    ) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  const pathname = decodedPath.replace(/\/+$/, "") || "/";
+  const segments = pathname.split("/");
+  const known = NOTIFICATION_ROUTE_TARGETS.some((target) => {
+    const targetSegments = target.split("/");
+    return (
+      targetSegments.length === segments.length &&
+      targetSegments.every(
+        (segment, index) =>
+          (/^\[[^\]]+\]$/.test(segment) && Boolean(segments[index])) ||
+          segment === segments[index]
+      )
+    );
+  });
+  if (!known) return null;
   return url;
 }
 

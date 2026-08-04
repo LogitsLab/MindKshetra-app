@@ -1,6 +1,12 @@
 import { fetch as expoFetch } from "expo/fetch";
-import { apiFetch, ApiError, streamChat, dispatchSseBlock } from "../client";
-import type { SseHandlers } from "../client";
+import {
+  apiFetch,
+  ApiError,
+  buildChatRequestBody,
+  dispatchSseBlock,
+  streamChat,
+} from "../client";
+import type { ChatRequestBody, SseHandlers } from "../client";
 
 jest.mock("expo/fetch", () => ({ fetch: jest.fn() }));
 
@@ -54,11 +60,76 @@ function handlers(): SseHandlers & { [k: string]: jest.Mock } {
   } as never;
 }
 
+function request(): ChatRequestBody {
+  return {
+    language: "en",
+    messages: [{ role: "user", content: "Guide me" }],
+  };
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockConfigured = true;
   mockGetSession.mockResolvedValue({ data: { session: { access_token: "tok-123" } } });
   global.fetch = jest.fn() as never;
+});
+
+describe("Madhav chat request context", () => {
+  const base = {
+    language: "en" as const,
+    sessionId: "chat-session",
+    messages: [{ role: "user" as const, content: "Guide me" }],
+  };
+
+  it("sends structured slokaId in the request body", async () => {
+    mockExpoFetch.mockResolvedValue(streamingResponse([]));
+
+    await streamChat(buildChatRequestBody({ ...base, slokaId: 247 }), handlers());
+
+    const [, init] = mockExpoFetch.mock.calls[0];
+    expect(JSON.parse(init.body)).toEqual({
+      language: "en",
+      sessionId: "chat-session",
+      chatSessionId: "chat-session",
+      messages: base.messages,
+      slokaId: 247,
+    });
+  });
+
+  it.each([
+    [{ slokaId: 247 }, { slokaId: 247 }],
+    [{ memberId: "member-1" }, { memberId: "member-1" }],
+    [
+      { chartSessionId: "chart-1", birth: { date: "2000-01-01" } },
+      { chartSessionId: "chart-1", birth: { date: "2000-01-01" } },
+    ],
+  ])("keeps each request context isolated", (context, expected) => {
+    const body = buildChatRequestBody({ ...base, ...context });
+
+    expect(body).toEqual(expect.objectContaining(expected));
+    expect(
+      ["slokaId", "memberId", "chartSessionId"].filter((key) => key in body)
+    ).toHaveLength(1);
+  });
+
+  it("rejects stale mixed context instead of transmitting it", () => {
+    expect(() =>
+      buildChatRequestBody({
+        ...base,
+        slokaId: 247,
+        memberId: "stale-member",
+      })
+    ).toThrow("conflicting context");
+  });
+
+  it("does not transmit birth details without their chart session", () => {
+    expect(() =>
+      buildChatRequestBody({
+        ...base,
+        birth: { date: "2000-01-01" },
+      })
+    ).toThrow("requires a chart session");
+  });
 });
 
 describe("streamChat — incremental delivery (guards F2)", () => {
@@ -72,7 +143,7 @@ describe("streamChat — incremental delivery (guards F2)", () => {
     );
 
     const h = handlers();
-    await streamChat({}, h);
+    await streamChat(request(), h);
 
     expect(h.onToken).toHaveBeenCalledTimes(2);
     expect(h.onToken).toHaveBeenNthCalledWith(1, "Arjuna");
@@ -86,7 +157,7 @@ describe("streamChat — incremental delivery (guards F2)", () => {
     );
 
     const h = handlers();
-    await streamChat({}, h);
+    await streamChat(request(), h);
 
     expect(h.onToken).toHaveBeenCalledWith("स्थितप्रज्ञ");
   });
@@ -112,7 +183,7 @@ describe("streamChat — incremental delivery (guards F2)", () => {
     });
 
     const h = handlers();
-    await streamChat({}, h);
+    await streamChat(request(), h);
 
     expect(h.onToken).toHaveBeenCalledWith("धर्म");
   });
@@ -123,7 +194,7 @@ describe("streamChat — incremental delivery (guards F2)", () => {
     );
 
     const h = handlers();
-    await streamChat({}, h);
+    await streamChat(request(), h);
 
     expect(h.onToken).toHaveBeenCalledWith("end");
   });
@@ -134,7 +205,7 @@ describe("streamChat — failure paths (guards E3/F4)", () => {
     mockExpoFetch.mockRejectedValue(new Error("Network request failed"));
 
     const h = handlers();
-    await streamChat({}, h);
+    await streamChat(request(), h);
 
     expect(h.onError).toHaveBeenCalledWith(
       "Could not reach Madhav. Check your connection and try again."
@@ -148,7 +219,7 @@ describe("streamChat — failure paths (guards E3/F4)", () => {
     mockExpoFetch.mockRejectedValue(abort);
 
     const h = handlers();
-    await streamChat({}, h);
+    await streamChat(request(), h);
 
     expect(h.onError).not.toHaveBeenCalled();
   });
@@ -162,7 +233,7 @@ describe("streamChat — failure paths (guards E3/F4)", () => {
     });
 
     const h = handlers();
-    await streamChat({}, h);
+    await streamChat(request(), h);
 
     expect(h.onError).toHaveBeenCalledWith("Slow down");
   });
@@ -177,7 +248,7 @@ describe("streamChat — failure paths (guards E3/F4)", () => {
     });
 
     const h = handlers();
-    await streamChat({}, h);
+    await streamChat(request(), h);
 
     expect(h.onToken).toHaveBeenCalledWith("buffered");
   });

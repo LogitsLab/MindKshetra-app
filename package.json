@@ -1,6 +1,6 @@
 {
   "name": "mindkshetra-app",
-  "version": "1.1.12",
+  "version": "2.0.0",
   "license": "AGPL-3.0-or-later",
   "main": "expo-router/entry",
   "engines": {
@@ -12,8 +12,13 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:routes": "node scripts/validate-routes.mjs",
+    "test:e2e": "maestro test e2e/maestro/flows",
+    "expo:check": "expo install --check && expo-doctor",
+    "quality": "npm run typecheck && npm test -- --ci --runInBand && npm run test:routes && npm run expo:check",
     "brand:assets": "node scripts/render-brand-assets.mjs",
     "release:notes": "node scripts/release-notes.mjs",
     "release:stores": "eas build --platform all --profile production --auto-submit --non-interactive"
@@ -35,6 +40,7 @@
     "@react-native-community/datetimepicker": "8.4.4",
     "@supabase/supabase-js": "^2.110.7",
     "expo": "~54.0.0",
+    "expo-asset": "~12.0.13",
     "expo-audio": "~1.1.1",
     "expo-auth-session": "~7.0.11",
     "expo-blur": "~15.0.8",
@@ -67,6 +73,7 @@
     "@types/jest": "^29.5.14",
     "@types/react": "~19.1.10",
     "babel-preset-expo": "~54.0.10",
+    "expo-doctor": "^1.20.1",
     "jest": "^29.7.0",
     "jest-expo": "~54.0.17",
     "typescript": "~5.9.2"

@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { streamChat } from "@/api/client";
+import { buildChatRequestBody, streamChat } from "@/api/client";
 import { chatApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
@@ -54,6 +54,7 @@ export default function MadhavScreen() {
     memberId,
     chartSessionId,
     birthPayload,
+    slokaId,
     clearPending,
     setStreaming,
   } = useMadhav();
@@ -189,15 +190,15 @@ export default function MadhavScreen() {
         }));
 
         await streamChat(
-          {
+          buildChatRequestBody({
             language: lang,
-            sessionId: sessionId ?? undefined,
-            chatSessionId: sessionId ?? undefined,
-            memberId: memberId ?? undefined,
-            chartSessionId: chartSessionId ?? undefined,
-            birth: birthPayload ?? undefined,
+            sessionId,
+            slokaId,
+            memberId,
+            chartSessionId,
+            birth: birthPayload,
             messages: history,
-          },
+          }),
           {
             onSession: (id) => {
               const sid = typeof id === "string" ? id : String(id);
@@ -303,6 +304,7 @@ export default function MadhavScreen() {
       memberId,
       chartSessionId,
       birthPayload,
+      slokaId,
       setStreaming,
       t,
     ]
@@ -344,7 +346,12 @@ export default function MadhavScreen() {
   const composerPad = Math.max(insets.bottom, spacing.sm);
 
   return (
-    <Screen padded={false} edges={["left", "right"]} atmosphere="soft">
+    <Screen
+      testID="screen-madhav"
+      padded={false}
+      edges={["top", "left", "right"]}
+      atmosphere="soft"
+    >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -362,13 +369,35 @@ export default function MadhavScreen() {
             resizeMode="cover"
           />
           <View style={{ flex: 1 }}>
-            <Text variant="eyebrow" color={colors.brassSoft}>
+            <Text variant="title" color={colors.brassSoft} style={styles.madhavName}>
               Madhav
             </Text>
-            <Text variant="title" style={{ fontSize: 18 * multiplier, marginTop: 2 }}>
-              {lang === "hi" ? "माधव से पूछें" : "Ask Madhav"}
+            <Text variant="eyebrow" style={styles.guideLabel}>
+              {lang === "hi" ? "गीता मार्गदर्शक" : "Gita guide"}
             </Text>
           </View>
+          <Pressable
+            testID="madhav-close"
+            accessibilityRole="button"
+            accessibilityLabel="Close Madhav"
+            onPress={() => router.back()}
+            style={({ pressed }) => [
+              styles.close,
+              {
+                borderColor: colors.hairline,
+                opacity: pressed ? 0.55 : 1,
+              },
+            ]}
+          >
+            <Text style={{ color: colors.textSoft, fontSize: 22, lineHeight: 24 }}>×</Text>
+          </Pressable>
+        </View>
+        <View style={[styles.disclaimer, { borderBottomColor: colors.hairline }]}>
+          <Text variant="muted" style={styles.disclaimerText}>
+            {lang === "hi"
+              ? "एक आध्यात्मिक साथी, चिकित्सक नहीं।"
+              : "A spiritual companion, not a therapist."}
+          </Text>
         </View>
 
         {crisisBanner ? (
@@ -444,7 +473,6 @@ export default function MadhavScreen() {
           style={[
             styles.composer,
             {
-              borderTopColor: colors.hairline,
               backgroundColor: colors.navBg,
               paddingBottom: composerPad,
             },
@@ -461,7 +489,7 @@ export default function MadhavScreen() {
               {
                 color: colors.text,
                 borderColor: colors.line,
-                backgroundColor: colors.inputBg,
+                backgroundColor: colors.panelStrong,
                 fontSize: 15 * multiplier,
               },
             ]}
@@ -477,9 +505,7 @@ export default function MadhavScreen() {
               },
             ]}
           >
-            <Text style={{ color: colors.onBrass, fontFamily: "Sora_600SemiBold" }}>
-              {t("send")}
-            </Text>
+            <Text style={{ color: colors.onBrass, fontSize: 20, lineHeight: 22 }}>➤</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -493,15 +519,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   portrait: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderColor: "rgba(201, 162, 39, 0.45)",
+  },
+  madhavName: {
+    fontFamily: "Fraunces_500Medium",
+    fontSize: 20,
+    lineHeight: 24,
+  },
+  guideLabel: {
+    marginTop: 2,
+    fontSize: 9,
+    letterSpacing: 1.8,
+  },
+  close: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  disclaimer: {
+    paddingBottom: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+  },
+  disclaimerText: {
+    textAlign: "center",
+    fontSize: 10,
+    lineHeight: 14,
   },
   crisis: {
     marginHorizontal: spacing.md,
@@ -512,11 +565,10 @@ const styles = StyleSheet.create({
   },
   composer: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth * 2,
     flexShrink: 0,
   },
   input: {
@@ -524,15 +576,15 @@ const styles = StyleSheet.create({
     minHeight: 48,
     maxHeight: 120,
     borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radii.md,
+    borderRadius: 24,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     fontFamily: "Sora_400Regular",
   },
   send: {
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.md,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },

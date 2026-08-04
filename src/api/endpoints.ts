@@ -54,7 +54,18 @@ export const contentApi = {
     apiFetch<{ story: string; language: string }>(
       `/api/slokas/${id}/story?lang=${lang}`
     ),
-  moods: () => apiFetch<{ moods: { id: string; label: string }[] }>("/api/moods"),
+  moods: async () => {
+    const data = await apiFetch<unknown>("/api/moods");
+    if (Array.isArray(data)) {
+      return { moods: data as { id: string; label: string; labelHi?: string }[] };
+    }
+    if (data && typeof data === "object" && Array.isArray((data as { moods?: unknown }).moods)) {
+      return data as {
+        moods: { id: string; label: string; labelHi?: string }[];
+      };
+    }
+    return { moods: [] };
+  },
   moodSlokas: (id: string) =>
     apiFetch<{ slokas: Sloka[] }>(`/api/moods/${id}/slokas`),
 };
@@ -627,6 +638,30 @@ export const astrologyApi = {
       source: predictionsText?.source ?? data.source,
       cached: data.cached,
     };
+  },
+  muhurat: (opts?: { date?: string; lat?: number; lng?: number }) => {
+    const q = new URLSearchParams();
+    if (opts?.date) q.set("date", opts.date);
+    if (opts?.lat != null) q.set("lat", String(opts.lat));
+    if (opts?.lng != null) q.set("lng", String(opts.lng));
+    const qs = q.toString();
+    return apiFetch<{
+      date: string;
+      disclaimer: string;
+      muhurats: Array<{
+        nameEn: string;
+        nameHi: string;
+        startIso: string;
+        endIso: string;
+        tag: string;
+      }>;
+      choghadiya: Array<{
+        kind: string;
+        startIso: string;
+        endIso: string;
+        quality: string;
+      }>;
+    }>(`/api/astrology/muhurat${qs ? `?${qs}` : ""}`);
   },
   health: () => apiFetch<{ ok: boolean; ephemeris?: { mode: string } }>("/api/astrology/health"),
 };

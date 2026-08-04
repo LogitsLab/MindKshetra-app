@@ -54,7 +54,7 @@ export default function TabsLayout() {
                 />
               )
             : undefined,
-        tabBarActiveTintColor: colors.brassSoft,
+        tabBarActiveTintColor: colors.brass,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarShowLabel: true,
         tabBarLabelStyle: {
@@ -68,6 +68,7 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: t("navHome"),
+          tabBarButtonTestID: "tab-home",
           tabBarIcon: ({ focused }) => <TabHomeIcon focused={focused} />,
         }}
       />
@@ -75,6 +76,7 @@ export default function TabsLayout() {
         name="explore/index"
         options={{
           title: t("navExplore"),
+          tabBarButtonTestID: "tab-explore",
           tabBarIcon: ({ focused }) => <TabExploreIcon focused={focused} />,
         }}
       />
@@ -82,6 +84,7 @@ export default function TabsLayout() {
         name="mood/index"
         options={{
           title: t("navMood"),
+          tabBarButtonTestID: "tab-mood",
           tabBarIcon: ({ focused }) => <TabMoodIcon focused={focused} />,
         }}
       />
@@ -89,6 +92,7 @@ export default function TabsLayout() {
         name="astrology/index"
         options={{
           title: t("navAstrology"),
+          tabBarButtonTestID: "tab-astrology",
           tabBarIcon: ({ focused }) => <TabAstrologyIcon focused={focused} />,
         }}
       />

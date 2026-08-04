@@ -206,7 +206,7 @@ export default function ChapterScreen() {
   );
 
   return (
-    <Screen>
+    <Screen testID="screen-chapter">
       <ScreenHeader
         showBack
         backFallback="/(tabs)/explore"

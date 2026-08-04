@@ -1,0 +1,17 @@
+appId: app.mindkshetra.mobile
+name: Mood opens detail
+tags:
+  - core
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: onboarding-continue
+    file: ../helpers/complete-onboarding.yaml
+- tapOn:
+    id: tab-mood
+- tapOn:
+    id: mood-anxious
+- assertVisible:
+    id: screen-mood-detail

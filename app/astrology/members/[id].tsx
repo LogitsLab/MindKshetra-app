@@ -134,14 +134,42 @@ export default function AstrologyMemberDetailScreen() {
   };
 
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={{ paddingBottom: 140, paddingTop: spacing.md }}>
-        <Text variant="eyebrow">{t("astroEyebrow")}</Text>
-        <Text variant="display" style={{ marginTop: spacing.sm }}>
-          {member?.name ?? "Chart"}
-        </Text>
-        <Text variant="muted" style={{ marginTop: spacing.xs }}>
-          {member?.placeLabel ?? member?.dob}
+    <Screen padded={false} atmosphere="soft">
+      <View
+        style={[
+          styles.chrome,
+          { borderBottomColor: colors.line, backgroundColor: colors.navBg },
+        ]}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.back, { opacity: pressed ? 0.5 : 1 }]}
+        >
+          <Text style={{ color: colors.brassSoft, fontSize: 30, lineHeight: 30 }}>‹</Text>
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text variant="title" numberOfLines={1} style={styles.memberTitle}>
+            {member?.name ?? "Chart"}
+          </Text>
+          <Text variant="muted" numberOfLines={1} style={styles.memberMeta}>
+            {[member?.placeLabel, member?.dob, member?.tob].filter(Boolean).join(" · ")}
+          </Text>
+        </View>
+        <View style={[styles.avatar, { borderColor: colors.line }]}>
+          <Text style={{ color: colors.brassSoft, fontFamily: "Fraunces_500Medium" }}>
+            {(member?.name ?? "C").charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text variant="eyebrow" color={colors.brassSoft}>
+          {t("astroEyebrow")}
         </Text>
 
         <View style={styles.tabs}>
@@ -278,6 +306,46 @@ export default function AstrologyMemberDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  chrome: {
+    minHeight: 72,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  back: {
+    width: 34,
+    height: 44,
+    alignItems: "flex-start",
+    justifyContent: "center",
+  },
+  memberTitle: {
+    fontFamily: "Fraunces_500Medium",
+    fontSize: 22,
+    lineHeight: 27,
+  },
+  memberMeta: {
+    marginTop: 2,
+    fontSize: 10,
+    lineHeight: 14,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
+  avatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: 140,
+  },
   tabs: {
     flexDirection: "row",
     gap: spacing.xs,

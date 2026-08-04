@@ -57,11 +57,16 @@ describe("shouldShowPrompt", () => {
 describe("notificationUrl", () => {
   it("accepts an app-relative route", () => {
     expect(notificationUrl({ url: "/sloka/123" })).toBe("/sloka/123");
+    expect(notificationUrl({ url: "/sadhana?source=reminder" })).toBe(
+      "/sadhana?source=reminder"
+    );
   });
 
-  it("rejects external and protocol-relative URLs", () => {
+  it("rejects external, protocol-relative and unknown app URLs", () => {
     expect(notificationUrl({ url: "https://evil.example/x" })).toBeNull();
     expect(notificationUrl({ url: "//evil.example/x" })).toBeNull();
+    expect(notificationUrl({ url: "/%2f%2fevil.example/x" })).toBeNull();
+    expect(notificationUrl({ url: "/not-a-real-screen" })).toBeNull();
   });
 
   it("rejects non-string, missing and malformed payloads", () => {
@@ -70,6 +75,21 @@ describe("notificationUrl", () => {
     expect(notificationUrl(null)).toBeNull();
     expect(notificationUrl("string-not-object")).toBeNull();
     expect(notificationUrl({ url: "sloka/123" })).toBeNull();
+    expect(notificationUrl({ url: " /sloka/123" })).toBeNull();
+    expect(notificationUrl({ url: "/sloka\\123" })).toBeNull();
+    expect(notificationUrl({ url: "/sloka/%ZZ" })).toBeNull();
+    expect(notificationUrl({ url: "/sloka/123\n/account" })).toBeNull();
+  });
+
+  it("rejects literal and encoded path traversal", () => {
+    expect(notificationUrl({ url: "/sloka/../account" })).toBeNull();
+    expect(notificationUrl({ url: "/sloka/%2e%2e/account" })).toBeNull();
+  });
+
+  it("accepts app-relative query strings and fragments", () => {
+    expect(notificationUrl({ url: "/sloka/123?from=push#meaning" })).toBe(
+      "/sloka/123?from=push#meaning"
+    );
   });
 });
 

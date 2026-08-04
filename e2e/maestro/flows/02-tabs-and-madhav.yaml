@@ -1,0 +1,35 @@
+appId: app.mindkshetra.mobile
+name: Four tabs and Madhav
+tags:
+  - core
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: onboarding-continue
+    file: ../helpers/complete-onboarding.yaml
+- tapOn:
+    id: tab-explore
+- assertVisible:
+    id: screen-explore
+- tapOn:
+    id: tab-mood
+- assertVisible:
+    id: screen-mood
+- tapOn:
+    id: tab-astrology
+- assertVisible:
+    id: screen-astrology
+- tapOn:
+    id: tab-home
+- assertVisible:
+    id: screen-home
+- tapOn:
+    id: madhav-fab
+- assertVisible:
+    id: screen-madhav
+- tapOn:
+    id: madhav-close
+- assertVisible:
+    id: screen-home

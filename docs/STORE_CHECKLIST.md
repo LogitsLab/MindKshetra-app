@@ -12,10 +12,11 @@ the original list assumed the app was correct and only needed configuration.
 - [x] `streamChat` handles offline and aborts instead of throwing unhandled — **[new]**
 - [x] FAB clears the tab bar; `spacing.tabBar` is the single source of truth — **[new]**
 - [x] Tab labels come from `t()` instead of hardcoded English — **[new]**
-- [x] Missing Supabase env fails loudly in dev instead of booting broken — **[new]**
+- [x] Missing Supabase env fails configuration validation instead of booting
+      broken auth — **[new]**
 - [x] `eas.json` declares `cli.appVersionSource` — **[new]**
-- [x] Jest suite covering crisis detection, SSE parsing, and auth headers
-      (`npm test`, 46 tests) — **[new]**
+- [x] Jest suite covering crisis detection, SSE parsing, auth headers, route
+      targets, progression, and context isolation — **[new]**
 
 ## Blocking — still to do
 
@@ -26,15 +27,10 @@ the original list assumed the app was correct and only needed configuration.
       dawn / streak kinds on a TestFlight / internal build. — **[new]**
       Sitting-course + VOTD streak prefs are already wired client-side; this is
       the only blocker for practice nudges.
-- [ ] **Run `eas init`** to write a real `extra.eas.projectId`. The previous value
-      (`"mindkshetra-mobile"`) was a slug, not a UUID, and has been removed — `eas build`
-      would have failed on it. — **[new]**
-- [ ] **Align dependencies to SDK 57.** `npx expo install --check` reports 13 packages off
-      expected versions (expo-router, react-native-screens, react-native-svg, and others).
-      Mismatched native modules are a common source of production-only crashes. — **[new]**
-- [ ] **Resolve the react / react-dom peer conflict.** `react@19.2.3` is pinned while a
-      transitive `react-dom@19.2.8` requires `^19.2.8`. Adding any new dependency fails
-      without `--legacy-peer-deps`. — **[new]**
+- [x] EAS project UUID is configured in `app.json`.
+- [x] Dependencies align with Expo SDK 54 (`npx expo install --check`);
+      `expo-asset` is installed explicitly for `expo-audio`.
+- [x] React and React DOM are aligned at the SDK 54-compatible version.
 - [ ] `EXPO_PUBLIC_*` env set for production API + Supabase
 - [ ] Supabase Auth: Google, email redirect `mindkshetra://auth/callback`
 - [ ] Privacy policy URL live: `https://mind.logitslab.com/privacy`; link from Account screen

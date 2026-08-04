@@ -49,34 +49,58 @@ export default function PersonalizeSettingsScreen() {
     useState<GuidanceStyleId>("balanced");
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [hydrating, setHydrating] = useState(true);
   const [status, setStatus] = useState<string | null>(null);
 
-  const hydrate = useCallback(async () => {
-    try {
-      const raw = await AsyncStorage.getItem(PERSONALIZATION_STORAGE_KEY);
-      if (!raw) return;
-      const draft = JSON.parse(raw) as {
-        goals?: GoalId[];
-        inspirations?: InspirationId[];
-        dailyTimeMinutes?: number;
-        guidanceStyle?: GuidanceStyleId;
-        displayName?: string;
-        preferredLanguage?: "en" | "hi";
-      };
+  const applyDraft = useCallback(
+    (draft: {
+      goals?: GoalId[];
+      inspirations?: InspirationId[];
+      dailyTimeMinutes?: number | null;
+      guidanceStyle?: GuidanceStyleId | null;
+      displayName?: string;
+      preferredLanguage?: "en" | "hi" | null;
+    }) => {
       if (Array.isArray(draft.goals)) setGoals(draft.goals);
       if (Array.isArray(draft.inspirations)) setInspirations(draft.inspirations);
       if (typeof draft.dailyTimeMinutes === "number") {
         setDailyTimeMinutes(draft.dailyTimeMinutes);
       }
       if (draft.guidanceStyle) setGuidanceStyle(draft.guidanceStyle);
-      if (draft.displayName) setDisplayName(draft.displayName);
+      if (typeof draft.displayName === "string") setDisplayName(draft.displayName);
       if (draft.preferredLanguage === "hi" || draft.preferredLanguage === "en") {
         setLang(draft.preferredLanguage);
       }
+    },
+    [setLang]
+  );
+
+  const hydrate = useCallback(async () => {
+    // Offline draft first for instant paint; server prefs win when signed in.
+    try {
+      const raw = await AsyncStorage.getItem(PERSONALIZATION_STORAGE_KEY);
+      if (raw) applyDraft(JSON.parse(raw));
     } catch {
       /* ignore */
     }
-  }, [setLang]);
+
+    if (isSignedIn && !isAnonymous) {
+      try {
+        const prefs = await userApi.preferences();
+        applyDraft({
+          goals: prefs.goals as GoalId[] | undefined,
+          inspirations: prefs.inspirations as InspirationId[] | undefined,
+          dailyTimeMinutes: prefs.dailyTimeMinutes as number | null | undefined,
+          guidanceStyle: prefs.guidanceStyle as GuidanceStyleId | null | undefined,
+          displayName: prefs.displayName as string | undefined,
+          preferredLanguage: prefs.preferredLanguage as "en" | "hi" | null | undefined,
+        });
+      } catch {
+        /* keep draft */
+      }
+    }
+    setHydrating(false);
+  }, [applyDraft, isSignedIn, isAnonymous]);
 
   useEffect(() => {
     void hydrate();
@@ -149,6 +173,10 @@ export default function PersonalizeSettingsScreen() {
             : "Goals, inspirations, time, and guidance — edit anytime without replaying onboarding."}
         </Text>
 
+        {hydrating ? (
+          <ActivityIndicator color={colors.brass} style={{ marginTop: spacing.lg }} />
+        ) : (
+          <>
         <Text variant="eyebrow" color={colors.brassSoft} style={styles.section}>
           {copy.setup.name[L]}
         </Text>
@@ -283,6 +311,8 @@ export default function PersonalizeSettingsScreen() {
             {status}
           </Text>
         ) : null}
+          </>
+        )}
       </ScrollView>
     </Screen>
   );

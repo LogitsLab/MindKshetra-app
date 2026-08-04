@@ -249,6 +249,7 @@ export default function OnboardingScreen() {
             <View style={styles.welcomeActions}>
               <OnboardingProgress step={0} total={STEPS.length} />
               <Button
+                testID="onboarding-continue"
                 label={`${copy.welcome.continue[L]}  →`}
                 onPress={() => setStep("goals")}
                 style={styles.primaryButton}
@@ -298,6 +299,7 @@ export default function OnboardingScreen() {
             </View>
             <View style={styles.bottomActions}>
               <Button
+                testID="onboarding-goals-next"
                 label={copy.goals.next[L]}
                 onPress={() => setStep("inspirations")}
                 style={styles.primaryButton}
@@ -347,6 +349,7 @@ export default function OnboardingScreen() {
               })}
             </View>
             <Button
+              testID="onboarding-inspirations-next"
               label={copy.inspirations.next[L]}
               onPress={() => setStep("time")}
               style={styles.sectionButton}
@@ -397,6 +400,7 @@ export default function OnboardingScreen() {
             </View>
             <View style={styles.bottomActions}>
               <Button
+                testID="onboarding-time-next"
                 label={copy.time.next[L]}
                 onPress={() => setStep("setup")}
                 style={styles.primaryButton}
@@ -501,6 +505,7 @@ export default function OnboardingScreen() {
               style={styles.input}
             />
             <Button
+              testID="onboarding-setup-next"
               label={copy.setup.start[L]}
               onPress={() => setStep("account")}
               style={styles.setupButton}
