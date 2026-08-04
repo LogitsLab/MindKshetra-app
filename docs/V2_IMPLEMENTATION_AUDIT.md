@@ -42,6 +42,52 @@ and ports v2 visual/interaction work screen by screen.
 
 ## Screen coverage
 
+### Route inventory and disposition
+
+| Route | Stitch / product source | v2.0.0 disposition |
+| --- | --- | --- |
+| `/` | Boot contract | Onboarding/auth gate, then Home |
+| `/onboarding` | 01, 42, 43, 46–48 | Implemented; detailed six-stage flow retained |
+| `/(tabs)/home` | 02 + v3 Home audit | Implemented; complete lifestyle Home retained |
+| `/(tabs)/explore` | 03 | Implemented; chapter discovery |
+| `/(tabs)/explore/[chapter]` | 04 | Implemented; virtualized verse list and cursor |
+| `/sloka/[id]` | 05 | Functional; v2 visual parity workstream |
+| `/(tabs)/mood` | 06 | v2 implementation retained |
+| `/(tabs)/mood/[id]` | 07 | Implemented; API-backed results |
+| `/madhav` | 08 | v2 implementation retained; structured verse context workstream |
+| `/(tabs)/astrology` | 09 | v2 implementation retained |
+| `/astrology/incognito` | 10 | Implemented with shared native birth form |
+| `/astrology/members` | Account/Jyotish flow | Implemented |
+| `/astrology/members/new` | 10 | Implemented |
+| `/astrology/members/[id]` | 11 | v2 chart presentation retained |
+| `/astrology/milan` | 12 | Implemented |
+| `/astrology/muhurat` | 30 | Implemented; contract verification required |
+| `/astrology/horoscope` | 31 | Implemented with saved-member predictions |
+| `/astrology/transits` | Jyotish suite | Implemented with saved-member transit data |
+| `/panchang` | 13 | Implemented |
+| `/panchang-calendar` | 13 | Implemented |
+| `/verse-of-the-day` | 14 | Implemented |
+| `/favorites` | 15 | Implemented |
+| `/sadhana` | 16 | Implemented; offline + signed-in logging |
+| `/japa` | 17 | Implemented |
+| `/meditation` | 18 | v2 implementation retained |
+| `/meditation/[day]` | 19 | v2 player retained |
+| `/meditation/daily/[id]` | 19 | Implemented |
+| Meditation complete state | 44 | v2 parity workstream |
+| `/paths` | 20 | Implemented |
+| `/paths/[id]` | 21 | Implemented |
+| `/community` | 22 | Implemented |
+| `/care` | 23 | Native route workstream |
+| `/support` | 24 | Native route workstream |
+| `/account` | 25 | Implemented |
+| `/account/progress` | 33, 45 | Implemented |
+| `/account/achievements` | 29, 41 | Implemented |
+| `/account/personalize` | v3 app requirement | Implemented; retained over ui-v2 deletion |
+| `/journal` | 28, 32 | Implemented |
+| `/account/reflections` | Account flow | Implemented |
+| `/privacy` | Legal requirement | Implemented |
+| `/auth/callback` | Auth contract | Implemented |
+
 ### Complete or covered by the integration
 
 - App shell, four-tab IA, global Madhav FAB, providers and onboarding gate.

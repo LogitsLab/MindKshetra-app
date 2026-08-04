@@ -54,7 +54,18 @@ export const contentApi = {
     apiFetch<{ story: string; language: string }>(
       `/api/slokas/${id}/story?lang=${lang}`
     ),
-  moods: () => apiFetch<{ moods: { id: string; label: string }[] }>("/api/moods"),
+  moods: async () => {
+    const data = await apiFetch<unknown>("/api/moods");
+    if (Array.isArray(data)) {
+      return { moods: data as { id: string; label: string; labelHi?: string }[] };
+    }
+    if (data && typeof data === "object" && Array.isArray((data as { moods?: unknown }).moods)) {
+      return data as {
+        moods: { id: string; label: string; labelHi?: string }[];
+      };
+    }
+    return { moods: [] };
+  },
   moodSlokas: (id: string) =>
     apiFetch<{ slokas: Sloka[] }>(`/api/moods/${id}/slokas`),
 };
