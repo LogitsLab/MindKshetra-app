@@ -628,5 +628,29 @@ export const astrologyApi = {
       cached: data.cached,
     };
   },
+  muhurat: (opts?: { date?: string; lat?: number; lng?: number }) => {
+    const q = new URLSearchParams();
+    if (opts?.date) q.set("date", opts.date);
+    if (opts?.lat != null) q.set("lat", String(opts.lat));
+    if (opts?.lng != null) q.set("lng", String(opts.lng));
+    const qs = q.toString();
+    return apiFetch<{
+      date: string;
+      disclaimer: string;
+      muhurats: Array<{
+        nameEn: string;
+        nameHi: string;
+        startIso: string;
+        endIso: string;
+        tag: string;
+      }>;
+      choghadiya: Array<{
+        kind: string;
+        startIso: string;
+        endIso: string;
+        quality: string;
+      }>;
+    }>(`/api/astrology/muhurat${qs ? `?${qs}` : ""}`);
+  },
   health: () => apiFetch<{ ok: boolean; ephemeris?: { mode: string } }>("/api/astrology/health"),
 };

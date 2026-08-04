@@ -5,7 +5,7 @@ import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
-import { apiFetch } from "@/api/client";
+import { astrologyApi } from "@/api/endpoints";
 import { spacing } from "@/theme/tokens";
 
 type Payload = {
@@ -41,7 +41,8 @@ export default function MuhuratScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void apiFetch<Payload>("/api/astrology/muhurat")
+    void astrologyApi
+      .muhurat()
       .then(setData)
       .catch((e) => setError((e as Error).message));
   }, []);
