@@ -140,4 +140,3 @@ All HTTP goes through `src/api/client.ts` and typed wrappers in
   marketing version `2.0.0`.
 - Internal iOS and Android artifacts must complete successfully; EAS
   `--no-wait` invocation alone is not build success.
-
