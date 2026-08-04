@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { streamChat } from "@/api/client";
+import { buildChatRequestBody, streamChat } from "@/api/client";
 import { chatApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
@@ -54,6 +54,7 @@ export default function MadhavScreen() {
     memberId,
     chartSessionId,
     birthPayload,
+    slokaId,
     clearPending,
     setStreaming,
   } = useMadhav();
@@ -189,15 +190,15 @@ export default function MadhavScreen() {
         }));
 
         await streamChat(
-          {
+          buildChatRequestBody({
             language: lang,
-            sessionId: sessionId ?? undefined,
-            chatSessionId: sessionId ?? undefined,
-            memberId: memberId ?? undefined,
-            chartSessionId: chartSessionId ?? undefined,
-            birth: birthPayload ?? undefined,
+            sessionId,
+            slokaId,
+            memberId,
+            chartSessionId,
+            birth: birthPayload,
             messages: history,
-          },
+          }),
           {
             onSession: (id) => {
               const sid = typeof id === "string" ? id : String(id);
@@ -303,6 +304,7 @@ export default function MadhavScreen() {
       memberId,
       chartSessionId,
       birthPayload,
+      slokaId,
       setStreaming,
       t,
     ]

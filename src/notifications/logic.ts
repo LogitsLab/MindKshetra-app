@@ -37,7 +37,33 @@ export function notificationUrl(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
   const url = (data as { url?: unknown }).url;
   if (typeof url !== "string") return null;
-  if (!url.startsWith("/") || url.startsWith("//")) return null;
+  if (
+    !url.startsWith("/") ||
+    url.startsWith("//") ||
+    url !== url.trim() ||
+    url.length > 2048 ||
+    /[\u0000-\u001f\u007f\\]/.test(url)
+  ) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(url, "https://app.mindkshetra.invalid");
+    const rawPath = url.split(/[?#]/, 1)[0];
+    const decodedPath = decodeURIComponent(rawPath);
+    const segments = decodedPath.split("/");
+    if (
+      parsed.origin !== "https://app.mindkshetra.invalid" ||
+      decodedPath.startsWith("//") ||
+      /[\u0000-\u001f\u007f\\]/.test(decodedPath) ||
+      segments.some((segment) => segment === "." || segment === "..")
+    ) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
   return url;
 }
 
