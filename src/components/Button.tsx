@@ -1,4 +1,4 @@
-import React from "react";
+import React, { type ReactNode } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -17,6 +17,7 @@ type Props = PressableProps & {
   label: string;
   variant?: Variant;
   loading?: boolean;
+  leading?: ReactNode;
 };
 
 export function Button({
@@ -25,11 +26,17 @@ export function Button({
   loading,
   disabled,
   onPress,
+  leading,
   ...rest
 }: Props) {
   const { colors } = useTheme();
   const isPrimary = variant === "primary";
   const isDanger = variant === "danger";
+  const labelColor = isPrimary
+    ? colors.onBrass
+    : isDanger
+      ? colors.danger
+      : colors.text;
 
   return (
     <Pressable
@@ -60,20 +67,19 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={isPrimary ? colors.onBrass : colors.text} />
       ) : (
-        <Text
-          variant="body"
-          style={{
-            fontFamily: "Sora_600SemiBold",
-            fontSize: 15,
-            color: isPrimary
-              ? colors.onBrass
-              : isDanger
-                ? colors.danger
-                : colors.text,
-          }}
-        >
-          {label}
-        </Text>
+        <View style={styles.labelRow}>
+          {leading}
+          <Text
+            variant="body"
+            style={{
+              fontFamily: "Sora_600SemiBold",
+              fontSize: 15,
+              color: labelColor,
+            }}
+          >
+            {label}
+          </Text>
+        </View>
       )}
     </Pressable>
   );
@@ -99,5 +105,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: spacing.md,
+  },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
 });

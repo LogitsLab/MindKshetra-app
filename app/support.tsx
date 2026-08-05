@@ -26,10 +26,11 @@ export default function SupportScreen() {
       >
         <Rise>
           <PageHero
-            image={images.pathCommunity}
+            image={images.pathPaths}
             eyebrow={t("supportEyebrow")}
             title={t("homeBlockSupportTitle")}
-            body={t("supportHeroBody")}
+            intro={t("supportHeroBody")}
+            compact
           />
         </Rise>
 

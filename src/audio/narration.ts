@@ -8,12 +8,12 @@ import { resolveSpeechUrl } from "@/audio/manifest";
 
 /**
  * Narration = pre-generated studio audio when the manifest has it, device TTS
- * otherwise. Mirrors the expo-speech callback contract so call sites swap
- * one function name. One player at a time — starting narration stops any
- * previous one, like Speech.speak does.
+ * otherwise. One session at a time — async gaps must not spawn orphan players.
  */
 let player: AudioPlayer | null = null;
 let audioModeSet = false;
+/** Bumped on every stop / new play so in-flight awaits can abort. */
+let session = 0;
 
 export type NarrationOptions = {
   lang: "en" | "hi";
@@ -27,10 +27,16 @@ export type NarrationOptions = {
 };
 
 export function stopNarration(): void {
+  session += 1;
   Speech.stop();
   if (player) {
     try {
       player.removeAllListeners("playbackStatusUpdate");
+      try {
+        player.pause();
+      } catch {
+        /* ignore */
+      }
       player.remove();
     } catch {
       /* already released */
@@ -50,36 +56,35 @@ function speakFallback(text: string, options: NarrationOptions): void {
   });
 }
 
-export async function playOrSpeak(
-  text: string,
-  options: NarrationOptions
-): Promise<void> {
+export type PlayUrlOptions = {
+  rate?: number;
+  onStart?: () => void;
+  onDone?: () => void;
+  onStopped?: () => void;
+  onError?: () => void;
+};
+
+/** Play a single audio file with no TTS fallback (Sanskrit recitation). */
+export async function playUrl(
+  url: string,
+  options: PlayUrlOptions = {}
+): Promise<boolean> {
   stopNarration();
-
-  let url = options.url ?? null;
-  if (!url) {
-    try {
-      url = await resolveSpeechUrl(text, options.lang);
-    } catch {
-      url = null;
-    }
-  }
-
-  if (!url) {
-    speakFallback(text, options);
-    return;
-  }
-
+  const mySession = session;
   try {
     if (!audioModeSet) {
       audioModeSet = true;
-      // Meditation must be audible with the iOS silent switch on.
       await setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
+    }
+    if (mySession !== session) {
+      options.onStopped?.();
+      return false;
     }
     const p = createAudioPlayer({ uri: url });
     player = p;
     let finished = false;
     p.addListener("playbackStatusUpdate", (status) => {
+      if (mySession !== session) return;
       if (status.didJustFinish && !finished) {
         finished = true;
         options.onDone?.();
@@ -90,9 +95,74 @@ export async function playOrSpeak(
     }
     p.play();
     options.onStart?.();
+    return true;
   } catch {
-    // Network/decoder failure — degrade to TTS rather than silence.
+    if (mySession === session) {
+      options.onError?.();
+    }
+    return false;
+  }
+}
+
+export async function playOrSpeak(
+  text: string,
+  options: NarrationOptions
+): Promise<boolean> {
+  stopNarration();
+  const mySession = session;
+
+  let url = options.url ?? null;
+  if (!url) {
+    try {
+      url = await resolveSpeechUrl(text, options.lang);
+    } catch {
+      url = null;
+    }
+  }
+
+  // A newer play/stop won while we were resolving audio.
+  if (mySession !== session) {
+    options.onStopped?.();
+    return false;
+  }
+
+  if (!url) {
+    speakFallback(text, options);
+    return true;
+  }
+
+  try {
+    if (!audioModeSet) {
+      audioModeSet = true;
+      await setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
+    }
+    if (mySession !== session) {
+      options.onStopped?.();
+      return false;
+    }
+    const p = createAudioPlayer({ uri: url });
+    player = p;
+    let finished = false;
+    p.addListener("playbackStatusUpdate", (status) => {
+      if (mySession !== session) return;
+      if (status.didJustFinish && !finished) {
+        finished = true;
+        options.onDone?.();
+      }
+    });
+    if (options.rate && options.rate !== 1) {
+      p.setPlaybackRate(options.rate, "high");
+    }
+    p.play();
+    options.onStart?.();
+    return true;
+  } catch {
+    if (mySession !== session) {
+      options.onStopped?.();
+      return false;
+    }
     stopNarration();
     speakFallback(text, options);
+    return true;
   }
 }

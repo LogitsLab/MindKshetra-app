@@ -1,28 +1,36 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BackHandler,
+  FlatList,
   Image,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
   View,
-  type ImageSourcePropType,
+  useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from "react-native";
 import { Redirect, useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { BrandMark } from "@/components/BrandMark";
+import { GoalIcon } from "@/components/GoalIcon";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import {
   OnboardingAuthStep,
   type AuthAction,
 } from "@/components/onboarding/OnboardingAuthStep";
-import { OnboardingBackdrop } from "@/components/onboarding/OnboardingBackdrop";
+import {
+  OnboardingBackdrop,
+  useReadingVeil,
+} from "@/components/onboarding/OnboardingBackdrop";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useOnboarding } from "@/context/OnboardingContext";
@@ -35,13 +43,11 @@ import {
   EMPTY_PERSONALIZATION,
   GOALS,
   GUIDANCE_STYLES,
-  INSPIRATIONS,
   ONBOARDING_COPY,
   ONBOARDING_VERSION,
   PERSONALIZATION_STORAGE_KEY,
   type GoalId,
   type GuidanceStyleId,
-  type InspirationId,
   type PersonalizationDraft,
 } from "@/data/personalization";
 
@@ -55,33 +61,13 @@ const STEPS = [
 ] as const;
 type Step = (typeof STEPS)[number];
 
-const INSPIRATION_IMAGES: Record<InspirationId, ImageSourcePropType> = {
-  krishna: images.madhavPortrait,
-  shiva: images.pathMeditation,
-  rama: images.pathExplore,
-  devi: images.pathMood,
-  hanuman: images.pathSadhana,
-  buddha: images.pathCommunity,
-};
-
-const GOAL_ICONS: Record<GoalId, string> = {
-  inner_peace: "⌁",
-  stress_relief: "≋",
-  self_realization: "◉",
-  devotion: "♧",
-  purpose: "◈",
-  healing: "⌁",
-  knowledge: "▤",
-  relationships: "∞",
-  other: "•••",
-};
-
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { lang, setLang } = useLanguage();
-  const { markComplete, complete } = useOnboarding();
+  const { markComplete, complete, forceReplay } = useOnboarding();
   const {
     configured,
     isSignedIn,
@@ -91,7 +77,8 @@ export default function OnboardingScreen() {
     emailCooldownSec,
   } = useAuth();
 
-  const [step, setStep] = useState<Step>("welcome");
+  const pagerRef = useRef<FlatList<Step>>(null);
+  const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState<PersonalizationDraft>({
     ...EMPTY_PERSONALIZATION,
     preferredLanguage: lang,
@@ -103,26 +90,45 @@ export default function OnboardingScreen() {
   const [message, setMessage] = useState<string | null>(null);
   const [guestFailed, setGuestFailed] = useState(false);
 
-  const stepIndex = STEPS.indexOf(step);
+  const step = STEPS[stepIndex];
   const copy = ONBOARDING_COPY;
   const L = lang === "hi" ? "hi" : "en";
+  const reading = useReadingVeil(stepIndex > 0);
+
+  const goTo = useCallback(
+    (index: number) => {
+      const clamped = Math.max(0, Math.min(STEPS.length - 1, index));
+      setStepIndex(clamped);
+      pagerRef.current?.scrollToIndex({ index: clamped, animated: true });
+    },
+    []
+  );
+
+  const goBack = useCallback(() => {
+    if (stepIndex <= 0) return false;
+    goTo(stepIndex - 1);
+    return true;
+  }, [goTo, stepIndex]);
 
   useEffect(() => {
-    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      goBack();
-      return true;
-    });
+    const sub = BackHandler.addEventListener("hardwareBackPress", goBack);
     return () => sub.remove();
-  });
+  }, [goBack]);
 
-  if (complete || isSignedIn) {
-    return <Redirect href="/(tabs)/home" />;
+  /**
+   * Bound to onScroll as well as onMomentumScrollEnd. A slow drag released
+   * without flick produces no momentum event on iOS, so momentum alone left the
+   * pager on the next page while progress still read the previous one.
+   */
+  function onPagerScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    if (width <= 0) return;
+    const index = Math.round(e.nativeEvent.contentOffset.x / width);
+    const clamped = Math.max(0, Math.min(STEPS.length - 1, index));
+    if (clamped !== stepIndex) setStepIndex(clamped);
   }
 
-  function goBack() {
-    if (stepIndex <= 0) return false;
-    setStep(STEPS[stepIndex - 1]);
-    return true;
+  if (!forceReplay && (complete || isSignedIn)) {
+    return <Redirect href="/(tabs)/home" />;
   }
 
   function toggleGoal(id: GoalId) {
@@ -131,15 +137,6 @@ export default function OnboardingScreen() {
       goals: current.goals.includes(id)
         ? current.goals.filter((goal) => goal !== id)
         : [...current.goals, id],
-    }));
-  }
-
-  function toggleInspiration(id: InspirationId) {
-    setDraft((current) => ({
-      ...current,
-      inspirations: current.inspirations.includes(id)
-        ? current.inspirations.filter((inspiration) => inspiration !== id)
-        : [...current.inspirations, id],
     }));
   }
 
@@ -205,344 +202,536 @@ export default function OnboardingScreen() {
     }
   }
 
-  const header = step !== "welcome" ? (
-    <OnboardingHeader
-      step={stepIndex}
-      total={STEPS.length}
-      onBack={goBack}
-      onSkip={
-        step === "inspirations"
-          ? () => {
-              setDraft((current) => ({ ...current, inspirations: [] }));
-              setStep("time");
-            }
-          : undefined
-      }
-    />
-  ) : null;
-
-  return (
-    <Screen
-      atmosphere="none"
-      padded={false}
-      edges={["top", "bottom"]}
-      style={styles.screen}
-    >
-      {step === "welcome" ? <OnboardingBackdrop reading={0} /> : null}
-      <View style={styles.wrap}>
-        {header}
-
-        {step === "welcome" ? (
-          <View style={styles.welcome}>
-            <View style={styles.welcomeBrand}>
-              <BrandMark size={64} />
-              <Text variant="display" color={colors.brassSoft} style={styles.brandTitle}>
-                {copy.welcome.title[L]}
-              </Text>
-              <Text variant="eyebrow" color={colors.onMedia} style={styles.brandSubtitle}>
-                {copy.welcome.subtitle[L]}
-              </Text>
-            </View>
-            <Text variant="title" color={colors.onMedia} style={styles.tagline}>
-              “{copy.welcome.tagline[L]}”
+  function renderWelcome() {
+    return (
+      <View style={styles.welcome}>
+        <View style={styles.welcomeBrand}>
+          <BrandMark size={64} />
+          <Text
+            variant="display"
+            color={colors.onMedia}
+            accessibilityRole="header"
+            style={styles.brandTitle}
+          >
+            {copy.welcome.title[L]}
+          </Text>
+          <Text
+            variant="eyebrow"
+            color={colors.onMediaMuted}
+            style={styles.brandSubtitle}
+          >
+            {copy.welcome.subtitle[L]}
+          </Text>
+        </View>
+        <Text variant="title" color={colors.onMedia} style={styles.tagline}>
+          “{copy.welcome.tagline[L]}”
+        </Text>
+        <View style={styles.welcomeActions}>
+          <OnboardingProgress step={0} total={STEPS.length} />
+          <Button
+            testID="onboarding-continue"
+            label={`${copy.welcome.continue[L]}  →`}
+            onPress={() => goTo(1)}
+            style={styles.primaryButton}
+          />
+          <Pressable onPress={() => finish(true)} hitSlop={12} style={styles.skipLink}>
+            <Text variant="eyebrow" color={colors.onMediaMuted}>
+              {copy.welcome.skip[L]}
             </Text>
-            <View style={styles.welcomeActions}>
-              <OnboardingProgress step={0} total={STEPS.length} />
-              <Button
-                testID="onboarding-continue"
-                label={`${copy.welcome.continue[L]}  →`}
-                onPress={() => setStep("goals")}
-                style={styles.primaryButton}
-              />
-              <Pressable onPress={() => finish(true)} hitSlop={12} style={styles.skipLink}>
-                <Text variant="eyebrow" color={colors.onMediaMuted}>
-                  {copy.welcome.skip[L]}
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  function renderGoals() {
+    return (
+      <ScrollView
+        contentContainerStyle={styles.page}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+      >
+        <Text
+          variant="display"
+          color={colors.onMedia}
+          accessibilityRole="header"
+          style={styles.pageTitle}
+        >
+          {copy.goals.title[L]}
+        </Text>
+        <Text variant="soft" color={colors.onMediaMuted} style={styles.centeredBody}>
+          {copy.goals.body[L]}
+        </Text>
+        <View style={styles.goalGrid}>
+          {GOALS.map((goal) => {
+            const selected = draft.goals.includes(goal.id);
+            return (
+              <Pressable
+                key={goal.id}
+                onPress={() => toggleGoal(goal.id)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+                style={({ pressed }) => [
+                  styles.goalTile,
+                  selected && styles.selectedTile,
+                  pressed && styles.pressed,
+                ]}
+              >
+                {selected ? <SelectionCheck compact /> : null}
+                <View style={styles.goalIconWrap}>
+                  <GoalIcon
+                    id={goal.id}
+                    color={selected ? colors.brassSoft : colors.brass}
+                    size={28}
+                  />
+                </View>
+                <Text
+                  variant="muted"
+                  color={selected ? colors.brassSoft : colors.onMedia}
+                  style={styles.goalLabel}
+                >
+                  {goal[L]}
                 </Text>
               </Pressable>
+            );
+          })}
+        </View>
+        <View style={styles.bottomActions}>
+          <Button
+            testID="onboarding-goals-next"
+            label={copy.goals.next[L]}
+            onPress={() => goTo(2)}
+            style={styles.primaryButton}
+          />
+          <Pressable onPress={() => finish(true)} style={styles.skipLink}>
+            <Text variant="eyebrow" color={colors.onMediaMuted}>
+              {copy.welcome.skip[L]}
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  function renderInspirations() {
+    const dialogue = copy.inspirations.dialogue;
+    const sloka = copy.inspirations.sloka;
+    return (
+      <ScrollView
+        contentContainerStyle={styles.page}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+      >
+        <Text variant="eyebrow" color={colors.brassSoft} style={styles.sceneEyebrow}>
+          {copy.inspirations.eyebrow[L]}
+        </Text>
+        <Text
+          variant="display"
+          color={colors.onMedia}
+          accessibilityRole="header"
+          style={styles.sceneTitle}
+        >
+          {copy.inspirations.sceneTitle[L]}
+        </Text>
+        <Text
+          variant="soft"
+          color={colors.onMediaMuted}
+          style={styles.inspirationBody}
+        >
+          {copy.inspirations.body[L]}
+        </Text>
+
+        <View style={styles.dialogueHero}>
+          <Image
+            source={images.pathMadhav}
+            style={styles.dialogueImage}
+            resizeMode="cover"
+            accessibilityLabel="Madhav and Arjun on the battlefield of Kurukshetra"
+          />
+          <LinearGradient
+            colors={["transparent", "rgba(7,9,15,0.45)", "rgba(7,9,15,0.88)"]}
+            locations={[0.4, 0.75, 1]}
+            style={styles.dialogueHeroFade}
+          />
+        </View>
+
+        <View style={styles.chatThread}>
+          <View style={styles.chatRowLeft}>
+            <Image
+              source={images.arjunPortrait}
+              style={styles.chatAvatar}
+              resizeMode="cover"
+              accessibilityLabel={dialogue.arjun.label[L]}
+            />
+            <View style={[styles.chatBubble, styles.chatBubbleLeft]}>
+              <Text variant="eyebrow" color={colors.onMediaMuted}>
+                {dialogue.arjun.label[L]}
+              </Text>
+              <Text variant="sanskrit" color={colors.onMedia} style={styles.chatHi}>
+                {dialogue.arjun.hi}
+              </Text>
+              <Text variant="soft" color={colors.onMediaMuted} style={styles.chatEn}>
+                {dialogue.arjun.en}
+              </Text>
             </View>
           </View>
-        ) : null}
 
-        {step === "goals" ? (
-          <ScrollView contentContainerStyle={styles.page}>
-            <Text variant="display" style={styles.pageTitle}>
-              {copy.goals.title[L]}
-            </Text>
-            <Text variant="soft" style={styles.centeredBody}>
-              {copy.goals.body[L]}
-            </Text>
-            <View style={styles.goalGrid}>
-              {GOALS.map((goal) => {
-                const selected = draft.goals.includes(goal.id);
-                return (
-                  <Pressable
-                    key={goal.id}
-                    onPress={() => toggleGoal(goal.id)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: selected }}
-                    style={({ pressed }) => [
-                      styles.goalTile,
-                      selected && styles.selectedTile,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    {selected ? <SelectionCheck compact /> : null}
-                    <Text color={colors.brass} style={styles.goalIcon}>
-                      {GOAL_ICONS[goal.id]}
-                    </Text>
-                    <Text variant="muted" color={colors.text} style={styles.goalLabel}>
-                      {goal[L]}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <View style={styles.bottomActions}>
-              <Button
-                testID="onboarding-goals-next"
-                label={copy.goals.next[L]}
-                onPress={() => setStep("inspirations")}
-                style={styles.primaryButton}
-              />
-              <Pressable onPress={() => finish(true)} style={styles.skipLink}>
-                <Text variant="eyebrow">{copy.welcome.skip[L]}</Text>
-              </Pressable>
-            </View>
-          </ScrollView>
-        ) : null}
-
-        {step === "inspirations" ? (
-          <ScrollView contentContainerStyle={styles.page}>
-            <Text variant="title" color={colors.brassSoft}>
-              {copy.inspirations.title[L]}
-            </Text>
-            <Text variant="soft" style={styles.inspirationBody}>
-              {copy.inspirations.body[L]}
-            </Text>
-            <View style={styles.inspirationGrid}>
-              {INSPIRATIONS.map((inspiration) => {
-                const selected = draft.inspirations.includes(inspiration.id);
-                return (
-                  <Pressable
-                    key={inspiration.id}
-                    onPress={() => toggleInspiration(inspiration.id)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: selected }}
-                    style={({ pressed }) => [
-                      styles.inspirationTile,
-                      selected && styles.selectedTile,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Image
-                      source={INSPIRATION_IMAGES[inspiration.id]}
-                      style={styles.inspirationImage}
-                      resizeMode="cover"
-                    />
-                    {selected ? <SelectionCheck /> : null}
-                    <View style={styles.imageScrim} />
-                    <Text variant="title" color={colors.onMedia} style={styles.inspirationName}>
-                      {inspiration[L]}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Button
-              testID="onboarding-inspirations-next"
-              label={copy.inspirations.next[L]}
-              onPress={() => setStep("time")}
-              style={styles.sectionButton}
-            />
-          </ScrollView>
-        ) : null}
-
-        {step === "time" ? (
-          <ScrollView contentContainerStyle={styles.page}>
-            <Text variant="display" color={colors.brassSoft} style={styles.pageTitle}>
-              {copy.time.title[L]}
-            </Text>
-            <Text variant="soft" style={styles.centeredBody}>
-              {copy.time.body[L]}
-            </Text>
-            <View style={styles.timeList}>
-              {DAILY_TIME_OPTIONS.map((option) => {
-                const selected = draft.dailyTimeMinutes === option.minutes;
-                return (
-                  <Pressable
-                    key={option.minutes}
-                    onPress={() =>
-                      setDraft((current) => ({
-                        ...current,
-                        dailyTimeMinutes: option.minutes,
-                      }))
-                    }
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected }}
-                    style={({ pressed }) => [
-                      styles.choiceRow,
-                      selected && styles.selectedRow,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <ClockIcon color={colors.brass} />
-                    <Text variant="muted" color={colors.text} style={styles.choiceLabel}>
-                      {option[L]}
-                    </Text>
-                    {selected ? (
-                      <SelectionCheck inline />
-                    ) : (
-                      <View style={styles.emptyRadio} />
-                    )}
-                  </Pressable>
-                );
-              })}
-            </View>
-            <View style={styles.bottomActions}>
-              <Button
-                testID="onboarding-time-next"
-                label={copy.time.next[L]}
-                onPress={() => setStep("setup")}
-                style={styles.primaryButton}
-              />
-              <Pressable onPress={() => setStep("setup")} style={styles.skipLink}>
-                <Text variant="muted">{copy.welcome.skip[L]}</Text>
-              </Pressable>
-            </View>
-          </ScrollView>
-        ) : null}
-
-        {step === "setup" ? (
-          <ScrollView
-            contentContainerStyle={styles.page}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text variant="display">{copy.setup.title[L]}</Text>
-            <Text variant="soft" style={styles.setupIntro}>
-              {copy.setup.creating[L]}
-            </Text>
-
-            <Text variant="eyebrow" color={colors.brassSoft} style={styles.fieldLabel}>
-              {copy.setup.language[L]}
-            </Text>
-            <View style={styles.languageRow}>
-              {(["en", "hi"] as const).map((code) => {
-                const selected = draft.preferredLanguage === code;
-                return (
-                  <Pressable
-                    key={code}
-                    onPress={() => {
-                      setLang(code);
-                      setDraft((current) => ({
-                        ...current,
-                        preferredLanguage: code,
-                      }));
-                    }}
-                    style={({ pressed }) => [
-                      styles.languageChoice,
-                      selected && styles.selectedTile,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Text
-                      variant="muted"
-                      color={selected ? colors.brassSoft : colors.textSoft}
-                      style={styles.choiceText}
-                    >
-                      {code === "en" ? "English" : "हिंदी"}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text variant="eyebrow" color={colors.brassSoft} style={styles.fieldLabel}>
-              {copy.setup.guidance[L]}
-            </Text>
-            <View style={styles.guidanceList}>
-              {GUIDANCE_STYLES.map((guidance) => {
-                const selected = draft.guidanceStyle === guidance.id;
-                return (
-                  <Pressable
-                    key={guidance.id}
-                    onPress={() =>
-                      setDraft((current) => ({
-                        ...current,
-                        guidanceStyle: guidance.id as GuidanceStyleId,
-                      }))
-                    }
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected }}
-                    style={({ pressed }) => [
-                      styles.choiceRow,
-                      selected && styles.selectedRow,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Text
-                      variant="muted"
-                      color={selected ? colors.brassSoft : colors.textSoft}
-                      style={[styles.choiceLabel, styles.choiceText]}
-                    >
-                      {guidance[L]}
-                    </Text>
-                    {selected ? <SelectionCheck inline /> : <View style={styles.emptyRadio} />}
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text variant="eyebrow" color={colors.brassSoft} style={styles.fieldLabel}>
-              {copy.setup.name[L]}
-            </Text>
-            <TextInput
-              value={draft.displayName}
-              onChangeText={(displayName) =>
-                setDraft((current) => ({ ...current, displayName }))
-              }
-              placeholder={copy.setup.namePlaceholder[L]}
-              placeholderTextColor={colors.textMuted}
-              style={styles.input}
-            />
-            <Button
-              testID="onboarding-setup-next"
-              label={copy.setup.start[L]}
-              onPress={() => setStep("account")}
-              style={styles.setupButton}
-            />
-            <Pressable onPress={() => setStep("account")} style={styles.skipLink}>
-              <Text variant="muted">
-                {L === "hi" ? "अभी के लिए छोड़ें" : "Skip for now"}
+          <View style={styles.chatRowRight}>
+            <View style={[styles.chatBubble, styles.chatBubbleRight]}>
+              <Text variant="eyebrow" color={colors.brassSoft}>
+                {dialogue.krishna.label[L]}
               </Text>
-            </Pressable>
-            <View style={styles.setupMark}>
-              <BrandMark size={30} />
+              <Text variant="sanskrit" color={colors.brassSoft} style={styles.chatHi}>
+                {dialogue.krishna.hi}
+              </Text>
+              <Text variant="soft" color={colors.onMediaMuted} style={styles.chatEn}>
+                {dialogue.krishna.en}
+              </Text>
             </View>
-          </ScrollView>
-        ) : null}
-
-        {step === "account" ? (
-          <ScrollView contentContainerStyle={styles.page}>
-            <OnboardingAuthStep
-              configured={configured}
-              pending={pending}
-              message={message}
-              email={email}
-              emailOpen={emailOpen}
-              linkSent={linkSent}
-              emailCooldownSec={emailCooldownSec}
-              guestFailed={guestFailed}
-              onEmailChange={setEmail}
-              onEmailOpen={() => setEmailOpen(true)}
-              onGoogle={() => onAuth("google")}
-              onEmailSubmit={() => onAuth("email")}
-              onGuest={() => onAuth("guest")}
-              onEnterAnyway={() => finish(false)}
+            <Image
+              source={images.madhavPortrait}
+              style={[styles.chatAvatar, styles.chatAvatarMadhav]}
+              resizeMode="cover"
+              accessibilityLabel={dialogue.krishna.label[L]}
             />
-          </ScrollView>
-        ) : null}
-      </View>
-    </Screen>
+          </View>
+        </View>
+
+        <View style={styles.slokaCard}>
+          <Text variant="eyebrow" color={colors.brassSoft}>
+            {sloka.ref[L]}
+          </Text>
+          <Text variant="sanskrit" color={colors.onMedia} style={styles.slokaSanskrit}>
+            {sloka.sanskrit}
+          </Text>
+          <Text variant="soft" color={colors.onMediaMuted} style={styles.slokaMeaning}>
+            {sloka[L]}
+          </Text>
+        </View>
+
+        <View style={styles.bottomActions}>
+          <Button
+            testID="onboarding-inspirations-next"
+            label={copy.inspirations.next[L]}
+            onPress={() => {
+              setDraft((current) => ({ ...current, inspirations: ["krishna"] }));
+              goTo(3);
+            }}
+            style={styles.primaryButton}
+          />
+          <Pressable
+            onPress={() => {
+              setDraft((current) => ({ ...current, inspirations: [] }));
+              goTo(3);
+            }}
+            style={styles.skipLink}
+          >
+            <Text variant="eyebrow" color={colors.onMediaMuted}>
+              {copy.welcome.skip[L]}
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  function renderTime() {
+    return (
+      <ScrollView
+        contentContainerStyle={styles.page}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+      >
+        <Text
+          variant="display"
+          color={colors.onMedia}
+          accessibilityRole="header"
+          style={styles.pageTitle}
+        >
+          {copy.time.title[L]}
+        </Text>
+        <Text variant="soft" color={colors.onMediaMuted} style={styles.centeredBody}>
+          {copy.time.body[L]}
+        </Text>
+        <View style={styles.timeList}>
+          {DAILY_TIME_OPTIONS.map((option) => {
+            const selected = draft.dailyTimeMinutes === option.minutes;
+            return (
+              <Pressable
+                key={option.minutes}
+                onPress={() =>
+                  setDraft((current) => ({
+                    ...current,
+                    dailyTimeMinutes: option.minutes,
+                  }))
+                }
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                style={({ pressed }) => [
+                  styles.choiceRow,
+                  selected && styles.selectedRow,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <ClockIcon color={colors.brassSoft} />
+                <Text
+                  variant="muted"
+                  color={selected ? colors.brassSoft : colors.onMedia}
+                  style={styles.choiceLabel}
+                >
+                  {option[L]}
+                </Text>
+                {selected ? (
+                  <SelectionCheck inline />
+                ) : (
+                  <View style={styles.emptyRadio} />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={styles.bottomActions}>
+          <Button
+            testID="onboarding-time-next"
+            label={copy.time.next[L]}
+            onPress={() => goTo(4)}
+            style={styles.primaryButton}
+          />
+          <Pressable onPress={() => goTo(4)} style={styles.skipLink}>
+            <Text variant="eyebrow" color={colors.onMediaMuted}>
+              {copy.welcome.skip[L]}
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  function renderSetup() {
+    return (
+      <ScrollView
+        contentContainerStyle={styles.page}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+      >
+        <Text
+          variant="display"
+          color={colors.onMedia}
+          accessibilityRole="header"
+        >
+          {copy.setup.title[L]}
+        </Text>
+        <Text variant="soft" color={colors.onMediaMuted} style={styles.setupIntro}>
+          {copy.setup.creating[L]}
+        </Text>
+
+        <Text variant="eyebrow" color={colors.brassSoft} style={styles.fieldLabel}>
+          {copy.setup.language[L]}
+        </Text>
+        <View style={styles.languageRow}>
+          {(["en", "hi"] as const).map((code) => {
+            const selected = draft.preferredLanguage === code;
+            return (
+              <Pressable
+                key={code}
+                onPress={() => {
+                  setLang(code);
+                  setDraft((current) => ({
+                    ...current,
+                    preferredLanguage: code,
+                  }));
+                }}
+                style={({ pressed }) => [
+                  styles.languageChoice,
+                  selected && styles.selectedTile,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text
+                  variant="muted"
+                  color={selected ? colors.brassSoft : colors.onMedia}
+                  style={styles.choiceText}
+                >
+                  {code === "en" ? "English" : "हिंदी"}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Text variant="eyebrow" color={colors.brassSoft} style={styles.fieldLabel}>
+          {copy.setup.guidance[L]}
+        </Text>
+        <Text variant="soft" color={colors.onMediaMuted} style={styles.guidanceBody}>
+          {copy.setup.guidanceBody[L]}
+        </Text>
+        <View style={styles.guidanceList}>
+          {GUIDANCE_STYLES.map((guidance) => {
+            const selected = draft.guidanceStyle === guidance.id;
+            const blurb = L === "hi" ? guidance.blurbHi : guidance.blurbEn;
+            return (
+              <Pressable
+                key={guidance.id}
+                onPress={() =>
+                  setDraft((current) => ({
+                    ...current,
+                    guidanceStyle: guidance.id as GuidanceStyleId,
+                  }))
+                }
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                style={({ pressed }) => [
+                  styles.guidanceRow,
+                  selected && styles.selectedRow,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View style={styles.guidanceCopy}>
+                  <Text
+                    variant="muted"
+                    color={selected ? colors.brassSoft : colors.onMedia}
+                    style={styles.choiceText}
+                  >
+                    {guidance[L]}
+                  </Text>
+                  <Text
+                    variant="soft"
+                    color={colors.onMediaMuted}
+                    style={styles.guidanceBlurb}
+                  >
+                    {blurb}
+                  </Text>
+                </View>
+                {selected ? <SelectionCheck inline /> : <View style={styles.emptyRadio} />}
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Text variant="eyebrow" color={colors.brassSoft} style={styles.fieldLabel}>
+          {copy.setup.name[L]}
+        </Text>
+        <TextInput
+          value={draft.displayName}
+          onChangeText={(displayName) =>
+            setDraft((current) => ({ ...current, displayName }))
+          }
+          placeholder={copy.setup.namePlaceholder[L]}
+          placeholderTextColor={colors.onMediaMuted}
+          style={[styles.input, { color: colors.onMedia }]}
+        />
+        <View style={styles.bottomActions}>
+          <Button
+            testID="onboarding-setup-next"
+            label={copy.setup.start[L]}
+            onPress={() => goTo(5)}
+            style={styles.primaryButton}
+          />
+          <Pressable onPress={() => goTo(5)} style={styles.skipLink}>
+            <Text variant="eyebrow" color={colors.onMediaMuted}>
+              {copy.welcome.skip[L]}
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  function renderAccount() {
+    return (
+      <ScrollView
+        contentContainerStyle={styles.page}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
+      >
+        <OnboardingAuthStep
+          configured={configured}
+          pending={pending}
+          message={message}
+          email={email}
+          emailOpen={emailOpen}
+          linkSent={linkSent}
+          emailCooldownSec={emailCooldownSec}
+          guestFailed={guestFailed}
+          onEmailChange={setEmail}
+          onEmailOpen={() => setEmailOpen(true)}
+          onGoogle={() => onAuth("google")}
+          onEmailSubmit={() => onAuth("email")}
+          onGuest={() => onAuth("guest")}
+          onEnterAnyway={() => finish(false)}
+        />
+      </ScrollView>
+    );
+  }
+
+  function renderStep(item: Step) {
+    switch (item) {
+      case "welcome":
+        return renderWelcome();
+      case "goals":
+        return renderGoals();
+      case "inspirations":
+        return renderInspirations();
+      case "time":
+        return renderTime();
+      case "setup":
+        return renderSetup();
+      case "account":
+        return renderAccount();
+    }
+  }
+
+  return (
+    <View style={[styles.root, { backgroundColor: colors.void }]}>
+      <OnboardingBackdrop reading={reading} />
+      <Screen
+        atmosphere="none"
+        padded={false}
+        edges={["top", "bottom"]}
+        style={styles.transparent}
+      >
+        <View style={styles.wrap}>
+          {stepIndex > 0 ? (
+            <OnboardingHeader
+              step={stepIndex}
+              total={STEPS.length}
+              onBack={goBack}
+            />
+          ) : (
+            <View style={styles.welcomeHeaderSpacer} />
+          )}
+
+          <FlatList
+            ref={pagerRef}
+            horizontal
+            pagingEnabled
+            data={[...STEPS]}
+            keyExtractor={(item) => item}
+            style={styles.pager}
+            showsHorizontalScrollIndicator={false}
+            onScroll={onPagerScroll}
+            onMomentumScrollEnd={onPagerScroll}
+            scrollEventThrottle={16}
+            keyboardShouldPersistTaps="handled"
+            getItemLayout={(_, index) => ({
+              length: width,
+              offset: width * index,
+              index,
+            })}
+            onScrollToIndexFailed={({ index }) => {
+              requestAnimationFrame(() => {
+                pagerRef.current?.scrollToIndex({ index, animated: true });
+              });
+            }}
+            renderItem={({ item }) => (
+              <View style={[styles.slide, { width }]}>{renderStep(item)}</View>
+            )}
+          />
+        </View>
+      </Screen>
+    </View>
   );
 }
 
@@ -616,11 +805,23 @@ const sharedStyles = StyleSheet.create({
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    screen: {
-      backgroundColor: colors.void,
+    root: {
+      flex: 1,
+    },
+    transparent: {
+      backgroundColor: "transparent",
     },
     wrap: {
       flex: 1,
+    },
+    pager: {
+      flex: 1,
+    },
+    slide: {
+      flex: 1,
+    },
+    welcomeHeaderSpacer: {
+      height: spacing.sm,
     },
     page: {
       flexGrow: 1,
@@ -642,10 +843,12 @@ function createStyles(colors: ThemeColors) {
     },
     brandTitle: {
       marginTop: spacing.md,
-      fontSize: 27,
+      fontSize: 40,
+      lineHeight: 44,
+      textAlign: "center",
     },
     brandSubtitle: {
-      marginTop: spacing.xs,
+      marginTop: spacing.sm,
       letterSpacing: 2.4,
     },
     tagline: {
@@ -653,7 +856,8 @@ function createStyles(colors: ThemeColors) {
       textAlign: "center",
       fontFamily: "Fraunces_600SemiBold",
       fontStyle: "italic",
-      lineHeight: 30,
+      fontSize: 18,
+      lineHeight: 26,
     },
     welcomeActions: {
       width: "100%",
@@ -692,10 +896,10 @@ function createStyles(colors: ThemeColors) {
       borderColor: colors.brass,
       backgroundColor: "rgba(201,162,39,0.06)",
     },
-    goalIcon: {
-      fontFamily: "Sora_600SemiBold",
-      fontSize: 22,
-      lineHeight: 26,
+    goalIconWrap: {
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 30,
     },
     goalLabel: {
       marginTop: spacing.xs,
@@ -713,43 +917,108 @@ function createStyles(colors: ThemeColors) {
       alignItems: "center",
       justifyContent: "center",
     },
+    sceneEyebrow: {
+      marginBottom: spacing.xs,
+    },
+    sceneTitle: {
+      maxWidth: 320,
+    },
     inspirationBody: {
       marginTop: spacing.sm,
-      maxWidth: 330,
+      maxWidth: 300,
     },
-    inspirationGrid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: spacing.sm,
+    dialogueHero: {
       marginTop: spacing.lg,
-    },
-    inspirationTile: {
-      width: "48.7%",
-      height: 190,
+      height: 168,
       overflow: "hidden",
-      borderWidth: 1,
-      borderColor: colors.line,
-      borderRadius: radii.sm,
+      borderRadius: radii.md,
       backgroundColor: colors.field,
     },
-    inspirationImage: {
+    dialogueImage: {
+      ...StyleSheet.absoluteFillObject,
       width: "100%",
       height: "100%",
     },
-    imageScrim: {
+    dialogueHeroFade: {
       ...StyleSheet.absoluteFillObject,
-      top: "48%",
-      backgroundColor: "rgba(7,9,15,0.58)",
     },
-    inspirationName: {
-      position: "absolute",
-      left: spacing.sm,
-      bottom: spacing.sm,
-      fontSize: 18,
-      lineHeight: 22,
-    },
-    sectionButton: {
+    chatThread: {
       marginTop: spacing.lg,
+      gap: spacing.md,
+    },
+    chatRowLeft: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: spacing.sm,
+      maxWidth: "94%",
+      alignSelf: "flex-start",
+    },
+    chatRowRight: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: spacing.sm,
+      maxWidth: "94%",
+      alignSelf: "flex-end",
+    },
+    chatAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: "rgba(238,242,247,0.18)",
+      backgroundColor: colors.field,
+    },
+    chatAvatarMadhav: {
+      borderColor: "rgba(201,162,39,0.45)",
+    },
+    chatBubble: {
+      flexShrink: 1,
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.md,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      gap: 2,
+    },
+    chatBubbleLeft: {
+      borderColor: "rgba(238,242,247,0.12)",
+      backgroundColor: "rgba(14,20,32,0.72)",
+      borderBottomLeftRadius: 4,
+    },
+    chatBubbleRight: {
+      borderColor: "rgba(201,162,39,0.35)",
+      backgroundColor: "rgba(201,162,39,0.1)",
+      borderBottomRightRadius: 4,
+    },
+    chatHi: {
+      marginTop: 2,
+      fontSize: 18,
+      lineHeight: 28,
+    },
+    chatEn: {
+      fontFamily: "Fraunces_500Medium",
+      fontStyle: "italic",
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    slokaCard: {
+      marginTop: spacing.lg,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.line,
+      backgroundColor: "rgba(14,20,32,0.55)",
+      gap: spacing.sm,
+    },
+    slokaSanskrit: {
+      fontSize: 17,
+      lineHeight: 28,
+    },
+    slokaMeaning: {
+      fontFamily: "Fraunces_500Medium",
+      fontStyle: "italic",
+      fontSize: 14,
+      lineHeight: 21,
     },
     timeList: {
       gap: spacing.sm,
@@ -803,9 +1072,35 @@ function createStyles(colors: ThemeColors) {
       borderRadius: radii.sm,
       backgroundColor: colors.surface,
     },
+    guidanceBody: {
+      marginTop: spacing.sm,
+      maxWidth: 340,
+      fontSize: 13,
+      lineHeight: 19,
+    },
     guidanceList: {
       gap: spacing.sm,
-      marginTop: spacing.sm,
+      marginTop: spacing.md,
+    },
+    guidanceRow: {
+      minHeight: 72,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.line,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+      gap: spacing.sm,
+    },
+    guidanceCopy: {
+      flex: 1,
+      gap: 4,
+    },
+    guidanceBlurb: {
+      fontSize: 12,
+      lineHeight: 17,
     },
     choiceText: {
       fontFamily: "Sora_600SemiBold",
@@ -821,14 +1116,6 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.inputBg,
       fontFamily: "Sora_400Regular",
       fontSize: 15,
-    },
-    setupButton: {
-      marginTop: spacing.md,
-    },
-    setupMark: {
-      alignItems: "center",
-      marginTop: spacing.sm,
-      opacity: 0.65,
     },
     pressed: {
       opacity: 0.72,

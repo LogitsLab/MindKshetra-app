@@ -17,6 +17,7 @@ import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
 import { MilestoneLine, takeNewMilestone } from "@/components/PracticeMarks";
 import { Rise } from "@/components/Rise";
+import { MoodIcon } from "@/components/MoodIcon";
 import {
   astrologyApi,
   contentApi,
@@ -410,6 +411,7 @@ export default function SadhanaScreen() {
             image={images.pathSadhana}
             eyebrow={t("homeSadhanaEyebrow")}
             title={t("sadhanaMoodTitle")}
+            intro={t("homeSadhanaBody")}
           />
           {pathContext ? (
             <Text variant="muted" color={colors.brassSoft} style={{ marginTop: spacing.sm }}>
@@ -452,7 +454,7 @@ export default function SadhanaScreen() {
                     },
                   ]}
                 >
-                  <View style={[styles.moodDot, { backgroundColor: accent }]} />
+                  <MoodIcon id={mood.id} size={22} color={accent} />
                   <Text
                     variant="body"
                     style={{ fontSize: 14, fontFamily: "Sora_600SemiBold" }}
@@ -689,11 +691,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth * 2,
-  },
-  moodDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
   },
   presetRow: {
     flexDirection: "row",

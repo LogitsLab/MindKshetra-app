@@ -1,51 +1,18 @@
 import React from "react";
 import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
-import { usePathname, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
+import { BrandNavLabel } from "@/components/BrandWordmark";
 import { Text } from "@/components/Text";
-import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 
-function profileLetter(email?: string | null, isAnonymous?: boolean) {
-  if (isAnonymous || !email) return "A";
-  const ch = email.trim().charAt(0).toUpperCase();
-  return /[A-Z0-9]/.test(ch) ? ch : "A";
-}
-
-/** Account / settings entry — use on every main screen. */
-export function ProfileButton() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { colors } = useTheme();
-  const { user, isAnonymous } = useAuth();
-
-  if (pathname?.startsWith("/account")) return null;
-
+/** Stack `headerRight` lockup — brand credit. */
+export function HeaderBrandRight() {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Account and settings"
-      onPress={() => router.push("/account")}
-      style={({ pressed }) => [
-        styles.avatar,
-        {
-          borderColor: colors.line,
-          backgroundColor: colors.panel,
-          opacity: pressed ? 0.85 : 1,
-        },
-      ]}
-    >
-      <Text
-        style={{
-          color: colors.brassSoft,
-          fontFamily: "Sora_600SemiBold",
-          fontSize: 14,
-        }}
-      >
-        {profileLetter(user?.email, isAnonymous || !user)}
-      </Text>
-    </Pressable>
+    <View style={styles.brandRight}>
+      <BrandNavLabel showCredit />
+    </View>
   );
 }
 
@@ -94,12 +61,13 @@ type ScreenHeaderProps = {
   backFallback?: string;
   /** Left slot when not using title (e.g. brand mark) */
   leading?: React.ReactNode;
-  showProfile?: boolean;
+  /** MindKshetra by LogitsLab — on by default for every screen. */
+  showBrand?: boolean;
   style?: ViewStyle;
 };
 
 /**
- * Shared top chrome: optional back, title/leading, always-on profile.
+ * Shared top chrome: optional back, title/leading, brand credit.
  */
 export function ScreenHeader({
   title,
@@ -107,7 +75,7 @@ export function ScreenHeader({
   showBack = false,
   backFallback,
   leading,
-  showProfile = true,
+  showBrand = true,
   style,
 }: ScreenHeaderProps) {
   const { colors } = useTheme();
@@ -124,7 +92,7 @@ export function ScreenHeader({
           <View
             style={[
               styles.copy,
-              (showBack || leading) ? { marginLeft: spacing.sm } : null,
+              showBack || leading ? { marginLeft: spacing.sm } : null,
             ]}
           >
             {title ? (
@@ -149,7 +117,11 @@ export function ScreenHeader({
           </View>
         ) : null}
       </View>
-      {showProfile ? <ProfileButton /> : null}
+      {showBrand ? (
+        <View style={styles.brandRight}>
+          <BrandNavLabel showCredit />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -163,6 +135,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
     minHeight: 44,
+  },
+  brandRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    flexShrink: 0,
   },
   left: {
     flex: 1,
@@ -181,14 +159,6 @@ const styles = StyleSheet.create({
   titleNested: {
     fontSize: 20,
     lineHeight: 26,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    alignItems: "center",
-    justifyContent: "center",
   },
   back: {
     width: 40,

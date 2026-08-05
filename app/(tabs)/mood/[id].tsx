@@ -4,10 +4,12 @@ import { useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { SlokaCard, EmptyState } from "@/components/SlokaCard";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { MoodIcon } from "@/components/MoodIcon";
 import { contentApi } from "@/api/endpoints";
 import { getMoodById } from "@/data/moods";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
+import { moodAccent } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 import type { Sloka } from "@/types";
 
@@ -38,6 +40,8 @@ export default function MoodDetailScreen() {
     };
   }, [id]);
 
+  const accent = moodAccent[id] ?? colors.brass;
+
   return (
     <Screen testID="screen-mood-detail">
       <ScreenHeader
@@ -45,6 +49,11 @@ export default function MoodDetailScreen() {
         backFallback="/(tabs)/mood"
         title={lang === "hi" ? mood?.labelHi : mood?.label ?? id}
       />
+      {mood ? (
+        <View style={{ alignItems: "center", marginTop: spacing.sm }}>
+          <MoodIcon id={mood.id} size={40} color={accent} />
+        </View>
+      ) : null}
 
       {loading ? (
         <View style={{ marginTop: spacing.xl }}>

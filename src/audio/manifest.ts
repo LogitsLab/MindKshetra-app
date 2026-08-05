@@ -13,13 +13,16 @@ export type AudioManifest = {
   recitation: Record<string, string>;
 };
 
-const CACHE_KEY = "mindkshetra-audio-manifest";
-const CACHE_MS = 24 * 60 * 60 * 1000;
+const CACHE_KEY = "mindkshetra-audio-manifest-v2";
+// Short TTL so newly generated meditation TTS lands without reinstalling.
+const CACHE_MS = 60 * 60 * 1000;
 
 let cached: AudioManifest | null | undefined;
 let inflight: Promise<AudioManifest | null> | null = null;
 
 function bucketBase(): string | null {
+  const explicit = process.env.EXPO_PUBLIC_AUDIO_BASE_URL?.replace(/\/$/, "");
+  if (explicit) return explicit;
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
   if (!url) return null;
   return `${url}/storage/v1/object/public/audio`;

@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo } from "react";
-import { ImageBackground, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
+import { Button } from "@/components/Button";
+import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
 import { siteUrl } from "@/api/client";
 import { meditationApi } from "@/api/endpoints";
@@ -91,39 +93,13 @@ export default function MeditationHubScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Rise>
-          <Text variant="eyebrow" color={colors.brassSoft}>
-            {t("medEyebrow")}
-          </Text>
-          <Text variant="display" color={colors.brassSoft} style={styles.heading}>
-            {t("medInnerTemple")}
-          </Text>
-          <Text variant="soft" style={styles.intro}>
-            {lang === "hi" ? program.intro_hi : program.intro_en}
-          </Text>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={fill(t("medDayA11y"), {
-              n: continueDay,
-              title: lang === "hi" ? program.title_hi : program.title_en,
-              minutes: program.days[continueDay - 1]?.duration_minutes ?? "",
-            })}
-            onPress={() => router.push(`/meditation/${continueDay}`)}
-          >
-            <ImageBackground
-              source={images.pathMeditation}
-              imageStyle={styles.heroImage}
-              style={styles.hero}
-            >
-              <View style={[styles.heroScrim, { backgroundColor: colors.scrim }]}>
-                <Text variant="eyebrow" color={colors.brassSoft}>
-                  {completedDays.length === 0
-                    ? t("medHeroBegin")
-                    : t("medHeroContinue")}
-                </Text>
-                <Text variant="title" color={colors.onMedia} style={styles.heroTitle}>
-                  {lang === "hi" ? program.title_hi : program.title_en}
-                </Text>
+          <PageHero
+            image={images.pathMeditation}
+            eyebrow={t("medEyebrow")}
+            title={t("medInnerTemple")}
+            intro={lang === "hi" ? program.intro_hi : program.intro_en}
+            meta={
+              <View>
                 <Text variant="muted" color={colors.onMediaMuted}>
                   {fill(t("medProgress"), {
                     done: completedDays.length,
@@ -131,9 +107,33 @@ export default function MeditationHubScreen() {
                   })}{" "}
                   · {fill(t("medDayLabel"), { n: continueDay })}
                 </Text>
+                <View style={[styles.pathTrack, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+                  <View
+                    style={[
+                      styles.pathFill,
+                      {
+                        width: `${Math.min(
+                          100,
+                          (completedDays.length / program.days_count) * 100
+                        )}%`,
+                        backgroundColor: colors.brass,
+                      },
+                    ]}
+                  />
+                </View>
               </View>
-            </ImageBackground>
-          </Pressable>
+            }
+            actions={
+              <Button
+                label={
+                  completedDays.length === 0
+                    ? t("medHeroBegin")
+                    : t("medHeroContinue")
+                }
+                onPress={() => router.push(`/meditation/${continueDay}`)}
+              />
+            }
+          />
 
           <View style={styles.sectionHeader}>
             <Text variant="eyebrow" color={colors.brassSoft}>
@@ -268,17 +268,13 @@ export default function MeditationHubScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingTop: spacing.md, paddingBottom: spacing.xxl },
-  heading: { marginTop: spacing.xs, fontSize: 34, lineHeight: 40 },
-  intro: { marginTop: spacing.sm, marginBottom: spacing.lg },
-  hero: { minHeight: 240, justifyContent: "flex-end" },
-  heroImage: { borderRadius: radii.lg },
-  heroScrim: {
-    minHeight: 240,
-    justifyContent: "flex-end",
-    padding: spacing.lg,
-    borderRadius: radii.lg,
+  pathTrack: {
+    height: 4,
+    borderRadius: 2,
+    marginTop: spacing.sm,
+    overflow: "hidden",
   },
-  heroTitle: { marginTop: spacing.xs, marginBottom: spacing.xs },
+  pathFill: { height: 4, borderRadius: 2 },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",

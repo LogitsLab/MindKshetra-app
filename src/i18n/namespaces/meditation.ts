@@ -86,6 +86,8 @@ export const en = {
   medRetrySave: "Retry saving",
   medHomeContinue: "Continue sitting · day {n}",
   medHomeStart: "Begin the sitting course",
+  medAmbientOn: "Stop music",
+  medAmbientOff: "Play music",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -173,4 +175,6 @@ export const hi: Record<keyof typeof en, string> = {
   medRetrySave: "फिर सहेजें",
   medHomeContinue: "बैठक जारी · दिन {n}",
   medHomeStart: "बैठने का पाठ्यक्रम आरंभ करें",
+  medAmbientOn: "संगीत रोकें",
+  medAmbientOff: "संगीत चलाएँ",
 };

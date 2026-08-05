@@ -73,10 +73,15 @@ export function OnboardingAuthStep({
         </Text>
       </View>
 
-      <Text variant="display" accessibilityRole="header" style={styles.title}>
+      <Text
+        variant="display"
+        color={colors.onMedia}
+        accessibilityRole="header"
+        style={styles.title}
+      >
         {t("onboardingAuthTitle")}
       </Text>
-      <Text variant="soft" style={styles.body}>
+      <Text variant="soft" color={colors.onMediaMuted} style={styles.body}>
         {t("onboardingAuthBody")}
       </Text>
 
@@ -112,7 +117,11 @@ export function OnboardingAuthStep({
 
           {emailOpen ? (
             <View style={styles.emailBlock}>
-              <Text variant="eyebrow" style={styles.emailLabel}>
+              <Text
+                variant="eyebrow"
+                color={colors.brassSoft}
+                style={styles.emailLabel}
+              >
                 {t("emailLabel")}
               </Text>
               <TextInput
@@ -125,11 +134,11 @@ export function OnboardingAuthStep({
                 textContentType="emailAddress"
                 accessibilityLabel={t("emailLabel")}
                 placeholder={t("emailPlaceholder")}
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={colors.onMediaMuted}
                 style={[
                   styles.input,
                   {
-                    color: colors.text,
+                    color: colors.onMedia,
                     borderColor: colors.line,
                     backgroundColor: colors.inputBg,
                   },
@@ -177,7 +186,9 @@ export function OnboardingAuthStep({
         <>
           <View style={styles.divider}>
             <Hairline style={styles.dividerRule} />
-            <Text variant="muted">{t("orDivider")}</Text>
+            <Text variant="muted" color={colors.onMediaMuted}>
+              {t("orDivider")}
+            </Text>
             <Hairline style={styles.dividerRule} />
           </View>
 
@@ -217,7 +228,9 @@ export function OnboardingAuthStep({
 
       {/* Chrome. Separated by a rule so it stops reading as another control. */}
       <Hairline style={styles.noteRule} />
-      <Text variant="muted">{t("authPrivacyNote")}</Text>
+      <Text variant="muted" color={colors.onMediaMuted}>
+        {t("authPrivacyNote")}
+      </Text>
     </Rise>
   );
 }

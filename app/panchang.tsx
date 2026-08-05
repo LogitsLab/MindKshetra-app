@@ -132,7 +132,7 @@ export default function PanchangScreen() {
             image={images.pathPanchangRing}
             eyebrow={t("panchangTitle")}
             title={formatDay(panchang.date, locale)}
-            body={panchang.vaar}
+            intro={panchang.vaar}
           />
           <Text variant="muted" style={{ marginTop: spacing.sm }}>
             {t("panchangLocationLine")}

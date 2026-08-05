@@ -18,6 +18,11 @@ export default function AchievementsScreen() {
   const { isSignedIn, isAnonymous } = useAuth();
   const router = useRouter();
   const [data, setData] = useState<AchievementsResponse | null>(null);
+  const [lifetime, setLifetime] = useState<{
+    sessions: number;
+    durationMinutes: number;
+    mantras: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const L = lang === "hi" ? "hi" : "en";
@@ -30,7 +35,18 @@ export default function AchievementsScreen() {
     setLoading(true);
     setError(false);
     try {
-      setData(await userApi.achievements());
+      const [ach, yearly] = await Promise.all([
+        userApi.achievements(),
+        userApi.progressSummary("yearly").catch(() => null),
+      ]);
+      setData(ach);
+      if (yearly) {
+        setLifetime({
+          sessions: yearly.sessions,
+          durationMinutes: yearly.durationMinutes,
+          mantras: yearly.mantras,
+        });
+      }
     } catch {
       setError(true);
     } finally {
@@ -120,20 +136,59 @@ export default function AchievementsScreen() {
             : "Private recognition — no leaderboards."}
         </Text>
 
+        {seeker ? (
+          <View
+            style={[
+              styles.levelPill,
+              { borderColor: colors.brass, backgroundColor: "rgba(201,162,39,0.1)" },
+            ]}
+          >
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {L === "hi" ? `स्तर ${seeker.level}` : `Level ${seeker.level}`}
+            </Text>
+          </View>
+        ) : null}
+
+        {lifetime ? (
+          <View style={[styles.lifetimeRow, { borderColor: colors.line }]}>
+            <View style={styles.lifetimeStat}>
+              <Text variant="display" color={colors.brassSoft} style={styles.lifetimeValue}>
+                {lifetime.sessions}
+              </Text>
+              <Text variant="eyebrow">{L === "hi" ? "सत्र" : "Sessions"}</Text>
+            </View>
+            <View style={styles.lifetimeStat}>
+              <Text variant="display" color={colors.brassSoft} style={styles.lifetimeValue}>
+                {lifetime.durationMinutes}
+              </Text>
+              <Text variant="eyebrow">{L === "hi" ? "मिनट" : "Minutes"}</Text>
+            </View>
+            <View style={styles.lifetimeStat}>
+              <Text variant="display" color={colors.brassSoft} style={styles.lifetimeValue}>
+                {lifetime.mantras}
+              </Text>
+              <Text variant="eyebrow">{L === "hi" ? "माला" : "Malas"}</Text>
+            </View>
+          </View>
+        ) : null}
+
         <Hairline style={{ marginVertical: spacing.lg }} />
 
         <View style={styles.grid}>
-          {(data?.achievements ?? []).map((a) => {
+          {(data?.achievements ?? []).map((a, index) => {
             const progress = Math.min(100, (a.progress / a.target) * 100);
+            const glyphs = ["✦", "◉", "◇"];
             return (
               <View
                 key={a.id}
                 style={[
                   styles.card,
                   {
-                    borderColor: colors.line,
-                    backgroundColor: colors.panel,
-                    opacity: a.unlocked ? 1 : 0.72,
+                    borderColor: a.unlocked ? "rgba(201,162,39,0.35)" : colors.line,
+                    backgroundColor: a.unlocked
+                      ? "rgba(201,162,39,0.06)"
+                      : colors.panel,
+                    opacity: a.unlocked ? 1 : 0.68,
                   },
                 ]}
               >
@@ -142,7 +197,9 @@ export default function AchievementsScreen() {
                     styles.badge,
                     {
                       borderColor: a.unlocked ? colors.brass : colors.line,
-                      backgroundColor: a.unlocked ? colors.surfaceHover : colors.field,
+                      backgroundColor: a.unlocked
+                        ? "rgba(201,162,39,0.12)"
+                        : colors.field,
                     },
                   ]}
                 >
@@ -151,7 +208,7 @@ export default function AchievementsScreen() {
                     color={a.unlocked ? colors.brassSoft : colors.textMuted}
                     style={styles.badgeGlyph}
                   >
-                    {a.motif.toLowerCase().includes("lotus") ? "❖" : "◇"}
+                    {a.unlocked ? glyphs[index % 3] : "⌾"}
                   </Text>
                 </View>
                 <Text variant="title" style={styles.cardTitle}>
@@ -192,26 +249,42 @@ export default function AchievementsScreen() {
 const styles = StyleSheet.create({
   pad: { paddingTop: spacing.md, paddingBottom: spacing.xxl },
   pageTitle: { marginTop: spacing.xs },
+  levelPill: {
+    alignSelf: "flex-start",
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  lifetimeRow: {
+    flexDirection: "row",
+    marginTop: spacing.lg,
+    paddingVertical: spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  lifetimeStat: { flex: 1, alignItems: "center", gap: 4 },
+  lifetimeValue: { fontSize: 26, lineHeight: 32 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   card: {
     width: "48.5%",
     minHeight: 280,
     borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     padding: spacing.md,
     alignItems: "center",
   },
   badge: {
-    width: 72,
-    height: 72,
+    width: 76,
+    height: 76,
     borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: 22,
-    transform: [{ rotate: "45deg" }],
+    borderRadius: 38,
     alignItems: "center",
     justifyContent: "center",
     marginVertical: spacing.md,
   },
-  badgeGlyph: { transform: [{ rotate: "-45deg" }], fontSize: 32 },
+  badgeGlyph: { fontSize: 30 },
   cardTitle: { fontSize: 17, lineHeight: 22, textAlign: "center" },
   cardLine: { textAlign: "center", marginTop: spacing.xs, flex: 1 },
   progressMeta: {

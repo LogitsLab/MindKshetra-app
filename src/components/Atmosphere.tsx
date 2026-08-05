@@ -57,7 +57,7 @@ export function Atmosphere({ intensity = "default" }: Props) {
       ? intensity === "strong"
         ? (["rgba(7,9,15,0.65)", "rgba(7,9,15,0.82)", "rgba(7,9,15,0.95)"] as const)
         : intensity === "soft"
-          ? (["rgba(7,9,15,0.35)", "rgba(7,9,15,0.55)", "rgba(7,9,15,0.78)"] as const)
+          ? (["rgba(7,9,15,0.18)", "rgba(7,9,15,0.48)", "rgba(7,9,15,0.78)"] as const)
           : (["rgba(7,9,15,0.55)", "rgba(7,9,15,0.7)", "rgba(7,9,15,0.9)"] as const)
       : (["rgba(7,9,15,0.25)", "rgba(7,9,15,0.15)", "rgba(7,9,15,0.35)"] as const);
 

@@ -11,12 +11,14 @@ import {
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
+import { CoverImage } from "@/components/CoverImage";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
 import { useTheme } from "@/context/ThemeContext";
 import { images } from "@/theme/assets";
 import { radii, spacing } from "@/theme/tokens";
 import type { Sloka } from "@/types";
+import { truncateAtWord } from "@/utils/text";
 
 export function SlokaCard({
   sloka,
@@ -208,16 +210,21 @@ export function PathTile({
 }) {
   const { colors } = useTheme();
   const wide = layout === "wide";
+  const bodyLine = body ? truncateAtWord(body, wide ? 72 : 48) : "";
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         wide ? styles.pathWide : styles.path,
         style,
-        { opacity: pressed ? 0.94 : 1, borderColor: colors.line },
+        {
+          opacity: pressed ? 0.94 : 1,
+          borderColor: colors.line,
+          transform: [{ scale: pressed ? 0.975 : 1 }],
+        },
       ]}
     >
-      <Image source={image} style={styles.pathImage} resizeMode="cover" />
+      <CoverImage source={image} opacity={0.85} />
       <LinearGradient
         colors={
           wide
@@ -229,7 +236,7 @@ export function PathTile({
             : [
                 "rgba(7,9,15,0.1)",
                 "rgba(7,9,15,0.35)",
-                "rgba(7,9,15,0.9)",
+                "rgba(7,9,15,0.88)",
               ]
         }
         locations={wide ? [0, 0.5, 1] : [0, 0.45, 1]}
@@ -244,18 +251,20 @@ export function PathTile({
               variant="title"
               color={colors.onMedia}
               numberOfLines={1}
+              ellipsizeMode="tail"
               style={styles.pathWideTitle}
             >
               {title}
             </Text>
-            {body ? (
+            {bodyLine ? (
               <Text
                 variant="soft"
                 color={colors.onMediaMuted}
-                numberOfLines={1}
+                numberOfLines={2}
+                ellipsizeMode="tail"
                 style={{ marginTop: 2 }}
               >
-                {body}
+                {bodyLine}
               </Text>
             ) : null}
           </View>
@@ -289,7 +298,8 @@ export function PathTile({
           <Text
             variant="title"
             color={colors.onMedia}
-            numberOfLines={1}
+            numberOfLines={2}
+            ellipsizeMode="tail"
             style={styles.pathTitle}
           >
             {title}
@@ -297,10 +307,11 @@ export function PathTile({
           <Text
             variant="soft"
             color={colors.onMediaMuted}
-            numberOfLines={1}
+            numberOfLines={2}
+            ellipsizeMode="tail"
             style={styles.pathBody}
           >
-            {body}
+            {bodyLine}
           </Text>
         </View>
       )}
@@ -325,12 +336,13 @@ const styles = StyleSheet.create({
   },
   path: {
     flex: 1,
-    aspectRatio: 0.92,
+    aspectRatio: 0.82,
     borderRadius: radii.lg,
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth * 2,
     justifyContent: "flex-end",
     backgroundColor: "#0e1420",
+    position: "relative",
   },
   pathWide: {
     width: "100%",
@@ -341,6 +353,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#0e1420",
     marginBottom: spacing.sm,
+    position: "relative",
   },
   pathWideRow: {
     flexDirection: "row",
@@ -348,20 +361,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     gap: spacing.md,
+    zIndex: 1,
   },
   pathWideTitle: {
     fontSize: 22,
     lineHeight: 28,
   },
-  pathImage: {
-    ...StyleSheet.absoluteFillObject,
-    width: "100%",
-    height: "100%",
-    opacity: 0.8,
-  },
   pathFooter: {
     padding: spacing.sm + 4,
     justifyContent: "flex-end",
+    zIndex: 1,
   },
   pathMark: {
     marginBottom: 4,
@@ -375,11 +384,11 @@ const styles = StyleSheet.create({
   },
   pathTitle: {
     marginTop: 2,
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 20,
   },
   pathBody: {
-    marginTop: 2,
+    marginTop: 3,
     fontSize: 12,
     lineHeight: 16,
   },

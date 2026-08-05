@@ -1,103 +1,44 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
+  type ImageSourcePropType,
 } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { Button } from "@/components/Button";
-import { BrandMark } from "@/components/BrandMark";
-import { BrandHeroTitle, BrandNavLabel } from "@/components/BrandWordmark";
-import { Panel } from "@/components/Panel";
+import { CoverImage } from "@/components/CoverImage";
 import { PathTile } from "@/components/SlokaCard";
+import { PracticeLifestyleGrid } from "@/components/PracticeLifestyleGrid";
 import { Rise } from "@/components/Rise";
-import { ScreenHeader } from "@/components/ScreenHeader";
-import { sadhanaApi, userApi } from "@/api/endpoints";
-import { moods, previewMoodIds } from "@/data/moods";
-import { getSadhanaLog, localDayStamp } from "@/storage/local";
+import { HomeHero } from "@/components/HomeHero";
+import { VotdCarousel } from "@/components/VotdCarousel";
+import { userApi } from "@/api/endpoints";
+import { HOME_PATHS } from "@/data/homePaths";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
-import { useVotd } from "@/hooks/useVotd";
-import { usePanchang } from "@/hooks/usePanchang";
-import { useMeditationProgress } from "@/hooks/useMeditationProgress";
-import { images, moodAccent } from "@/theme/assets";
+import { useFeaturedVerses } from "@/hooks/useFeaturedVerses";
+import { images } from "@/theme/assets";
 import { motion, radii, spacing } from "@/theme/tokens";
+import { truncateAtWord } from "@/utils/text";
 
+/**
+ * Full companion Home — VOTD, practice, paths, together, Madhav.
+ * Path / Practise tabs still hold the same grids for focused browsing.
+ */
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { t, lang } = useLanguage();
-  const { isSignedIn, session } = useAuth();
+  const { t } = useLanguage();
+  const { isSignedIn } = useAuth();
   const [streak, setStreak] = useState(0);
-  const [sadhanaDone, setSadhanaDone] = useState(false);
-  const {
-    votd,
-    nakshatra: votdNakshatra,
-    error: votdError,
-    stale: votdStale,
-  } = useVotd();
-  const med = useMeditationProgress();
-  const {
-    panchang,
-    error: panchangError,
-    stale: panchangStale,
-  } = usePanchang();
-
-  const day = Math.floor(Date.now() / 86400000);
-
-  const previewMoods = useMemo(() => {
-    return previewMoodIds.map((id, i) => {
-      const found = moods.find((m) => m.id === id);
-      return found ?? moods[(day + i) % moods.length];
-    }).filter(Boolean);
-  }, [day]);
-
-  // Refreshes on focus so finishing the flow shows the check on return.
-  const sessionUserId = session?.user.id ?? null;
-  useFocusEffect(
-    useCallback(() => {
-      let alive = true;
-      const checkLocal = async () => {
-        const log = await getSadhanaLog();
-        const today = localDayStamp();
-        return log.some((e) => e.practice === "flow" && e.occurredOn === today);
-      };
-      (async () => {
-        try {
-          if (sessionUserId) {
-            let tz: string | undefined;
-            try {
-              tz = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
-            } catch {
-              tz = undefined;
-            }
-            const s = await sadhanaApi.summary(tz);
-            if (alive) setSadhanaDone(s.doneToday.includes("flow"));
-          } else if (alive) {
-            setSadhanaDone(await checkLocal());
-          }
-        } catch {
-          // Offline — the device log still knows about today.
-          try {
-            if (alive) setSadhanaDone(await checkLocal());
-          } catch {
-            /* leave as-is; never an error on home */
-          }
-        }
-      })();
-      return () => {
-        alive = false;
-      };
-    }, [sessionUserId])
-  );
+  const { verses, error: votdError, stale: votdStale } = useFeaturedVerses();
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -107,442 +48,52 @@ export default function HomeScreen() {
       .catch(() => undefined);
   }, [isSignedIn]);
 
-  const bottomPad = spacing.tabBar + insets.bottom + spacing.fab + spacing.lg;
-  const translation = votd
-    ? lang === "hi"
-      ? votd.hindi_translation
-      : votd.english_translation
-    : null;
-
-  const paths = [
-    {
-      index: "01",
-      title: t("homeExploreTitle"),
-      body: lang === "hi" ? "१८ अध्याय" : "18 chapters",
-      image: images.pathExplore,
-      mark: "explore" as const,
-      href: "/(tabs)/explore" as const,
-    },
-    {
-      index: "02",
-      title: t("homeMoodTitle"),
-      body: lang === "hi" ? "भाव से" : "By feeling",
-      image: images.pathMood,
-      mark: "mood" as const,
-      href: "/(tabs)/mood" as const,
-    },
-    {
-      index: "03",
-      title: t("homeMeditationTitle"),
-      body: lang === "hi" ? "४५ दिन का पाठ्यक्रम" : "45-day course",
-      image: images.pathMeditation,
-      mark: "meditation" as const,
-      href: "/meditation" as const,
-    },
-    {
-      index: "04",
-      title: t("homeMadhavTitle"),
-      body: lang === "hi" ? "पूछें और सुनें" : "Ask & listen",
-      image: images.pathMadhav,
-      mark: "madhav" as const,
-      href: "/madhav" as const,
-    },
-    {
-      index: "05",
-      title: t("homeAstroTitle"),
-      body: lang === "hi" ? "आपकी कुंडली" : "Your chart",
-      image: images.pathAstrology,
-      mark: "astrology" as const,
-      href: "/(tabs)/astrology" as const,
-    },
-    {
-      index: "06",
-      title: t("homeBlockPathsTitle"),
-      body: lang === "hi" ? "सात दिन प्रत्येक" : "7 days each",
-      image: images.pathPaths,
-      mark: "paths" as const,
-      href: "/paths" as const,
-    },
-  ];
+  const bottomPad =
+    spacing.tabBar + insets.bottom + spacing.fab + spacing.fabInset + spacing.xl;
 
   return (
-    <Screen testID="screen-home" atmosphere="soft" padded>
+    <Screen
+      testID="screen-home"
+      atmosphere="soft"
+      padded
+      edges={["left", "right"]}
+    >
       <ScrollView
         contentContainerStyle={{
           paddingBottom: bottomPad,
-          paddingTop: spacing.sm,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top chrome */}
-        {/*
-          The brand and the streak are two different facts and used to share one
-          slot: once you had a streak, "MindKshetra" was replaced by "4 days" and
-          the app stopped naming itself on its own home screen. They sit side by
-          side now, with the streak as a brass count that only appears when there
-          is one.
-        */}
-        <ScreenHeader
-          leading={
-            <Rise>
-              <View style={styles.brandRow}>
-                <BrandMark size={28} />
-                <BrandNavLabel
-                  trailing={
-                    streak > 0 ? (
-                      <>
-                        <View
-                          style={[
-                            styles.brandDot,
-                            { backgroundColor: colors.brass },
-                          ]}
-                        />
-                        <Text variant="muted" color={colors.brassSoft}>
-                          {streak} {t("homeStreakLabel")}
-                        </Text>
-                      </>
-                    ) : null
-                  }
-                />
-              </View>
-            </Rise>
-          }
+        <HomeHero
+          votdSanskrit={verses[0]?.sloka.sanskrit_devanagari}
+          topInset={insets.top}
+          streak={streak}
         />
 
-        {/* Brand-first hero */}
-        <Rise delay={motion.staggerMs} style={styles.hero}>
-          <Text
-            style={[styles.watermark, { color: colors.text }]}
-            numberOfLines={1}
-          >
-            मनः
-          </Text>
-          <BrandHeroTitle fontSize={40} />
-          <Text
-            variant="title"
-            color={colors.brassSoft}
-            style={{
-              marginTop: spacing.sm,
-              fontSize: 18,
-              lineHeight: 26,
-              maxWidth: 320,
-            }}
-          >
-            {t("homeTagline")}
-          </Text>
-          <View style={styles.ctaRow}>
-            <View style={{ flex: 1 }}>
-              <Button
-                label={t("homeCtaMadhav")}
-                onPress={() => router.push("/madhav")}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button
-                label={t("homeCtaExplore")}
-                variant="ghost"
-                onPress={() => router.push("/(tabs)/explore")}
-              />
-            </View>
-          </View>
+        <Rise delay={motion.staggerMs * 2} style={{ marginTop: spacing.md }}>
+          <VotdCarousel
+            verses={verses}
+            error={votdError}
+            stale={votdStale}
+          />
         </Rise>
 
-        {/* Featured verse — the day’s sit */}
-        <Rise delay={motion.staggerMs * 2} style={{ marginTop: spacing.xl }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("homeFeaturedCta")}
-            onPress={() =>
-              router.push(votd ? `/sloka/${votd.id}` : "/verse-of-the-day")
-            }
-          >
-            <Panel strong style={styles.votd}>
-              <View style={styles.votdHead}>
-                <Text variant="eyebrow" color={colors.brassSoft}>
-                  {t("homeFeaturedEyebrow")}
-                </Text>
-                {votd ? (
-                  <Text variant="eyebrow" color={colors.textMuted}>
-                    {votd.chapter}.{votd.verse_number}
-                  </Text>
-                ) : null}
-              </View>
-              {votd ? (
-                <>
-                  <Text
-                    variant="sanskrit"
-                    style={{
-                      marginTop: spacing.md,
-                      fontSize: 20,
-                      lineHeight: 32,
-                    }}
-                    numberOfLines={3}
-                  >
-                    {votd.sanskrit_devanagari}
-                  </Text>
-                  {translation ? (
-                    <Text
-                      variant="soft"
-                      style={{ marginTop: spacing.md }}
-                      numberOfLines={3}
-                    >
-                      {translation}
-                    </Text>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <Text variant="title" style={{ marginTop: spacing.md }}>
-                    {lang === "hi" ? "आज का श्लोक" : "Today’s verse"}
-                  </Text>
-                  <Text variant="soft" style={{ marginTop: spacing.xs }}>
-                    {lang === "hi"
-                      ? "एक श्लोक, एक दिन"
-                      : "One verse to sit with"}
-                  </Text>
-                </>
-              )}
-              <Text
-                variant="muted"
-                color={colors.brassSoft}
-                style={{ marginTop: spacing.md }}
-              >
-                {t("homeFeaturedCta")} →
-              </Text>
-            </Panel>
-            {votd && votdNakshatra ? (
-              <Text variant="muted" style={{ marginTop: spacing.sm }}>
-                {t("votdNakshatraLine").replace("{nakshatra}", votdNakshatra)}
-              </Text>
-            ) : null}
-            {votdError ? (
-              <Text
-                accessibilityRole="alert"
-                variant="muted"
-                color={colors.brassSoft}
-                style={{ marginTop: spacing.xs }}
-              >
-                {votd
-                  ? votdStale
-                    ? t("homeVotdStale")
-                    : t("homeVotdOffline")
-                  : t("homeVotdUnavailable")}
-              </Text>
-            ) : null}
-          </Pressable>
-        </Rise>
-
-        {/* Today's composed practice — one card, prominent but calm */}
-        <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.md }}>
-          <Pressable
-            testID="home-practice-sadhana"
-            onPress={() => router.push("/sadhana")}
-          >
-            <Panel>
-              <View style={styles.sadhanaRow}>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    variant="eyebrow"
-                    color={colors.brassSoft}
-                    // Letter-spaced Devanagari breaks matra shaping.
-                    style={
-                      lang === "hi"
-                        ? { letterSpacing: 0, textTransform: "none" as const }
-                        : undefined
-                    }
-                  >
-                    {t("homeSadhanaEyebrow")}
-                  </Text>
-                  <Text
-                    variant="title"
-                    style={{ marginTop: spacing.xs, fontSize: 20 }}
-                  >
-                    {t("homeSadhanaTitle")}
-                  </Text>
-                  <Text
-                    variant="muted"
-                    color={sadhanaDone ? colors.brassSoft : undefined}
-                    style={{ marginTop: spacing.xs }}
-                  >
-                    {sadhanaDone ? t("homeSadhanaDone") : t("homeSadhanaBody")}
-                  </Text>
-                </View>
-                {sadhanaDone ? (
-                  <View style={[styles.sadhanaCheck, { borderColor: colors.line }]}>
-                    <Text
-                      color={colors.brassSoft}
-                      style={{
-                        fontFamily: "Fraunces_600SemiBold",
-                        fontSize: 16,
-                      }}
-                    >
-                      ✓
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            </Panel>
-          </Pressable>
-        </Rise>
-
-        {!med.loading ? (
-          <Rise delay={motion.staggerMs * 3.5} style={{ marginTop: spacing.sm }}>
-            <Pressable
-              onPress={() =>
-                router.push(
-                  `/meditation/${Math.min(45, Math.max(1, med.currentDay))}`
-                )
-              }
-            >
-              <Panel>
-                <Text variant="eyebrow" color={colors.brassSoft}>
-                  {t("medEyebrow")}
-                </Text>
-                <Text
-                  variant="title"
-                  style={{ marginTop: spacing.xs, fontSize: 18 }}
-                >
-                  {med.completedDays.length === 0
-                    ? t("medHomeStart")
-                    : t("medHomeContinue").replace(
-                        "{n}",
-                        String(Math.min(45, Math.max(1, med.currentDay)))
-                      )}
-                </Text>
-              </Panel>
-            </Pressable>
-          </Rise>
-        ) : null}
-
-        {/* Practice entries — lifestyle grid */}
-        <Rise delay={motion.staggerMs * 4} style={{ marginTop: spacing.md }}>
-          <Text variant="eyebrow" color={colors.brassSoft}>
-            {t("homeLifestyleEyebrow")}
-          </Text>
-          <Text
-            variant="title"
-            style={{ marginTop: spacing.xs, fontSize: 20, marginBottom: spacing.sm }}
-          >
-            {t("homeLifestyleTitle")}
-          </Text>
-          <View style={styles.practiceRow}>
-            <Pressable
-              style={styles.practicePress}
-              onPress={() => router.push("/japa")}
-            >
-              <Panel style={styles.practiceCard}>
-                <Text variant="title" style={{ fontSize: 18 }}>
-                  {t("homeJapaTitle")}
-                </Text>
-                <Text
-                  variant="muted"
-                  style={{ marginTop: spacing.xs }}
-                  numberOfLines={2}
-                >
-                  {t("homeJapaBody")}
-                </Text>
-              </Panel>
-            </Pressable>
-            <Pressable
-              style={styles.practicePress}
-              accessibilityRole="button"
-              accessibilityLabel={t("homeBlockPanchangTitle")}
-              onPress={() => router.push("/panchang")}
-            >
-              <Panel style={styles.practiceCard}>
-                <Text variant="title" style={{ fontSize: 18 }}>
-                  {t("homeBlockPanchangTitle")}
-                </Text>
-                <Text
-                  variant="muted"
-                  style={{ marginTop: spacing.xs }}
-                  numberOfLines={2}
-                >
-                  {panchang ? panchang.tithi : t("homeBlockPanchangBody")}
-                </Text>
-                {panchangError ? (
-                  <Text variant="muted" color={colors.brassSoft} style={{ marginTop: 4 }}>
-                    {panchang
-                      ? panchangStale
-                        ? t("homePanchangStale")
-                        : t("homePanchangOffline")
-                      : t("homePanchangUnavailable")}
-                  </Text>
-                ) : null}
-              </Panel>
-            </Pressable>
-          </View>
-          <View style={[styles.practiceRow, { marginTop: spacing.sm }]}>
-            <Pressable
-              style={styles.practicePress}
-              onPress={() => router.push("/paths")}
-            >
-              <Panel style={styles.practiceCard}>
-                <Text variant="title" style={{ fontSize: 18 }}>
-                  {t("homeBlockPathsTitle")}
-                </Text>
-                <Text
-                  variant="muted"
-                  style={{ marginTop: spacing.xs }}
-                  numberOfLines={2}
-                >
-                  {t("homeBlockPathsBody")}
-                </Text>
-              </Panel>
-            </Pressable>
-            <Pressable
-              style={styles.practicePress}
-              onPress={() => router.push("/community")}
-            >
-              <Panel style={styles.practiceCard}>
-                <Text variant="title" style={{ fontSize: 18 }}>
-                  {t("homeBlockSanghaTitle")}
-                </Text>
-                <Text
-                  variant="muted"
-                  style={{ marginTop: spacing.xs }}
-                  numberOfLines={2}
-                >
-                  {t("homeBlockSanghaBody")}
-                </Text>
-              </Panel>
-            </Pressable>
-          </View>
-        </Rise>
-
-        {/* Reminders callout */}
-        <Rise delay={motion.staggerMs * 4.5} style={{ marginTop: spacing.md }}>
-          <Pressable onPress={() => router.push("/account")}>
-            <Panel>
-              <Text variant="eyebrow" color={colors.brassSoft}>
-                {t("homeBlockNotifTitle")}
-              </Text>
-              <Text variant="muted" style={{ marginTop: spacing.xs }}>
-                {t("homeBlockNotifBody")}
-              </Text>
-            </Panel>
-          </Pressable>
-        </Rise>
-
-        {/* Equal path grid */}
-        <Rise delay={motion.staggerMs * 5} style={{ marginTop: spacing.xl }}>
+        <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.xl }}>
           <Text variant="eyebrow" color={colors.brassSoft}>
             {t("homePaths")}
           </Text>
-          <View style={styles.pathGrid}>
-            {/* Rows of two, derived from the array — a hardcoded grid once
-                silently dropped the sixth path. */}
+          <View style={[styles.pathGrid, { marginTop: spacing.md }]}>
             {Array.from(
-              { length: Math.ceil(paths.length / 2) },
-              (_, row) => paths.slice(row * 2, row * 2 + 2)
+              { length: Math.ceil(HOME_PATHS.length / 2) },
+              (_, row) => HOME_PATHS.slice(row * 2, row * 2 + 2)
             ).map((pair, row) => (
               <View key={row} style={styles.pathRow}>
                 {pair.map((path) => (
                   <PathTile
                     key={path.index}
                     index={path.index}
-                    title={path.title}
-                    body={path.body}
+                    title={t(path.titleKey)}
+                    body={t(path.blurbKey)}
                     image={path.image}
                     mark={path.mark}
                     onPress={() => router.push(path.href)}
@@ -554,86 +105,41 @@ export default function HomeScreen() {
           </View>
         </Rise>
 
-        {/* Mood chips — arrive by feeling */}
-        <Rise delay={motion.staggerMs * 6} style={{ marginTop: spacing.xl }}>
-          <View style={styles.moodHead}>
-            <View style={{ flex: 1 }}>
-              <Text variant="eyebrow" color={colors.brassSoft}>
-                {t("homeMoodsEyebrow")}
-              </Text>
-              <Text variant="title" style={{ marginTop: spacing.xs, fontSize: 20 }}>
-                {t("homeMoodsTitle")}
-              </Text>
-            </View>
-            <Pressable onPress={() => router.push("/(tabs)/mood")}>
-              <Text variant="muted" color={colors.brassSoft}>
-                {t("homeMoodsAll")} →
-              </Text>
-            </Pressable>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.moodRow}
-          >
-            {previewMoods.map((mood) => {
-              const accent = moodAccent[mood.id] ?? colors.brass;
-              return (
-                <Pressable
-                  key={mood.id}
-                  onPress={() => router.push(`/(tabs)/mood/${mood.id}`)}
-                  style={({ pressed }) => [
-                    styles.moodChip,
-                    {
-                      borderColor: `${accent}66`,
-                      backgroundColor: pressed
-                        ? `${accent}28`
-                        : `${accent}14`,
-                    },
-                  ]}
-                >
-                  <View style={[styles.moodDot, { backgroundColor: accent }]} />
-                  <Text
-                    variant="body"
-                    style={{ fontSize: 14, fontFamily: "Sora_600SemiBold" }}
-                  >
-                    {lang === "hi" ? mood.labelHi : mood.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+        <Rise delay={motion.staggerMs * 4} style={{ marginTop: spacing.xl }}>
+          <PracticeLifestyleGrid />
         </Rise>
 
-        {/* Closing Madhav band */}
-        <Rise delay={motion.staggerMs * 7} style={{ marginTop: spacing.xl }}>
+        <Rise delay={motion.staggerMs * 5} style={{ marginTop: spacing.xl }}>
           <Pressable
             onPress={() => router.push("/madhav")}
             style={({ pressed }) => [
               styles.closeBand,
-              { borderColor: colors.line, opacity: pressed ? 0.92 : 1 },
+              {
+                borderColor: colors.line,
+                opacity: pressed ? 0.92 : 1,
+                transform: [{ scale: pressed ? 0.985 : 1 }],
+              },
             ]}
           >
-            <Image
-              source={images.pathMadhav}
-              style={StyleSheet.absoluteFillObject}
-              resizeMode="cover"
-            />
+            <CoverImage source={images.pathMadhav} opacity={0.9} />
             <LinearGradient
               colors={[
-                "rgba(7,9,15,0.88)",
-                "rgba(7,9,15,0.55)",
-                "rgba(7,9,15,0.35)",
+                "rgba(7,9,15,0.9)",
+                "rgba(7,9,15,0.5)",
+                "rgba(7,9,15,0.28)",
               ]}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={StyleSheet.absoluteFillObject}
             />
             <View style={styles.closeCopy}>
+              <Text variant="eyebrow" color={colors.brassSoft}>
+                Madhav
+              </Text>
               <Text
                 variant="title"
                 color={colors.onMedia}
-                style={{ fontSize: 22, lineHeight: 28, maxWidth: 220 }}
+                style={styles.closeTitle}
               >
                 {t("homeCloseLine")}
               </Text>
@@ -647,117 +153,149 @@ export default function HomeScreen() {
             </View>
           </Pressable>
         </Rise>
+
+        <Rise delay={motion.staggerMs * 6} style={{ marginTop: spacing.xl }}>
+          <Text variant="eyebrow" color={colors.brassSoft}>
+            {t("homeTogetherEyebrow")}
+          </Text>
+          <Text variant="title" style={styles.sectionTitle}>
+            {t("homeTogetherTitle")}
+          </Text>
+          <View style={styles.togetherRow}>
+            <TogetherTile
+              image={images.pathCommunity}
+              title={t("homeBlockSanghaTitle")}
+              body={t("homeBlockSanghaBody")}
+              onPress={() => router.push("/community")}
+            />
+            <TogetherTile
+              image={images.pathMood}
+              title={t("homeBlockCareTitle")}
+              body={t("homeBlockCareBody")}
+              onPress={() => router.push("/care")}
+            />
+            <TogetherTile
+              image={images.pathPaths}
+              title={t("homeBlockSupportTitle")}
+              body={t("homeBlockSupportBody")}
+              onPress={() => router.push("/support")}
+            />
+          </View>
+        </Rise>
       </ScrollView>
     </Screen>
   );
 }
 
+function TogetherTile({
+  image,
+  title,
+  body,
+  onPress,
+}: {
+  image: ImageSourcePropType;
+  title: string;
+  body: string;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.togetherTile,
+        {
+          borderColor: colors.line,
+          opacity: pressed ? 0.94 : 1,
+          transform: [{ scale: pressed ? 0.975 : 1 }],
+        },
+      ]}
+    >
+      <CoverImage source={image} opacity={0.88} />
+      <LinearGradient
+        colors={["rgba(7,9,15,0.1)", "rgba(7,9,15,0.45)", "rgba(7,9,15,0.92)"]}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <View style={styles.togetherCopy}>
+        <Text
+          variant="title"
+          color={colors.onMedia}
+          style={styles.togetherTitle}
+          numberOfLines={2}
+        >
+          {title}
+        </Text>
+        <Text
+          variant="muted"
+          color={colors.onMediaMuted}
+          style={styles.togetherBody}
+          numberOfLines={2}
+        >
+          {truncateAtWord(body, 48)}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  brandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexShrink: 1,
-    gap: spacing.sm,
-  },
-  brandDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    opacity: 0.7,
-  },
-  hero: {
-    marginTop: spacing.xl,
-    minHeight: 200,
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  watermark: {
-    position: "absolute",
-    right: -16,
-    top: -28,
-    // Devanagari glyphs — Fraunces has no coverage here (VISUAL_SYSTEM.md).
-    fontFamily: "NotoSerifDevanagari_600SemiBold",
-    fontSize: 120,
-    lineHeight: 150,
-    opacity: 0.05,
-  },
-  ctaRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  votd: {
-    paddingVertical: spacing.lg,
-  },
-  votdHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sadhanaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  sadhanaCheck: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  practiceRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  practicePress: {
-    flex: 1,
-  },
-  practiceCard: {
-    flex: 1,
+  sectionTitle: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.md,
+    fontSize: 22,
+    lineHeight: 28,
   },
   pathGrid: {
-    marginTop: spacing.md,
     gap: spacing.sm,
   },
   pathRow: {
     flexDirection: "row",
     gap: spacing.sm,
   },
-  moodHead: {
+  togetherRow: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  moodRow: {
     gap: spacing.sm,
-    paddingRight: spacing.md,
   },
-  moodChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingVertical: spacing.sm + 4,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.lg,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-  },
-  moodDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  closeBand: {
+  togetherTile: {
+    flex: 1,
     minHeight: 148,
     borderRadius: radii.lg,
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth * 2,
+    justifyContent: "flex-end",
+    backgroundColor: "#0e1420",
+    position: "relative",
+  },
+  togetherCopy: {
+    padding: spacing.sm + 2,
+    zIndex: 1,
+  },
+  togetherTitle: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  togetherBody: {
+    marginTop: 4,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  closeBand: {
+    minHeight: 168,
+    borderRadius: radii.lg,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth * 2,
     justifyContent: "center",
+    backgroundColor: "#0e1420",
+    position: "relative",
   },
   closeCopy: {
     padding: spacing.lg,
+    maxWidth: 320,
+    zIndex: 1,
+  },
+  closeTitle: {
+    fontSize: 22,
+    lineHeight: 28,
+    marginTop: spacing.sm,
   },
 });

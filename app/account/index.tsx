@@ -14,7 +14,7 @@ import { Text } from "@/components/Text";
 import { Button, Hairline } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { BrandMark } from "@/components/BrandMark";
-import { BRAND_NAME } from "@/components/BrandWordmark";
+import { BRAND_CREDIT, BRAND_NAME, BrandNavLabel } from "@/components/BrandWordmark";
 import { PracticeMarks } from "@/components/PracticeMarks";
 import {
   notificationPrefsApi,
@@ -65,6 +65,14 @@ export default function AccountScreen() {
   const [linkSent, setLinkSent] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [growth, setGrowth] = useState<{
+    sessions: number;
+    versesCompleted: number;
+    durationMinutes: number;
+    mantras: number;
+    seekerLabel: string | null;
+    seekerLevel: number | null;
+  } | null>(null);
   const [deleteStage, setDeleteStage] = useState<
     "idle" | "confirming" | "deleting"
   >("idle");
@@ -129,13 +137,35 @@ export default function AccountScreen() {
   useEffect(() => {
     if (!isSignedIn) {
       setStreak(0);
+      setGrowth(null);
       return;
     }
     userApi
       .streak()
       .then((s) => setStreak(s.current ?? 0))
       .catch(() => undefined);
-  }, [isSignedIn]);
+    if (isAnonymous) {
+      setGrowth(null);
+      return;
+    }
+    userApi
+      .progressSummary("monthly")
+      .then((data) => {
+        setGrowth({
+          sessions: data.sessions ?? 0,
+          versesCompleted: data.versesCompleted ?? 0,
+          durationMinutes: data.durationMinutes ?? 0,
+          mantras: data.mantras ?? 0,
+          seekerLabel: data.seeker
+            ? lang === "hi"
+              ? data.seeker.labelHi
+              : data.seeker.labelEn
+            : null,
+          seekerLevel: data.seeker?.level ?? null,
+        });
+      })
+      .catch(() => setGrowth(null));
+  }, [isSignedIn, isAnonymous, lang]);
 
   useEffect(() => {
     if (!isSignedIn || isAnonymous) {
@@ -388,12 +418,20 @@ export default function AccountScreen() {
   return (
     <Screen>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
+        contentContainerStyle={{
+          paddingBottom: spacing.tabBar + 100,
+          paddingTop: spacing.md,
+        }}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.accountHeader}>
-          <BrandMark size={24} />
-          <Text variant="eyebrow" color={colors.brassSoft}>{t("account")}</Text>
+          <View style={styles.accountBrand}>
+            <BrandMark size={24} />
+            <BrandNavLabel showCredit />
+          </View>
+          <Text variant="eyebrow" color={colors.brassSoft}>
+            {lang === "hi" ? "प्रोफ़ाइल" : "Profile"}
+          </Text>
         </View>
         <View style={styles.profileHero}>
           <View style={[styles.avatar, { borderColor: colors.line, backgroundColor: colors.field }]}>
@@ -422,6 +460,151 @@ export default function AccountScreen() {
           ) : null}
         </View>
 
+        {isSignedIn && !isAnonymous ? (
+          <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
+            <Pressable
+              onPress={() => router.push("/account/progress")}
+              style={({ pressed }) => [
+                styles.journeyBand,
+                {
+                  borderColor: colors.line,
+                  backgroundColor: "rgba(201,162,39,0.07)",
+                  opacity: pressed ? 0.92 : 1,
+                  marginTop: 0,
+                },
+              ]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text variant="eyebrow" color={colors.brassSoft}>
+                  {lang === "hi" ? "प्रगति और वृद्धि" : "Progress & growth"}
+                </Text>
+                <Text variant="title" style={{ marginTop: spacing.xs, fontSize: 20 }}>
+                  {growth?.seekerLabel
+                    ? growth.seekerLevel != null
+                      ? `${growth.seekerLabel} · L${growth.seekerLevel}`
+                      : growth.seekerLabel
+                    : lang === "hi"
+                      ? "आपकी यात्रा"
+                      : "Your journey"}
+                </Text>
+                <Text variant="muted" style={{ marginTop: 4 }}>
+                  {streak > 0
+                    ? `${streak} ${t("streakDays")}`
+                    : lang === "hi"
+                      ? "निजी पहचान — कोई लीडरबोर्ड नहीं"
+                      : "Private recognition — no leaderboards"}
+                </Text>
+              </View>
+              <Text color={colors.brassSoft} style={{ fontSize: 22 }}>
+                →
+              </Text>
+            </Pressable>
+
+            <View style={[styles.accountStats, { borderColor: colors.line }]}>
+              <Pressable
+                style={styles.accountStat}
+                onPress={() => router.push("/account/progress")}
+              >
+                <Text
+                  variant="display"
+                  color={colors.brassSoft}
+                  style={styles.accountStatValue}
+                >
+                  {streak}
+                </Text>
+                <Text variant="eyebrow">{t("streakDays")}</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.accountStat,
+                  styles.accountStatBorder,
+                  { borderColor: colors.hairline },
+                ]}
+                onPress={() => router.push("/account/progress")}
+              >
+                <Text
+                  variant="display"
+                  color={colors.brassSoft}
+                  style={styles.accountStatValue}
+                >
+                  {growth?.sessions ?? "—"}
+                </Text>
+                <Text variant="eyebrow">
+                  {lang === "hi" ? "सत्र" : "SESSIONS"}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.accountStat,
+                  styles.accountStatBorder,
+                  { borderColor: colors.hairline },
+                ]}
+                onPress={() => router.push("/account/progress")}
+              >
+                <Text
+                  variant="display"
+                  color={colors.brassSoft}
+                  style={styles.accountStatValue}
+                >
+                  {growth?.versesCompleted ?? "—"}
+                </Text>
+                <Text variant="eyebrow">
+                  {lang === "hi" ? "श्लोक" : "VERSES"}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.accountStat,
+                  styles.accountStatBorder,
+                  { borderColor: colors.hairline },
+                ]}
+                onPress={() => router.push("/account/achievements")}
+              >
+                <Text
+                  variant="display"
+                  color={colors.brassSoft}
+                  style={styles.accountStatValue}
+                >
+                  ◇
+                </Text>
+                <Text variant="eyebrow">
+                  {lang === "hi" ? "उपलब्धियाँ" : "BADGES"}
+                </Text>
+              </Pressable>
+            </View>
+
+            {growth ? (
+              <View
+                style={[
+                  styles.growthDetail,
+                  { borderColor: colors.line, backgroundColor: colors.surface },
+                ]}
+              >
+                <Text variant="eyebrow" color={colors.brassSoft}>
+                  {lang === "hi" ? "इस महीने" : "This month"}
+                </Text>
+                <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                  {lang === "hi"
+                    ? `${growth.durationMinutes} मिनट · ${growth.mantras} मंत्र`
+                    : `${growth.durationMinutes} min · ${growth.mantras} mantras`}
+                </Text>
+                <View style={styles.growthLinks}>
+                  <Pressable onPress={() => router.push("/account/progress")}>
+                    <Text variant="muted" color={colors.brassSoft}>
+                      {lang === "hi" ? "पूरी प्रगति →" : "Full progress →"}
+                    </Text>
+                  </Pressable>
+                  <Pressable onPress={() => router.push("/account/achievements")}>
+                    <Text variant="muted" color={colors.brassSoft}>
+                      {lang === "hi" ? "उपलब्धियाँ →" : "Achievements →"}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
         {!configured ? (
           <Text
             variant="muted"
@@ -429,24 +612,6 @@ export default function AccountScreen() {
           >
             {t("authNotConfigured")}
           </Text>
-        ) : null}
-
-        {isSignedIn && !isAnonymous ? (
-          <View style={[styles.accountStats, { borderColor: colors.line }]}>
-            <Pressable style={styles.accountStat} onPress={() => router.push("/account/progress")}>
-              <Text variant="display" color={colors.brassSoft} style={styles.accountStatValue}>
-                {streak}
-              </Text>
-              <Text variant="eyebrow">{t("streakDays")}</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.accountStat, styles.accountStatBorder, { borderColor: colors.hairline }]}
-              onPress={() => router.push("/account/achievements")}
-            >
-              <Text variant="display" color={colors.brassSoft} style={styles.accountStatValue}>◇</Text>
-              <Text variant="eyebrow">{lang === "hi" ? "उपलब्धियाँ" : "BADGES"}</Text>
-            </Pressable>
-          </View>
         ) : null}
 
         {isSignedIn && !isAnonymous ? (
@@ -1087,6 +1252,8 @@ export default function AccountScreen() {
         >
           {BRAND_NAME}
           {"\n"}
+          {BRAND_CREDIT}
+          {"\n"}
           {getAppVersionLabel()}
         </Text>
 
@@ -1168,7 +1335,14 @@ const styles = StyleSheet.create({
   accountHeader: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: spacing.sm,
+  },
+  accountBrand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    flexShrink: 1,
   },
   profileHero: {
     alignItems: "center",
@@ -1192,6 +1366,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     marginTop: spacing.md,
   },
+  journeyBand: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
   accountStats: {
     flexDirection: "row",
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -1204,7 +1388,19 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   accountStatBorder: { borderLeftWidth: StyleSheet.hairlineWidth },
-  accountStatValue: { fontSize: 24, lineHeight: 30 },
+  accountStatValue: { fontSize: 20, lineHeight: 26 },
+  growthDetail: {
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  growthLinks: {
+    marginTop: spacing.md,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
   sectionLabel: { marginBottom: spacing.sm },
   accountRow: {
     flexDirection: "row",

@@ -1,6 +1,5 @@
-import React from "react";
+import React, { type ReactNode } from "react";
 import {
-  Image,
   Pressable,
   StyleSheet,
   View,
@@ -9,6 +8,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { CoverImage } from "@/components/CoverImage";
 import { Text } from "@/components/Text";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -18,24 +18,41 @@ type Props = {
   image: ImageSourcePropType;
   eyebrow?: string;
   title: string;
+  /** Alias for web ImmersiveHero `intro`. */
   body?: string;
+  intro?: string;
+  meta?: ReactNode;
+  actions?: ReactNode;
+  children?: ReactNode;
+  /** Slightly shorter — for quiet pages like Care. */
+  compact?: boolean;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 };
 
 /**
- * The painted header band — the same image + scrim + copy idiom the home
- * grid's path cards use, lifted out so the sections that were shipping as
- * bare text (paths, sādhana, panchang, community, meditation) get the same
- * depth. Ports the web's PageHeroImage.
+ * Shared field hero for lifestyle surfaces — ports web ImmersiveHero:
+ * tall image, scrim, brass CTAs, optional meta/actions.
  *
  * Devanagari never takes the tracked, uppercased eyebrow: Fraunces has no
- * Devanagari coverage and letter-spacing breaks matra shaping, so the hi
- * eyebrow drops both (docs/design/VISUAL_SYSTEM.md).
+ * Devanagari coverage and letter-spacing breaks matra shaping.
  */
-export function PageHero({ image, eyebrow, title, body, onPress, style }: Props) {
+export function PageHero({
+  image,
+  eyebrow,
+  title,
+  body,
+  intro,
+  meta,
+  actions,
+  children,
+  compact = false,
+  onPress,
+  style,
+}: Props) {
   const { colors } = useTheme();
   const { lang } = useLanguage();
+  const blurb = intro ?? body;
   const hiEyebrow =
     lang === "hi"
       ? { letterSpacing: 0, textTransform: "none" as const }
@@ -47,10 +64,10 @@ export function PageHero({ image, eyebrow, title, body, onPress, style }: Props)
 
   const content = (
     <>
-      <Image source={image} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+      <CoverImage source={image} />
       <LinearGradient
-        colors={["rgba(7,9,15,0.28)", "rgba(7,9,15,0.62)", "rgba(7,9,15,0.92)"]}
-        locations={[0, 0.5, 1]}
+        colors={["rgba(7,9,15,0.22)", "rgba(7,9,15,0.55)", "rgba(7,9,15,0.94)"]}
+        locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFillObject}
       />
       <View style={styles.copy}>
@@ -62,31 +79,40 @@ export function PageHero({ image, eyebrow, title, body, onPress, style }: Props)
         <Text
           variant="title"
           color={colors.onMedia}
-          style={[styles.title, hiTitle]}
+          style={[styles.title, compact && styles.titleCompact, hiTitle]}
         >
           {title}
         </Text>
-        {body ? (
+        {blurb ? (
           <Text
             variant="soft"
             color={colors.onMediaMuted}
-            style={{ marginTop: spacing.sm }}
+            style={styles.blurb}
           >
-            {body}
+            {blurb}
           </Text>
         ) : null}
+        {meta ? <View style={styles.meta}>{meta}</View> : null}
+        {actions ? <View style={styles.actions}>{actions}</View> : null}
+        {children}
       </View>
     </>
   );
+
+  const bandStyle = [
+    styles.band,
+    compact ? styles.bandCompact : styles.bandTall,
+    { borderColor: colors.line },
+    style,
+  ];
 
   if (onPress) {
     return (
       <Pressable
         onPress={onPress}
         style={({ pressed }) => [
-          styles.band,
-          { borderColor: colors.line, opacity: pressed ? 0.94 : 1 },
-          style,
+          ...bandStyle,
+          { opacity: pressed ? 0.94 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] },
         ]}
       >
         {content}
@@ -94,27 +120,56 @@ export function PageHero({ image, eyebrow, title, body, onPress, style }: Props)
     );
   }
 
-  return (
-    <View style={[styles.band, { borderColor: colors.line }, style]}>
-      {content}
-    </View>
-  );
+  return <View style={bandStyle}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
   band: {
-    minHeight: 180,
     borderRadius: radii.lg,
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth * 2,
     justifyContent: "flex-end",
+    position: "relative",
+    backgroundColor: "#0e1420",
+  },
+  bandTall: {
+    minHeight: 248,
+  },
+  bandCompact: {
+    minHeight: 196,
   },
   copy: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    zIndex: 1,
   },
   title: {
     marginTop: spacing.sm,
+    fontSize: 30,
+    lineHeight: 36,
+    letterSpacing: -0.3,
+    maxWidth: 340,
+  },
+  titleCompact: {
     fontSize: 26,
     lineHeight: 32,
+  },
+  blurb: {
+    marginTop: spacing.sm,
+    maxWidth: 320,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  meta: {
+    marginTop: spacing.md,
+    maxWidth: 320,
+  },
+  actions: {
+    marginTop: spacing.lg,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "flex-end",
+    gap: spacing.sm,
   },
 });

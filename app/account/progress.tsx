@@ -118,12 +118,21 @@ export default function ProgressScreen() {
             </View>
 
             <View style={styles.streakSection}>
-              <View style={[styles.streakRing, { borderColor: colors.brass }]}>
-                <View style={[styles.streakInner, { borderColor: colors.line }]}>
-                  <Text variant="display" color={colors.brassSoft} style={styles.streakNumber}>
-                    {data.visitStreak.current}
-                  </Text>
-                  <Text variant="eyebrow">{L === "hi" ? "दिन" : "DAYS"}</Text>
+              <View
+                style={[
+                  styles.streakHalo,
+                  { borderColor: "rgba(201,162,39,0.2)", backgroundColor: "rgba(201,162,39,0.05)" },
+                ]}
+              >
+                <View style={[styles.streakRing, { borderColor: colors.brass }]}>
+                  <View style={[styles.streakInner, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+                    <Text variant="display" color={colors.brassSoft} style={styles.streakNumber}>
+                      {data.visitStreak.current}
+                    </Text>
+                    <Text variant="eyebrow" color={colors.brassSoft}>
+                      {L === "hi" ? "दिन" : "DAYS"}
+                    </Text>
+                  </View>
                 </View>
               </View>
               <View style={styles.streakPair}>
@@ -237,23 +246,31 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 25 },
   streakSection: { alignItems: "center", marginTop: spacing.xl },
+  streakHalo: {
+    width: 248,
+    height: 248,
+    borderRadius: 124,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   streakRing: {
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    borderWidth: 2,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    borderWidth: 2.5,
     alignItems: "center",
     justifyContent: "center",
   },
   streakInner: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
+    width: 188,
+    height: 188,
+    borderRadius: 94,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
   },
-  streakNumber: { fontSize: 46, lineHeight: 52 },
+  streakNumber: { fontSize: 52, lineHeight: 58 },
   streakPair: { flexDirection: "row", width: "100%", marginTop: spacing.xl },
   streakMetric: { flex: 1, alignItems: "center", gap: spacing.xs },
   streakMetricBorder: { borderLeftWidth: StyleSheet.hairlineWidth },

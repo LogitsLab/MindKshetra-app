@@ -279,17 +279,33 @@ export default function PersonalizeSettingsScreen() {
         <Text variant="eyebrow" color={colors.brassSoft} style={styles.section}>
           {copy.setup.guidance[L]}
         </Text>
-        <View style={styles.wrap}>
+        <Text variant="soft" style={{ marginTop: spacing.sm }}>
+          {copy.setup.guidanceBody[L]}
+        </Text>
+        <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
           {GUIDANCE_STYLES.map((g) => {
             const active = guidanceStyle === g.id;
             return (
               <Pressable
                 key={g.id}
                 onPress={() => setGuidanceStyle(g.id)}
-                style={chip(active)}
+                style={[
+                  chip(active),
+                  {
+                    width: "100%",
+                    alignItems: "flex-start",
+                    paddingVertical: spacing.sm + 2,
+                  },
+                ]}
               >
                 <Text color={active ? colors.brassSoft : colors.textSoft}>
                   {L === "hi" ? g.hi : g.en}
+                </Text>
+                <Text
+                  variant="muted"
+                  style={{ marginTop: 4, fontSize: 12, lineHeight: 17 }}
+                >
+                  {L === "hi" ? g.blurbHi : g.blurbEn}
                 </Text>
               </Pressable>
             );

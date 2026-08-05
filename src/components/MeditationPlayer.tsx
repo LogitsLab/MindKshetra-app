@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
+import { startAmbient, stopAmbient } from "@/audio/ambient";
 import { playOrSpeak, stopNarration } from "@/audio/narration";
 import { useKeepAwake } from "expo-keep-awake";
 import { Screen } from "@/components/Screen";
@@ -69,6 +70,7 @@ export function MeditationPlayer({
   const [guestSaved, setGuestSaved] = useState(false);
   const [milestone, setMilestone] = useState<SittingMilestone | null>(null);
   const [rate, setRate] = useState(1);
+  const [ambientOn, setAmbientOn] = useState(true);
   const [speaking, setSpeaking] = useState(false);
   const satSecRef = useRef(0);
   const autoAdvance = useRef(true);
@@ -85,8 +87,22 @@ export function MeditationPlayer({
   useEffect(() => {
     return () => {
       stopNarration();
+      stopAmbient();
     };
   }, []);
+
+  // Music rides with the silence countdown — auto-starts, user can stop/play.
+  useEffect(() => {
+    const current = session.phases[phaseIdx];
+    if (stage !== "play" || current?.type !== "silence" || !ambientOn) {
+      stopAmbient();
+      return;
+    }
+    void startAmbient(0.35);
+    return () => {
+      stopAmbient();
+    };
+  }, [stage, phaseIdx, ambientOn, session.phases]);
 
   const advancePhase = () => {
     stopNarration();
@@ -369,6 +385,17 @@ export function MeditationPlayer({
                   {formatClock(silenceLeft ?? phase.seconds)}
                 </Text>
                 </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={ambientOn ? t("medAmbientOn") : t("medAmbientOff")}
+                  accessibilityState={{ selected: ambientOn }}
+                  onPress={() => setAmbientOn((v) => !v)}
+                  style={styles.playerAction}
+                >
+                  <Text color={colors.brassSoft}>
+                    {ambientOn ? t("medAmbientOn") : t("medAmbientOff")}
+                  </Text>
+                </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t("medNextPhase")}

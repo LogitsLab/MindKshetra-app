@@ -16,7 +16,7 @@ import { OnboardingProvider } from "@/context/OnboardingContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { MadhavProvider } from "@/context/MadhavContext";
 import { MadhavFab } from "@/components/MadhavFab";
-import { ProfileButton } from "@/components/ScreenHeader";
+import { HeaderBrandRight } from "@/components/ScreenHeader";
 import { OnboardingGate } from "@/components/OnboardingGate";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useDailyVisit } from "@/hooks/useDailyVisit";
@@ -47,7 +47,7 @@ function RootNavigator() {
 
   return (
     <>
-      <StatusBar style={mode === "dark" ? "light" : "dark"} />
+      <StatusBar style={mode === "dark" ? "light" : "dark"} translucent />
       <Stack
         initialRouteName="index"
         screenOptions={{
@@ -57,7 +57,7 @@ function RootNavigator() {
           contentStyle: { backgroundColor: colors.void },
           headerShadowVisible: false,
           headerBackButtonDisplayMode: "minimal",
-          headerRight: () => <ProfileButton />,
+          headerRight: () => <HeaderBrandRight />,
         }}
       >
         <Stack.Screen
@@ -119,7 +119,6 @@ function RootNavigator() {
           name="account/index"
           options={{
             title: "Profile",
-            headerRight: () => null,
             animation: "slide_from_right",
             animationDuration: 280,
             gestureEnabled: true,
@@ -127,23 +126,23 @@ function RootNavigator() {
         />
         <Stack.Screen
           name="account/reflections"
-          options={{ title: "Reflections", headerRight: () => null }}
+          options={{ title: "Reflections" }}
         />
         <Stack.Screen
           name="account/achievements"
-          options={{ title: "Achievements", headerRight: () => null }}
+          options={{ title: "Achievements" }}
         />
         <Stack.Screen
           name="account/progress"
-          options={{ title: "Progress", headerRight: () => null }}
+          options={{ title: "Progress" }}
         />
         <Stack.Screen
           name="account/personalize"
-          options={{ title: "Personalize", headerRight: () => null }}
+          options={{ title: "Personalize" }}
         />
         <Stack.Screen
           name="journal/index"
-          options={{ title: "Journal", headerRight: () => null }}
+          options={{ title: "Journal" }}
         />
         <Stack.Screen name="astrology/incognito" options={{ title: "Incognito chart" }} />
         <Stack.Screen name="astrology/muhurat" options={{ title: "Muhurats" }} />

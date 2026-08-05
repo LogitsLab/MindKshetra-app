@@ -7,6 +7,7 @@ import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
+import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
 import { MilestoneLine, takeNewMilestone } from "@/components/PracticeMarks";
 import { sadhanaApi } from "@/api/endpoints";
@@ -17,6 +18,7 @@ import { mantras, type Mantra } from "@/data/mantras";
 import type { Milestone } from "@/data/milestones";
 import { appendSadhanaLog, localDayStamp } from "@/storage/local";
 import { uuidv4 } from "@/utils/uuid";
+import { images } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 
 const BEADS_PER_MALA = 108;
@@ -118,14 +120,23 @@ export default function JapaScreen() {
       : null;
 
   return (
-    <Screen>
+    <Screen atmosphere="soft" padded>
+      <Rise>
+        <PageHero
+          image={images.pathPaths}
+          eyebrow={lang === "hi" ? "जप" : "Japa"}
+          title={t("homeJapaTitle")}
+          intro={t("homeJapaBody")}
+          compact
+        />
+      </Rise>
       <Pressable
         style={styles.surface}
         onPress={onTap}
         accessibilityRole="button"
         accessibilityLabel={t("japaTapHint")}
       >
-        <Rise>
+        <Rise delay={40}>
           <Pressable onPress={() => setPickerOpen(true)}>
             <Panel>
               <Text

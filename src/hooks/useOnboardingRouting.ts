@@ -14,14 +14,14 @@ export function useOnboardingRouting() {
   const router = useRouter();
   const segments = useSegments();
   const rootState = useRootNavigationState();
-  const { ready, complete } = useOnboarding();
+  const { ready, complete, forceReplay } = useOnboarding();
   const { loading: authLoading, isSignedIn } = useAuth();
 
   const navigationReady = Boolean(rootState?.key);
   const root = segments[0] as string | undefined;
   const onOnboarding = root === "onboarding";
   const onAuthCallback = root === "auth";
-  const done = complete || isSignedIn;
+  const done = forceReplay ? false : complete || isSignedIn;
 
   useEffect(() => {
     if (!ready || authLoading || !navigationReady) return;

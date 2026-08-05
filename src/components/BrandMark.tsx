@@ -139,3 +139,62 @@ export function TabAstrologyIcon({ focused, size = 22 }: TabIconProps) {
     </Svg>
   );
 }
+
+export function TabPractiseIcon({ focused, size = 22 }: TabIconProps) {
+  const { colors } = useTheme();
+  const c = focused ? colors.brass : colors.textMuted;
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="8" stroke={c} strokeWidth="1.5" />
+      <Path
+        d="M12 7v5l3 2"
+        stroke={c}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function TabPathIcon({ focused, size = 22 }: TabIconProps) {
+  const { colors } = useTheme();
+  const c = focused ? colors.brass : colors.textMuted;
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Trail / route — reads as Path, not a music note */}
+      <Path
+        d="M6 19c0-3.5 2-5 4-7s3-3.5 3-6"
+        stroke={c}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <Path
+        d="M13 6c0 2.5 1.2 4 3 5.5S19 14.5 19 18"
+        stroke={c}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        opacity={0.75}
+      />
+      <Circle cx="10" cy="5.5" r="2" stroke={c} strokeWidth="1.5" />
+      <Circle cx="6" cy="19" r="1.6" fill={c} />
+      <Circle cx="19" cy="19" r="1.6" fill={c} opacity={0.75} />
+    </Svg>
+  );
+}
+
+export function TabProfileIcon({ focused, size = 22 }: TabIconProps) {
+  const { colors } = useTheme();
+  const c = focused ? colors.brass : colors.textMuted;
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="9" r="3.5" stroke={c} strokeWidth="1.5" />
+      <Path
+        d="M5.5 19c1.2-3 3.4-4.5 6.5-4.5s5.3 1.5 6.5 4.5"
+        stroke={c}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}

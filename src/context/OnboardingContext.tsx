@@ -15,6 +15,8 @@ import {
 type OnboardingContextValue = {
   ready: boolean;
   complete: boolean;
+  /** Dev / settings replay — bypasses the signed-in skip until finish. */
+  forceReplay: boolean;
   markComplete: () => Promise<void>;
   resetComplete: () => Promise<void>;
 };
@@ -24,6 +26,7 @@ const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [complete, setComplete] = useState(false);
+  const [forceReplay, setForceReplay] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -47,16 +50,18 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const markComplete = useCallback(async () => {
     await setOnboardingComplete();
     setComplete(true);
+    setForceReplay(false);
   }, []);
 
   const resetComplete = useCallback(async () => {
     await clearOnboardingComplete();
     setComplete(false);
+    setForceReplay(true);
   }, []);
 
   const value = useMemo(
-    () => ({ ready, complete, markComplete, resetComplete }),
-    [ready, complete, markComplete, resetComplete]
+    () => ({ ready, complete, forceReplay, markComplete, resetComplete }),
+    [ready, complete, forceReplay, markComplete, resetComplete]
   );
 
   return (

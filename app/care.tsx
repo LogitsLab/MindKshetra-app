@@ -33,10 +33,11 @@ export default function CareScreen() {
       >
         <Rise>
           <PageHero
-            image={images.pathCommunity}
+            image={images.pathMood}
             eyebrow={t("careEyebrow")}
             title={t("homeBlockCareTitle")}
-            body={t("careHeroBody")}
+            intro={t("careHeroBody")}
+            compact
           />
         </Rise>
 

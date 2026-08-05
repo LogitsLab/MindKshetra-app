@@ -50,7 +50,7 @@ export default function CommunityScreen() {
             image={images.pathCommunity}
             eyebrow={t("homeBlockSanghaTitle")}
             title={t("homeTogetherTitle")}
-            body={t("homeTogetherBlurb")}
+            intro={t("homeTogetherBlurb")}
           />
         </Rise>
 

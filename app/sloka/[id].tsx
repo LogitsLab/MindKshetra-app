@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,21 +7,16 @@ import {
   StyleSheet,
   TextInput,
   View,
-  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Circle, Path } from "react-native-svg";
-import { playOrSpeak, stopNarration } from "@/audio/narration";
-import { resolveRecitationUrl } from "@/audio/manifest";
 import * as Haptics from "expo-haptics";
-import { BlurView } from "expo-blur";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { Rise } from "@/components/Rise";
-import { MadhavMark } from "@/components/BrandMark";
+import { SpeakButton } from "@/components/SpeakButton";
 import { BackButton } from "@/components/ScreenHeader";
 import { EmptyState } from "@/components/SlokaCard";
 import {
@@ -29,10 +24,13 @@ import {
   maybeShowNotificationPrompt,
 } from "@/components/NotificationPrompt";
 import { contentApi, eventsApi, progressApi, userApi } from "@/api/endpoints";
+import { getApiUrl } from "@/api/client";
+import { stopNarration } from "@/audio/narration";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
+import { chapterTitle, getChapterMeta } from "@/data/chapters";
 import { bumpFocusVersion } from "@/hooks/useFocusRefresh";
 import {
   addJournalDraft,
@@ -42,21 +40,30 @@ import {
   queuePendingProgress,
   setGuestCursor,
 } from "@/storage/local";
-import { getApiUrl } from "@/api/client";
 import { radii, spacing } from "@/theme/tokens";
 import type { Sloka } from "@/types";
+import {
+  cleanCommentary,
+  hasCommentary,
+  splitVerseLines,
+} from "@/utils/verseDisplay";
 
 export default function SlokaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const slokaId = Number(id);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors, mode } = useTheme();
-  const { lang } = useLanguage();
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
   const { isSignedIn } = useAuth();
   const { askAboutVerse, setVerseContext } = useMadhav();
   const [sloka, setSloka] = useState<Sloka | null>(null);
   const [story, setStory] = useState<string | null>(null);
+  const [storyLang, setStoryLang] = useState<"en" | "hi">(
+    lang === "hi" ? "hi" : "en"
+  );
+  const [prev, setPrev] = useState<Sloka | null>(null);
+  const [next, setNext] = useState<Sloka | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showingOfflineCopy, setShowingOfflineCopy] = useState(false);
@@ -68,9 +75,6 @@ export default function SlokaScreen() {
   const [progressNotice, setProgressNotice] = useState<string | null>(null);
   const [notifPromptVisible, setNotifPromptVisible] = useState(false);
 
-  // The pre-permission sheet appears only after the first meaningful action
-  // succeeds here (verse done, favorite added) — never on launch, and only
-  // while OS permission is undetermined and the decline cooldown allows.
   const offerNotifications = () => {
     void maybeShowNotificationPrompt().then((show) => {
       if (show) setNotifPromptVisible(true);
@@ -79,11 +83,16 @@ export default function SlokaScreen() {
 
   useEffect(() => {
     setVerseContext(slokaId);
-    return () => setVerseContext(null);
+    return () => {
+      setVerseContext(null);
+      stopNarration();
+    };
   }, [slokaId, setVerseContext]);
 
-  // The star used to start empty forever — state was never hydrated, so a
-  // saved verse looked unsaved and tapping it re-added the favorite.
+  useEffect(() => {
+    setStoryLang(lang === "hi" ? "hi" : "en");
+  }, [lang]);
+
   useEffect(() => {
     if (!isSignedIn) {
       setFavorited(false);
@@ -103,6 +112,10 @@ export default function SlokaScreen() {
 
   useEffect(() => {
     let alive = true;
+    setLoading(true);
+    setError(null);
+    setPrev(null);
+    setNext(null);
     (async () => {
       const cached = await getCachedVerse<Sloka>(slokaId);
       if (cached && alive) setSloka(cached);
@@ -126,21 +139,53 @@ export default function SlokaScreen() {
 
   useEffect(() => {
     if (!sloka) return;
-    // Guest cursor always (offline resilience); the server cursor too when
-    // signed in — "Continue reading" reads the server for members and was
-    // permanently stale without this.
     void setGuestCursor(sloka.chapter, sloka.verse_number);
     if (isSignedIn) {
       progressApi.setCursor(sloka.id).catch(() => undefined);
     }
-    // The cursor moved — "Continue reading" on explore must not serve its
-    // TTL-cached copy on the next focus.
     bumpFocusVersion("progress");
+
+    let alive = true;
     contentApi
-      .story(sloka.id, lang)
-      .then((r) => setStory(r.story))
+      .slokas({ chapter: sloka.chapter, limit: 200 })
+      .then(({ slokas: list }) => {
+        if (!alive) return;
+        const sorted = [...list].sort(
+          (a, b) => a.verse_number - b.verse_number
+        );
+        const idx = sorted.findIndex((s) => s.id === sloka.id);
+        setPrev(idx > 0 ? sorted[idx - 1] : null);
+        setNext(
+          idx >= 0 && idx < sorted.length - 1 ? sorted[idx + 1] : null
+        );
+      })
       .catch(() => undefined);
-  }, [sloka, lang, isSignedIn]);
+    return () => {
+      alive = false;
+    };
+  }, [sloka, isSignedIn]);
+
+  useEffect(() => {
+    if (!sloka) return;
+    let alive = true;
+    setStory(null);
+    contentApi
+      .story(sloka.id, storyLang)
+      .then((r) => {
+        if (alive) setStory(r.story?.trim() || null);
+      })
+      .catch(() => {
+        if (alive) setStory(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [sloka, storyLang]);
+
+  const chapterMeta = useMemo(
+    () => (sloka ? getChapterMeta(sloka.chapter) : undefined),
+    [sloka]
+  );
 
   if (loading && !sloka) {
     return (
@@ -169,7 +214,10 @@ export default function SlokaScreen() {
         <View testID="sloka-error" style={styles.centeredState}>
           <EmptyState
             title={lang === "hi" ? "श्लोक नहीं मिला" : "Verse not found"}
-            body={error ?? (lang === "hi" ? "श्लोक उपलब्ध नहीं है" : "Verse missing")}
+            body={
+              error ??
+              (lang === "hi" ? "श्लोक उपलब्ध नहीं है" : "Verse missing")
+            }
           />
         </View>
       </Screen>
@@ -178,150 +226,90 @@ export default function SlokaScreen() {
 
   const translation =
     lang === "hi" ? sloka.hindi_translation : sloka.english_translation;
-  const meaning =
-    lang === "hi"
-      ? sloka.hindi_meaning ?? sloka.english_meaning
-      : sloka.english_meaning ?? sloka.hindi_meaning;
+  const preferredMeaning =
+    lang === "hi" ? sloka.hindi_meaning : sloka.english_meaning;
+  const commentary = hasCommentary(preferredMeaning)
+    ? cleanCommentary(preferredMeaning!)
+    : "";
+  const sanskritLines = splitVerseLines(sloka.sanskrit_devanagari);
+  const iastLines = splitVerseLines(sloka.transliteration_iast);
+  const chTitle = chapterTitle(chapterMeta, lang === "hi" ? "hi" : "en");
+  const progressLabel = chapterMeta?.verses_count
+    ? t("verseOfChapter")
+        .replace("{n}", String(sloka.verse_number))
+        .replace("{total}", String(chapterMeta.verses_count))
+    : null;
+  const ref = `${sloka.chapter}.${sloka.verse_number}`;
 
-  const toolbar = (
-    <View
-      accessibilityRole="toolbar"
-      accessibilityLabel={lang === "hi" ? "श्लोक क्रियाएँ" : "Verse actions"}
-      style={styles.toolbarInner}
-    >
-      <Tool
-        icon="favorite"
-        label={lang === "hi" ? "पसंद" : "Save"}
-        selected={favorited}
-        testID="sloka-favorite"
-        onPress={async () => {
-          if (!isSignedIn) {
-            router.push("/account");
-            return;
-          }
-          const next = !favorited;
-          setFavorited(next);
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          try {
-            if (next) await userApi.addFavorite(sloka.id);
-            else await userApi.removeFavorite(sloka.id);
-            bumpFocusVersion("favorites");
-            if (next) offerNotifications();
-          } catch {
-            setFavorited(!next);
-          }
-        }}
-      />
-      <Tool
-        icon="speak"
-        label={lang === "hi" ? "सुनें" : "Speak"}
-        testID="sloka-narration"
-        onPress={() => {
-          stopNarration();
-          void (async () => {
-            // The shloka recitation is the thing worth hearing; the spoken
-            // translation (pre-generated or TTS) is the fallback.
-            const recitation = await resolveRecitationUrl(
-              sloka.chapter,
-              sloka.verse_number
-            );
-            void playOrSpeak(translation, { lang, url: recitation });
-          })();
-        }}
-      />
-      <Tool
-        icon="share"
-        label={lang === "hi" ? "साझा" : "Share"}
-        testID="sloka-share"
-        onPress={() => {
-          void Share.share({
-            message: `${sloka.chapter}.${sloka.verse_number}\n${sloka.sanskrit_devanagari}\n${translation}\n${getApiUrl()}/sloka/${sloka.id}`,
-          })
-            .then((result) => {
-              if (result.action === Share.sharedAction) {
-                void eventsApi.send("share_card", {
-                  method: "sheet",
-                  slokaId: sloka.id,
-                });
-              }
-            })
-            .catch(() => {});
-        }}
-      />
-      <Tool
-        icon="journal"
-        label={lang === "hi" ? "जर्नल" : "Journal"}
-        selected={showJournal}
-        testID="sloka-journal"
-        onPress={() => setShowJournal((v) => !v)}
-      />
-      <Tool
-        icon="complete"
-        label={lang === "hi" ? "पूर्ण" : "Mark complete"}
-        testID="sloka-complete"
-        onPress={async () => {
-          await markGuestComplete(sloka.id);
-          if (isSignedIn) {
-            try {
-              await progressApi.complete(sloka.id);
-              setProgressNotice(
-                lang === "hi" ? "प्रगति खाते में सहेजी गई।" : "Progress saved to your account."
-              );
-            } catch {
-              await queuePendingProgress(sloka.id);
-              setProgressNotice(
-                lang === "hi"
-                  ? "डिवाइस पर कतार में है — ऑनलाइन होने पर खाते से सिंक होगा।"
-                  : "Queued on this device — it will sync to your account when online."
-              );
-            }
-          } else {
-            setProgressNotice(
-              lang === "hi"
-                ? "प्रगति अभी इसी डिवाइस पर सहेजी गई।"
-                : "Progress saved on this device for now."
-            );
-          }
-          bumpFocusVersion("progress");
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          offerNotifications();
-        }}
-      />
-      <Tool
-        icon="madhav"
-        label={lang === "hi" ? "पूछें" : "Ask Madhav"}
-        testID="sloka-ask-madhav"
-        onPress={() => {
-          askAboutVerse(
-            sloka.id,
-            `Please reflect on Gita ${sloka.chapter}.${sloka.verse_number}`
-          );
-          router.push("/madhav");
-        }}
-      />
-    </View>
-  );
+  const markComplete = async () => {
+    await markGuestComplete(sloka.id);
+    if (isSignedIn) {
+      try {
+        await progressApi.complete(sloka.id);
+        setProgressNotice(
+          lang === "hi"
+            ? "प्रगति खाते में सहेजी गई।"
+            : "Progress saved to your account."
+        );
+      } catch {
+        await queuePendingProgress(sloka.id);
+        setProgressNotice(
+          lang === "hi"
+            ? "डिवाइस पर कतार में है — ऑनलाइन होने पर खाते से सिंक होगा।"
+            : "Queued on this device — it will sync to your account when online."
+        );
+      }
+    } else {
+      setProgressNotice(
+        lang === "hi"
+          ? "प्रगति अभी इसी डिवाइस पर सहेजी गई।"
+          : "Progress saved on this device for now."
+      );
+    }
+    bumpFocusVersion("progress");
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    offerNotifications();
+  };
+
+  const toggleFavorite = async () => {
+    if (!isSignedIn) {
+      router.push("/account");
+      return;
+    }
+    const nextFav = !favorited;
+    setFavorited(nextFav);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      if (nextFav) await userApi.addFavorite(sloka.id);
+      else await userApi.removeFavorite(sloka.id);
+      bumpFocusVersion("favorites");
+      if (nextFav) offerNotifications();
+    } catch {
+      setFavorited(!nextFav);
+    }
+  };
 
   return (
     <Screen testID="screen-sloka" padded={false} atmosphere="strong">
-      <View style={styles.readerHeader}>
-        <BackButton fallback="/(tabs)/explore" />
+      <View style={[styles.topBar, { paddingTop: spacing.sm }]}>
+        <BackButton fallback={`/(tabs)/explore/${sloka.chapter}`} />
         <Text
           variant="eyebrow"
           color={colors.textMuted}
-          accessibilityLabel={`Bhagavad Gita ${sloka.chapter}.${sloka.verse_number}`}
           testID="sloka-citation"
-          style={styles.headerCitation}
+          style={styles.topCitation}
         >
-          BG {sloka.chapter}.{sloka.verse_number}
+          BG {ref}
         </Text>
+        <View style={{ width: 40 }} />
       </View>
+
       <ScrollView
         testID="sloka-scroll"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: 88 + Math.max(insets.bottom, spacing.md) },
+          { paddingBottom: insets.bottom + spacing.xxl },
         ]}
       >
         {showingOfflineCopy ? (
@@ -335,95 +323,310 @@ export default function SlokaScreen() {
             </Text>
           </View>
         ) : null}
+
         <Rise>
-          <Text variant="eyebrow" color={colors.brass} style={styles.verseEyebrow}>
-            Chapter {String(sloka.chapter).padStart(2, "0")} · Verse{" "}
-            {String(sloka.verse_number).padStart(2, "0")}
-          </Text>
-          <Text
-            variant="sanskrit"
-            accessibilityLanguage="sa"
-            testID="sloka-sanskrit"
-            style={styles.sanskrit}
-          >
-            {sloka.sanskrit_devanagari}
-          </Text>
+          <View style={styles.headerBlock}>
+            <Text
+              variant="eyebrow"
+              color={colors.brassSoft}
+              style={styles.eyebrow}
+            >
+              {lang === "hi" ? "भगवद्गीता" : "Bhagavad Gita"} · {ref}
+              {chTitle ? ` · ${chTitle}` : ""}
+              {progressLabel ? ` · ${progressLabel}` : ""}
+            </Text>
+
+            <Text
+              variant="sanskrit"
+              accessibilityRole="header"
+              accessibilityLanguage="sa"
+              testID="sloka-sanskrit"
+              style={[styles.sanskrit, { color: colors.text }]}
+            >
+              {sanskritLines.map((line, i) => (
+                <Text key={i} variant="sanskrit" style={styles.sanskritLine}>
+                  {line}
+                  {i < sanskritLines.length - 1 ? "।" : " ॥"}
+                  {i < sanskritLines.length - 1 ? "\n" : ""}
+                </Text>
+              ))}
+            </Text>
+
+            <View style={styles.iastBlock}>
+              {iastLines.map((line, i) => (
+                <Text
+                  key={i}
+                  variant="soft"
+                  accessibilityLanguage="sa-Latn"
+                  testID={i === 0 ? "sloka-transliteration" : undefined}
+                  style={[styles.iast, { color: colors.textMuted }]}
+                >
+                  {line}
+                </Text>
+              ))}
+            </View>
+
+            <View style={styles.listenBlock}>
+              <SpeakButton
+                testID="sloka-narration"
+                text={sloka.sanskrit_devanagari}
+                lang={lang === "hi" ? "hi" : "en"}
+                chapter={sloka.chapter}
+                verseNumber={sloka.verse_number}
+                recitationOnly
+                listenLabel={t("verseListen")}
+                stopLabel={t("verseStop")}
+                unsupportedLabel={t("ttsUnsupported")}
+              />
+              <Text variant="muted" color={colors.textMuted} style={styles.credit}>
+                {t("verseRecitationCredit")}
+              </Text>
+            </View>
+
+            <View
+              accessibilityRole="toolbar"
+              accessibilityLabel={t("verseTools")}
+              style={styles.tools}
+            >
+              <QuietTool
+                label={lang === "hi" ? "पूर्ण" : "Complete"}
+                testID="sloka-complete"
+                onPress={() => void markComplete()}
+              />
+              <Text variant="muted" color={colors.textMuted} style={styles.dot}>
+                ·
+              </Text>
+              <QuietTool
+                label={
+                  favorited
+                    ? lang === "hi"
+                      ? "सहेजा"
+                      : "Saved"
+                    : lang === "hi"
+                      ? "पसंद"
+                      : "Favorite"
+                }
+                testID="sloka-favorite"
+                onPress={() => void toggleFavorite()}
+              />
+              <Text variant="muted" color={colors.textMuted} style={styles.dot}>
+                ·
+              </Text>
+              <QuietTool
+                label={t("verseShare")}
+                testID="sloka-share"
+                onPress={() => {
+                  void Share.share({
+                    message: `${ref}\n${sloka.sanskrit_devanagari}\n${translation ?? ""}\n${getApiUrl()}/sloka/${sloka.id}`,
+                  })
+                    .then((result) => {
+                      if (result.action === Share.sharedAction) {
+                        void eventsApi.send("share_card", {
+                          method: "sheet",
+                          slokaId: sloka.id,
+                        });
+                      }
+                    })
+                    .catch(() => undefined);
+                }}
+              />
+              <Text variant="muted" color={colors.textMuted} style={styles.dot}>
+                ·
+              </Text>
+              <QuietTool
+                label={lang === "hi" ? "जर्नल" : "Journal"}
+                testID="sloka-journal"
+                onPress={() => setShowJournal((v) => !v)}
+              />
+            </View>
+
+            <View style={styles.prevNext}>
+              {prev ? (
+                <Pressable
+                  onPress={() => {
+                    stopNarration();
+                    router.replace(`/sloka/${prev.id}`);
+                  }}
+                  hitSlop={8}
+                >
+                  <Text variant="muted" color={colors.brassSoft}>
+                    ← {prev.chapter}.{prev.verse_number}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Text variant="muted" color={colors.textMuted} style={{ opacity: 0.35 }}>
+                  {lang === "hi" ? "आरंभ" : "Start"}
+                </Text>
+              )}
+              {next ? (
+                <Pressable
+                  onPress={() => {
+                    stopNarration();
+                    router.replace(`/sloka/${next.id}`);
+                  }}
+                  hitSlop={8}
+                >
+                  <Text variant="muted" color={colors.brassSoft}>
+                    {next.chapter}.{next.verse_number} →
+                  </Text>
+                </Pressable>
+              ) : (
+                <Text variant="muted" color={colors.textMuted} style={{ opacity: 0.35 }}>
+                  {lang === "hi" ? "अंत" : "End"}
+                </Text>
+              )}
+            </View>
+          </View>
         </Rise>
-        <View style={[styles.divider, { backgroundColor: colors.line }]} />
-        <Text
-          variant="soft"
-          accessibilityLanguage="sa-Latn"
-          testID="sloka-transliteration"
-          style={[styles.transliteration, { color: colors.textSoft }]}
-        >
-          {sloka.transliteration_iast}
-        </Text>
 
-        <Text
-          variant="sanskrit"
-          accessibilityLanguage="hi"
-          testID="sloka-hindi-translation"
-          style={[styles.hindiTranslation, { color: colors.textSoft }]}
-        >
-          {sloka.hindi_translation}
-        </Text>
+        <View style={[styles.rule, { backgroundColor: colors.line }]} />
 
-        <Text
-          variant="display"
-          accessibilityLanguage="en"
-          testID="sloka-english-translation"
-          color={colors.brassSoft}
-          style={styles.englishTranslation}
+        <Pressable
+          testID="sloka-ask-madhav"
+          onPress={() => {
+            askAboutVerse(
+              sloka.id,
+              lang === "hi"
+                ? `श्लोक ${ref} के बारे में मुझे समझाइए — आज मेरे जीवन में इसका क्या अर्थ हो सकता है?`
+                : `Help me understand verse ${ref} — what might it mean for my life right now?`
+            );
+            router.push("/madhav");
+          }}
+          style={({ pressed }) => [
+            styles.askMadhav,
+            {
+              borderColor: "rgba(201,162,39,0.4)",
+              opacity: pressed ? 0.9 : 1,
+            },
+          ]}
         >
-          ‘{sloka.english_translation}’
-        </Text>
-        {meaning ? (
-          <Panel blur style={styles.reflectionPanel}>
+          <Text variant="soft" color={colors.brassSoft}>
+            {t("askMadhavVerse")}
+          </Text>
+        </Pressable>
+
+        {translation ? (
+          <View style={styles.section}>
             <Text variant="eyebrow" color={colors.brass}>
-              {lang === "hi" ? "चिन्तन" : "Reflection"}
+              {t("translation")}
+            </Text>
+            <Text
+              variant="display"
+              color={colors.brassSoft}
+              testID={
+                lang === "hi"
+                  ? "sloka-hindi-translation"
+                  : "sloka-english-translation"
+              }
+              style={styles.translation}
+              accessibilityLanguage={lang === "hi" ? "hi" : "en"}
+            >
+              {lang === "hi" ? translation : `‘${translation}’`}
+            </Text>
+          </View>
+        ) : null}
+
+        {commentary ? (
+          <Panel blur style={styles.sectionPanel}>
+            <Text variant="eyebrow" color={colors.brass}>
+              {t("meaning")}
             </Text>
             <Text variant="soft" style={styles.panelCopy}>
-              {meaning}
+              {commentary}
             </Text>
           </Panel>
         ) : null}
-        {story ? (
-          <Panel blur style={styles.storyPanel}>
-            <Text variant="eyebrow" color={colors.brass}>
-              {lang === "hi" ? "कथा" : "Story"}
-            </Text>
-            <Text variant="soft" style={styles.panelCopy}>
-              {story}
-            </Text>
-          </Panel>
-        ) : null}
+
+        <Panel blur style={styles.sectionPanel}>
+          <View style={styles.storyHead}>
+            <View style={{ flex: 1 }}>
+              <Text variant="eyebrow" color={colors.brass}>
+                {t("reflectiveStory")}
+              </Text>
+              <Text variant="muted" color={colors.textMuted} style={styles.storyBlurb}>
+                {t("storyBlurb")}
+              </Text>
+            </View>
+            <View style={styles.storyControls}>
+              <View
+                style={[styles.langToggle, { borderColor: colors.line }]}
+              >
+                {(["en", "hi"] as const).map((code) => (
+                  <Pressable
+                    key={code}
+                    onPress={() => {
+                      stopNarration();
+                      setStoryLang(code);
+                    }}
+                    style={[
+                      styles.langChip,
+                      storyLang === code && {
+                        backgroundColor: colors.brass,
+                      },
+                    ]}
+                  >
+                    <Text
+                      variant="muted"
+                      color={
+                        storyLang === code ? colors.onBrass : colors.textMuted
+                      }
+                      style={styles.langChipText}
+                    >
+                      {code.toUpperCase()}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              {story ? (
+                <SpeakButton
+                  testID="sloka-story-listen"
+                  text={story}
+                  lang={storyLang}
+                  listenLabel={t("verseListenStory")}
+                  stopLabel={t("verseStop")}
+                  unsupportedLabel={t("ttsUnsupported")}
+                />
+              ) : null}
+            </View>
+          </View>
+          <Text variant="soft" style={styles.panelCopy}>
+            {story
+              ? story
+              : lang === "hi"
+                ? "कथा लोड हो रही है…"
+                : "Loading story…"}
+          </Text>
+        </Panel>
 
         {showJournal ? (
           <View
             testID="sloka-journal-editor"
             style={[
               styles.journalSection,
-              { borderTopColor: colors.hairline, borderBottomColor: colors.hairline },
+              {
+                borderTopColor: colors.hairline,
+                borderBottomColor: colors.hairline,
+              },
             ]}
           >
-            <Text variant="eyebrow" color={colors.brass} style={styles.journalLabel}>
+            <Text
+              variant="eyebrow"
+              color={colors.brass}
+              style={styles.journalLabel}
+            >
               {lang === "hi" ? "निजी चिन्तन" : "Private reflection"}
             </Text>
             <TextInput
               value={journal}
               onChangeText={setJournal}
               multiline
-              accessibilityLabel={lang === "hi" ? "आपका निजी चिन्तन" : "Your private reflection"}
+              accessibilityLabel={
+                lang === "hi" ? "आपका निजी चिन्तन" : "Your private reflection"
+              }
               testID="sloka-journal-input"
               placeholder={lang === "hi" ? "आपका चिन्तन…" : "A private note…"}
               placeholderTextColor={colors.textMuted}
-              style={[
-                styles.input,
-                {
-                  color: colors.text,
-                  backgroundColor: "transparent",
-                },
-              ]}
+              style={[styles.input, { color: colors.text }]}
             />
             <Button
               label={
@@ -456,7 +659,9 @@ export default function SlokaScreen() {
                         ? "इस डिवाइस पर सहेजा गया — खाते में रखने के लिए साइन इन करें।"
                         : "Saved on this device — sign in to keep it in your account."
                     );
-                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    void Haptics.impactAsync(
+                      Haptics.ImpactFeedbackStyle.Light
+                    );
                   }
                   setJournal("");
                   setShowJournal(false);
@@ -477,7 +682,6 @@ export default function SlokaScreen() {
         {journalNotice ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={journalNotice}
             testID="sloka-journal-notice"
             onPress={() => router.push("/account")}
             style={{ marginTop: spacing.md }}
@@ -504,35 +708,6 @@ export default function SlokaScreen() {
         ) : null}
       </ScrollView>
 
-      {Platform.OS === "ios" ? (
-        <BlurView
-          intensity={mode === "dark" ? 40 : 50}
-          tint={mode === "dark" ? "dark" : "light"}
-          style={[
-            styles.toolbar,
-            {
-              borderTopColor: colors.hairline,
-              paddingBottom: Math.max(insets.bottom, spacing.md),
-            },
-          ]}
-        >
-          {toolbar}
-        </BlurView>
-      ) : (
-        <View
-          style={[
-            styles.toolbar,
-            {
-              backgroundColor: colors.navBg,
-              borderTopColor: colors.hairline,
-              paddingBottom: Math.max(insets.bottom, spacing.md),
-            },
-          ]}
-        >
-          {toolbar}
-        </View>
-      )}
-
       <NotificationPrompt
         visible={notifPromptVisible}
         onClose={() => setNotifPromptVisible(false)}
@@ -541,19 +716,13 @@ export default function SlokaScreen() {
   );
 }
 
-type ToolIcon = "favorite" | "complete" | "speak" | "share" | "journal" | "madhav";
-
-function Tool({
-  icon,
+function QuietTool({
   label,
   onPress,
-  selected = false,
   testID,
 }: {
-  icon: ToolIcon;
   label: string;
   onPress: () => void;
-  selected?: boolean;
   testID: string;
 }) {
   const { colors } = useTheme();
@@ -561,91 +730,15 @@ function Tool({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ selected }}
       testID={testID}
       onPress={onPress}
-      hitSlop={6}
-      style={({ pressed }) => [styles.tool, { opacity: pressed ? 0.58 : 1 }]}
+      hitSlop={8}
+      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
     >
-      {icon === "madhav" ? (
-        <MadhavMark size={26} />
-      ) : (
-        <ActionIcon icon={icon} color={colors.brassSoft} filled={selected} />
-      )}
+      <Text variant="soft" color={colors.textSoft} style={styles.quietLabel}>
+        {label}
+      </Text>
     </Pressable>
-  );
-}
-
-function ActionIcon({
-  icon,
-  color,
-  filled,
-}: {
-  icon: Exclude<ToolIcon, "madhav">;
-  color: string;
-  filled: boolean;
-}) {
-  if (icon === "favorite") {
-    return (
-      <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
-        <Path
-          d="M20.8 4.7a5.5 5.5 0 00-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 00-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 00-.1-7.8z"
-          fill={filled ? color : "none"}
-          stroke={color}
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
-    );
-  }
-  if (icon === "complete") {
-    return (
-      <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
-        <Circle cx={12} cy={12} r={8.5} stroke={color} strokeWidth={1.5} />
-        <Path
-          d="M8.2 12.2l2.4 2.4 5.3-5.4"
-          stroke={color}
-          strokeWidth={1.6}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
-    );
-  }
-  if (icon === "speak") {
-    return (
-      <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
-        <Path
-          d="M5 10v4h3l4 3.5v-11L8 10H5zM15.5 9a4.2 4.2 0 010 6M18 6.5a7.7 7.7 0 010 11"
-          stroke={color}
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
-    );
-  }
-  if (icon === "share") {
-    return (
-      <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
-        <Circle cx={18} cy={5.5} r={2.25} stroke={color} strokeWidth={1.5} />
-        <Circle cx={6} cy={12} r={2.25} stroke={color} strokeWidth={1.5} />
-        <Circle cx={18} cy={18.5} r={2.25} stroke={color} strokeWidth={1.5} />
-        <Path d="M8 10.9l7.8-4.2M8 13.1l7.8 4.2" stroke={color} strokeWidth={1.5} />
-      </Svg>
-    );
-  }
-  return (
-    <Svg width={25} height={25} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M5 4.5h10a2 2 0 012 2V11M5 4.5a2 2 0 00-2 2v11a2 2 0 002 2h8M5 4.5v15M14.5 17.8l4.8-4.8 1.7 1.7-4.8 4.8-2.7.8.8-2.7z"
-        stroke={color}
-        strokeWidth={1.45}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
   );
 }
 
@@ -659,71 +752,150 @@ const styles = StyleSheet.create({
   stateHeader: {
     minHeight: 56,
     justifyContent: "center",
+    paddingHorizontal: spacing.lg,
   },
-  readerHeader: {
-    minHeight: 72,
+  topBar: {
+    minHeight: 56,
     paddingHorizontal: spacing.lg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  headerCitation: {
-    letterSpacing: 1.8,
+  topCitation: {
+    letterSpacing: 1.4,
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
   },
   offlineBadge: {
-    alignSelf: "flex-start",
+    alignSelf: "center",
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderRadius: radii.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     marginBottom: spacing.md,
   },
-  verseEyebrow: {
-    letterSpacing: 2.1,
+  headerBlock: {
+    alignItems: "center",
+  },
+  eyebrow: {
+    textAlign: "center",
+    lineHeight: 18,
   },
   sanskrit: {
     marginTop: spacing.lg,
-    fontSize: 24,
-    lineHeight: 38,
-    letterSpacing: 0.35,
+    fontSize: 26,
+    lineHeight: 42,
+    textAlign: "center",
+    letterSpacing: 0,
   },
-  divider: {
+  sanskritLine: {
+    fontSize: 26,
+    lineHeight: 42,
+    textAlign: "center",
+  },
+  iastBlock: {
+    marginTop: spacing.md,
+    alignItems: "center",
+    gap: 2,
+  },
+  iast: {
+    fontStyle: "italic",
+    textAlign: "center",
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  listenBlock: {
+    marginTop: spacing.lg,
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  credit: {
+    fontSize: 11,
+    letterSpacing: 1.2,
+  },
+  tools: {
+    marginTop: spacing.md,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+  quietLabel: {
+    fontSize: 14,
+  },
+  dot: {
+    opacity: 0.35,
+    fontSize: 14,
+  },
+  prevNext: {
+    marginTop: spacing.lg,
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  rule: {
     marginTop: spacing.xl,
     height: StyleSheet.hairlineWidth * 2,
     width: "100%",
   },
-  transliteration: {
+  askMadhav: {
+    marginTop: spacing.md,
+    minHeight: 44,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+  },
+  section: {
     marginTop: spacing.xl,
-    fontStyle: "italic",
-    lineHeight: 24,
-    opacity: 0.84,
   },
-  hindiTranslation: {
-    marginTop: 40,
-    fontSize: 18,
-    lineHeight: 31,
+  translation: {
+    marginTop: spacing.sm,
+    fontSize: 24,
+    lineHeight: 34,
+    letterSpacing: -0.2,
   },
-  englishTranslation: {
-    marginTop: 40,
-    fontSize: 28,
-    lineHeight: 36,
-    letterSpacing: -0.25,
-  },
-  reflectionPanel: {
-    marginTop: spacing.xxl,
-    padding: spacing.lg,
-  },
-  storyPanel: {
+  sectionPanel: {
     marginTop: spacing.lg,
     padding: spacing.lg,
   },
   panelCopy: {
     marginTop: spacing.md,
     lineHeight: 24,
+  },
+  storyHead: {
+    gap: spacing.md,
+  },
+  storyBlurb: {
+    marginTop: 4,
+    fontSize: 12,
+  },
+  storyControls: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  langToggle: {
+    flexDirection: "row",
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.sm,
+    padding: 2,
+    gap: 2,
+  },
+  langChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radii.sm - 2,
+  },
+  langChipText: {
+    fontSize: 11,
+    letterSpacing: 1,
+    fontFamily: "Sora_600SemiBold",
   },
   journalSection: {
     marginTop: spacing.xxl,
@@ -733,26 +905,6 @@ const styles = StyleSheet.create({
   },
   journalLabel: {
     marginBottom: spacing.sm,
-  },
-  toolbar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderTopWidth: StyleSheet.hairlineWidth * 2,
-  },
-  toolbarInner: {
-    minHeight: 64,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    paddingHorizontal: spacing.md,
-  },
-  tool: {
-    width: 48,
-    height: 48,
-    alignItems: "center",
-    justifyContent: "center",
   },
   input: {
     minHeight: 108,

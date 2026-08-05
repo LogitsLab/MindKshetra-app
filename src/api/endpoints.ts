@@ -234,11 +234,25 @@ export const votdApi = {
    * Server-authoritative verse of the day — never derive it from the clock.
    * `nakshatra` is present when the day's pick was moon-driven (provenance
    * context, not causation).
+   * `offset` (e.g. -1 / -2) matches the web home carousel days.
+   * `full` includes the sloka body so the client can skip a second fetch.
    */
-  today: () =>
-    apiFetch<{ id: number; ref: string; date: string; nakshatra?: string }>(
-      "/api/votd/today"
-    ),
+  today: (opts?: { offset?: number; full?: boolean }) => {
+    const params = new URLSearchParams();
+    if (opts?.offset != null && opts.offset !== 0) {
+      params.set("offset", String(opts.offset));
+    }
+    if (opts?.full) params.set("full", "1");
+    const q = params.toString();
+    return apiFetch<{
+      id: number;
+      ref: string;
+      date: string;
+      offset?: number;
+      nakshatra?: string;
+      sloka?: import("@/types").Sloka;
+    }>(`/api/votd/today${q ? `?${q}` : ""}`);
+  },
 };
 
 export const eventsApi = {

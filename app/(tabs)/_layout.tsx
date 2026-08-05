@@ -3,10 +3,10 @@ import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { BlurView } from "expo-blur";
 import { Redirect, Tabs } from "expo-router";
 import {
-  TabAstrologyIcon,
-  TabExploreIcon,
   TabHomeIcon,
-  TabMoodIcon,
+  TabPathIcon,
+  TabPractiseIcon,
+  TabProfileIcon,
 } from "@/components/BrandMark";
 import { useLanguage } from "@/context/LanguageContext";
 import { useOnboarding } from "@/context/OnboardingContext";
@@ -73,31 +73,35 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore/index"
+        name="practise"
         options={{
-          title: t("navExplore"),
-          tabBarButtonTestID: "tab-explore",
-          tabBarIcon: ({ focused }) => <TabExploreIcon focused={focused} />,
+          title: t("navPractise"),
+          tabBarButtonTestID: "tab-practise",
+          tabBarIcon: ({ focused }) => <TabPractiseIcon focused={focused} />,
         }}
       />
       <Tabs.Screen
-        name="mood/index"
+        name="path"
         options={{
-          title: t("navMood"),
-          tabBarButtonTestID: "tab-mood",
-          tabBarIcon: ({ focused }) => <TabMoodIcon focused={focused} />,
+          title: t("navPath"),
+          tabBarButtonTestID: "tab-path",
+          tabBarIcon: ({ focused }) => <TabPathIcon focused={focused} />,
         }}
       />
       <Tabs.Screen
-        name="astrology/index"
+        name="profile"
         options={{
-          title: t("navAstrology"),
-          tabBarButtonTestID: "tab-astrology",
-          tabBarIcon: ({ focused }) => <TabAstrologyIcon focused={focused} />,
+          title: t("navProfile"),
+          tabBarButtonTestID: "tab-profile",
+          tabBarIcon: ({ focused }) => <TabProfileIcon focused={focused} />,
         }}
       />
+      {/* Reachable from Home paths — kept off the tab bar */}
+      <Tabs.Screen name="explore/index" options={{ href: null }} />
       <Tabs.Screen name="explore/[chapter]" options={{ href: null }} />
+      <Tabs.Screen name="mood/index" options={{ href: null }} />
       <Tabs.Screen name="mood/[id]" options={{ href: null }} />
+      <Tabs.Screen name="astrology/index" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -62,7 +62,8 @@ export async function setStoredTextScale(scale: "sm" | "md" | "lg"): Promise<voi
 
 /** Bump when onboarding content/flow changes to re-show once for returning users. */
 // v6: 5-step personalization (goals, inspirations, time, journey setup) + auth sheet.
-const ONBOARDING_VERSION = 6;
+// v7: Krishna dialogue inspirations step + goal/mood icon refresh.
+const ONBOARDING_VERSION = 7;
 
 export async function getOnboardingComplete(): Promise<boolean> {
   const storedVersion = await AsyncStorage.getItem(KEYS.onboardingVersion);

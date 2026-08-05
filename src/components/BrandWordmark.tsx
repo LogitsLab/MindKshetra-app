@@ -12,7 +12,7 @@ type CreditProps = {
   style?: StyleProp<TextStyle>;
 };
 
-/** Small studio credit — header lockup only. */
+/** Small studio credit — shown with the product name on every screen. */
 export function BrandCredit({ tone = "muted", style }: CreditProps) {
   const { colors } = useTheme();
   return (
@@ -28,22 +28,29 @@ export function BrandCredit({ tone = "muted", style }: CreditProps) {
 type NavProps = {
   /** Extra nodes after the name stack (e.g. streak). */
   trailing?: React.ReactNode;
+  /** Studio credit under the name — on by default. */
+  showCredit?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
 /**
- * Header lockup: stacked name + credit, trailing edges aligned
- * so "LogitsLab" lines up with "Kshetra".
+ * Header lockup: name (+ optional studio credit).
  */
-export function BrandNavLabel({ trailing, style }: NavProps) {
+export function BrandNavLabel({
+  trailing,
+  showCredit = true,
+  style,
+}: NavProps) {
   const { colors } = useTheme();
   return (
     <View style={[styles.navWrap, style]}>
-      <View style={styles.navStack}>
+      <View style={[styles.navStack, !showCredit && styles.navStackFlat]}>
         <Text variant="muted" color={colors.textSoft} style={styles.navName}>
           {BRAND_NAME}
         </Text>
-        <BrandCredit tone="muted" style={styles.navCredit} />
+        {showCredit ? (
+          <BrandCredit tone="muted" style={styles.navCredit} />
+        ) : null}
       </View>
       {trailing}
     </View>
@@ -97,12 +104,17 @@ const styles = StyleSheet.create({
   },
   navStack: {
     flexDirection: "column",
-    alignItems: "flex-end",
+    alignItems: "flex-start",
     justifyContent: "center",
     flexShrink: 1,
   },
+  navStackFlat: {
+    alignItems: "flex-start",
+  },
   navName: {
     lineHeight: 18,
+    fontFamily: "Sora_600SemiBold",
+    fontSize: 13,
   },
   navCredit: {
     marginTop: 1,

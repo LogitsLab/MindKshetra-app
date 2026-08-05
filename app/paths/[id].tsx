@@ -70,22 +70,20 @@ export default function PathDetailScreen() {
             image={images.pathPaths}
             eyebrow={`${path.days_count} ${lang === "hi" ? "दिन" : "days"}`}
             title={title}
-            body={intro}
+            intro={intro}
+            meta={
+              run.completedDays.length > 0 ? (
+                <Text variant="muted" color={colors.onMediaMuted}>
+                  {pathDone
+                    ? t("pathRunDone")
+                    : fill(t("pathRunProgress"), {
+                        n: run.currentDay,
+                        total: path.days_count,
+                      })}
+                </Text>
+              ) : null
+            }
           />
-          {run.completedDays.length > 0 ? (
-            <Text
-              variant="muted"
-              color={colors.brassSoft}
-              style={{ marginTop: spacing.md }}
-            >
-              {pathDone
-                ? t("pathRunDone")
-                : fill(t("pathRunProgress"), {
-                    n: run.currentDay,
-                    total: path.days_count,
-                  })}
-            </Text>
-          ) : null}
           {run.guest && run.completedDays.length > 0 ? (
             <Pressable onPress={() => router.push("/account")}>
               <Text variant="muted" style={{ marginTop: spacing.xs }}>
