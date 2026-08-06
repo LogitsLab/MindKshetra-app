@@ -3,8 +3,8 @@
   "days_count": 7,
   "title_en": "Seven days of sitting",
   "title_hi": "बैठने के सात दिन",
-  "intro_en": "A free progressive course: one short guided sit a day. Unlock the next day when you finish today. Missing a calendar day never erases your place — only kindness, never guilt. This is not japa and not a marketplace.",
-  "intro_hi": "मुफ़्त क्रमिक पाठ्यक्रम: प्रतिदिन एक छोटी निर्देशित बैठक। आज पूर्ण होने पर अगला दिन खुलता है। कोई दिन छूटने से प्रगति नहीं मिटती — केवल प्रोत्साहन, अपराधबोध नहीं। यह जप नहीं, और बाज़ार भी नहीं।",
+  "intro_en": "A free progressive course: one short guided sit a day. Unlock the next day when you finish today. Missing a calendar day never erases your place, only kindness, never guilt. This is not japa and not a marketplace.",
+  "intro_hi": "मुफ़्त क्रमिक पाठ्यक्रम: प्रतिदिन एक छोटी निर्देशित बैठक। आज पूर्ण होने पर अगला दिन खुलता है। कोई दिन छूटने से प्रगति नहीं मिटती, केवल प्रोत्साहन, अपराधबोध नहीं। यह जप नहीं, और बाज़ार भी नहीं।",
   "days": [
     {
       "id": "foundation-7-d1",
@@ -16,13 +16,13 @@
       "duration_minutes": 6,
       "title_en": "Posture and setup",
       "title_hi": "मुद्रा और तैयारी",
-      "theme_en": "A steady seat is enough. Comfort over perfection — the mind follows the body that feels safe.",
-      "theme_hi": "स्थिर आसन पर्याप्त है। पूर्णता से अधिक आराम — मन उसी शरीर का अनुसरण करता है जो सुरक्षित महसूस करे।",
+      "theme_en": "A steady seat is enough. Comfort over perfection, the mind follows the body that feels safe.",
+      "theme_hi": "स्थिर आसन पर्याप्त है। पूर्णता से अधिक आराम, मन उसी शरीर का अनुसरण करता है जो सुरक्षित महसूस करे।",
       "phases": [
         {
           "type": "speak",
-          "text_en": "Welcome. Find a seat where your spine can be tall but soft. Feet on the floor, or legs crossed if that is natural. Rest your hands. Soften the jaw. You are not performing — you are arriving.",
-          "text_hi": "स्वागत है। ऐसा आसन चुनें जहाँ रीढ़ सीधी पर कोमल रहे। पैर ज़मीन पर, या सहज रूप से पालथी। हाथ विश्राम में। जबड़ा ढीला। आप प्रदर्शन नहीं कर रहे — आप पहुँच रहे हैं।"
+          "text_en": "Welcome. Find a seat where your spine can be tall but soft. Feet on the floor, or legs crossed if that is natural. Rest your hands. Soften the jaw. You are not performing, you are arriving.",
+          "text_hi": "स्वागत है। ऐसा आसन चुनें जहाँ रीढ़ सीधी पर कोमल रहे। पैर ज़मीन पर, या सहज रूप से पालथी। हाथ विश्राम में। जबड़ा ढीला। आप प्रदर्शन नहीं कर रहे, आप पहुँच रहे हैं।"
         },
         { "type": "silence", "seconds": 45 },
         {
@@ -48,19 +48,19 @@
       "duration_minutes": 7,
       "title_en": "Breath awareness",
       "title_hi": "श्वास जागरूकता",
-      "theme_en": "The breath is always available. You do not invent it — you notice it.",
-      "theme_hi": "श्वास सदैव उपलब्ध है। आप इसे बनाते नहीं — आप इसे देखते हैं।",
+      "theme_en": "The breath is always available. You do not invent it, you notice it.",
+      "theme_hi": "श्वास सदैव उपलब्ध है। आप इसे बनाते नहीं, आप इसे देखते हैं।",
       "phases": [
         {
           "type": "speak",
           "text_en": "Settle into your seat. Soften the belly. Feel the natural breath without forcing it longer or shorter.",
-          "text_hi": "आसन में स्थिर हों। पेट कोमल रखें। स्वाभाविक श्वास महसूस करें — लंबा या छोटा करने का दबाव न डालें।"
+          "text_hi": "आसन में स्थिर हों। पेट कोमल रखें। स्वाभाविक श्वास महसूस करें, लंबा या छोटा करने का दबाव न डालें।"
         },
         { "type": "silence", "seconds": 30 },
         {
           "type": "speak",
-          "text_en": "Rest attention at the nostrils or the rise of the chest. When the mind wanders — and it will — gently return to one breath.",
-          "text_hi": "ध्यान नासिका पर या छाती के उठने-गिरने पर रखें। मन भटकेगा — और भटकेगा ही — तो कोमलता से एक श्वास पर लौट आएँ।"
+          "text_en": "Rest attention at the nostrils or the rise of the chest. When the mind wanders, and it will, gently return to one breath.",
+          "text_hi": "ध्यान नासिका पर या छाती के उठने-गिरने पर रखें। मन भटकेगा, और भटकेगा ही, तो कोमलता से एक श्वास पर लौट आएँ।"
         },
         { "type": "silence", "seconds": 180 },
         {
@@ -85,8 +85,8 @@
       "phases": [
         {
           "type": "speak",
-          "text_en": "Close the eyes if you wish. Begin at the crown of the head. Notice warmth, coolness, or nothing at all — all are welcome.",
-          "text_hi": "चाहें तो आँखें बंद करें। सिर के शीर्ष से आरंभ करें। गर्मी, ठंडक, या कुछ नहीं — सब स्वागत योग्य है।"
+          "text_en": "Close the eyes if you wish. Begin at the crown of the head. Notice warmth, coolness, or nothing at all, all are welcome.",
+          "text_hi": "चाहें तो आँखें बंद करें। सिर के शीर्ष से आरंभ करें। गर्मी, ठंडक, या कुछ नहीं, सब स्वागत योग्य है।"
         },
         { "type": "silence", "seconds": 40 },
         {
@@ -112,8 +112,8 @@
       "duration_minutes": 8,
       "title_en": "Thoughts without judgment",
       "title_hi": "निर्णय के बिना विचार",
-      "theme_en": "Thoughts are weather. You are the sky that holds them — not every cloud needs chasing.",
-      "theme_hi": "विचार मौसम हैं। आप आकाश हैं जो उन्हें धारण करता है — हर बादल का पीछा ज़रूरी नहीं।",
+      "theme_en": "Thoughts are weather. You are the sky that holds them, not every cloud needs chasing.",
+      "theme_hi": "विचार मौसम हैं। आप आकाश हैं जो उन्हें धारण करता है, हर बादल का पीछा ज़रूरी नहीं।",
       "phases": [
         {
           "type": "speak",
@@ -129,8 +129,8 @@
         { "type": "silence", "seconds": 210 },
         {
           "type": "speak",
-          "text_en": "Finish with three breaths. The practice was noticing — not emptying the mind.",
-          "text_hi": "तीन श्वासों के साथ समाप्त करें। अभ्यास था देखना — मन को खाली करना नहीं।"
+          "text_en": "Finish with three breaths. The practice was noticing, not emptying the mind.",
+          "text_hi": "तीन श्वासों के साथ समाप्त करें। अभ्यास था देखना, मन को खाली करना नहीं।"
         }
       ]
     },
@@ -156,7 +156,7 @@
         {
           "type": "speak",
           "text_en": "Labels can change. Stay with what is true now, not what you think you should feel.",
-          "text_hi": "नाम बदल सकते हैं। अभी जो सत्य है उसी के साथ रहें — जो महसूस करना चाहिए वह नहीं।"
+          "text_hi": "नाम बदल सकते हैं। अभी जो सत्य है उसी के साथ रहें, जो महसूस करना चाहिए वह नहीं।"
         },
         { "type": "silence", "seconds": 200 },
         {
@@ -181,8 +181,8 @@
       "phases": [
         {
           "type": "speak",
-          "text_en": "Sit quietly. Bring to mind one simple thing that supported you today — a person, a meal, a moment of rest. Hold it lightly.",
-          "text_hi": "शांत बैठें। आज जिस एक साधारण बात ने सहारा दिया — व्यक्ति, भोजन, विश्राम का क्षण — उसे हल्के से याद करें।"
+          "text_en": "Sit quietly. Bring to mind one simple thing that supported you today, a person, a meal, a moment of rest. Hold it lightly.",
+          "text_hi": "शांत बैठें। आज जिस एक साधारण बात ने सहारा दिया, व्यक्ति, भोजन, विश्राम का क्षण, उसे हल्के से याद करें।"
         },
         { "type": "silence", "seconds": 45 },
         {
@@ -225,8 +225,8 @@
         { "type": "silence", "seconds": 210 },
         {
           "type": "speak",
-          "text_en": "Before you rise: what helped this week? Keep that one thing. The course continues only if you want — daily one-offs and scripture sādhana remain open. Thank yourself for showing up.",
-          "text_hi": "उठने से पहले: इस सप्ताह क्या सहायक रहा? वही एक बात रखें। पाठ्यक्रम तभी आगे जब चाहें — दैनिक एक-बार बैठक और शास्त्र साधना खुली हैं। आने के लिए स्वयं को धन्यवाद दें।"
+          "text_en": "Before you rise: what helped this week? Keep that one thing. The course continues only if you want, daily one-offs and scripture sādhana remain open. Thank yourself for showing up.",
+          "text_hi": "उठने से पहले: इस सप्ताह क्या सहायक रहा? वही एक बात रखें। पाठ्यक्रम तभी आगे जब चाहें, दैनिक एक-बार बैठक और शास्त्र साधना खुली हैं। आने के लिए स्वयं को धन्यवाद दें।"
         }
       ]
     }

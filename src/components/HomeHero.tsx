@@ -35,7 +35,7 @@ const HOME_VISITED_KEY = "mindkshetra-home-visited";
 
 const ROTATING_LINES_EN = [
   "A verse, a short sit, guidance when you need it.",
-  "Meet the mind where it is — not where it should be.",
+  "Meet the mind where it is, not where it should be.",
   "Clarity for the battlefield of the day.",
   "One honest line can steady the field.",
   "Scripture that knows who is asking.",
@@ -44,7 +44,7 @@ const ROTATING_LINES_EN = [
 
 const ROTATING_LINES_HI = [
   "एक श्लोक, एक छोटी बैठक, ज़रूरत पर मार्गदर्शन।",
-  "मन जहाँ है वहीं मिलें — जहाँ होना चाहिए वहाँ नहीं।",
+  "मन जहाँ है वहीं मिलें, जहाँ होना चाहिए वहाँ नहीं।",
   "आज के कुरुक्षेत्र के लिए स्पष्टता।",
   "एक सच्ची पंक्ति क्षेत्र को स्थिर कर सकती है।",
   "वह शास्त्र जो जानता है कि कौन पूछ रहा है।",
@@ -53,7 +53,7 @@ const ROTATING_LINES_HI = [
 
 type Props = {
   votdSanskrit?: string | null;
-  /** Safe-area top — brand floats on atmosphere, no solid header chrome. */
+  /** Safe-area top, brand floats on atmosphere, no solid header chrome. */
   topInset?: number;
   streak?: number;
 };
@@ -192,7 +192,7 @@ export function HomeHero({
           await AsyncStorage.setItem(HOME_VISITED_KEY, "1");
         }
       } catch {
-        /* guest storage flaky — treat as first visit */
+        /* guest storage flaky, treat as first visit */
       }
       try {
         const raw = await AsyncStorage.getItem(PERSONALIZATION_STORAGE_KEY);
@@ -324,12 +324,18 @@ export function HomeHero({
           >
             {BRAND_NAME}
           </Text>
-          <Text variant="muted" color={colors.textMuted} style={styles.credit}>
-            {BRAND_CREDIT}
-          </Text>
+          <View style={styles.textScrim}>
+            <Text
+              variant="muted"
+              color="rgba(232,228,220,0.9)"
+              style={styles.credit}
+            >
+              {BRAND_CREDIT}
+            </Text>
+          </View>
         </View>
         {streak > 0 ? (
-          <View style={styles.streakPill}>
+          <View style={[styles.streakPill, styles.textScrim]}>
             <View
               style={[styles.brandDot, { backgroundColor: colors.brass }]}
             />
@@ -349,7 +355,7 @@ export function HomeHero({
       </Text>
       <Text
         variant="soft"
-        color="rgba(232,228,220,0.78)"
+        color="rgba(232,228,220,0.94)"
         style={styles.body}
       >
         {returning ? rotating : t("homeHeroBody")}
@@ -374,13 +380,21 @@ export function HomeHero({
       </View>
 
       <View style={styles.moodHead}>
-        <Text variant="eyebrow" color={colors.brassSoft}>
-          {lang === "hi" ? "अभी कैसा लगता है?" : "How are you arriving?"}
-        </Text>
-        <Pressable onPress={() => router.push("/(tabs)/mood")} hitSlop={8}>
-          <Text variant="muted" color={colors.textSoft} style={styles.allMoods}>
-            {t("homeMoodsAll")} →
+        <View style={styles.textScrim}>
+          <Text variant="eyebrow" color={colors.brassSoft}>
+            {lang === "hi" ? "अभी कैसा लगता है?" : "How are you arriving?"}
           </Text>
+        </View>
+        <Pressable onPress={() => router.push("/(tabs)/mood")} hitSlop={8}>
+          <View style={styles.textScrim}>
+            <Text
+              variant="muted"
+              color="rgba(232,228,220,0.88)"
+              style={styles.allMoods}
+            >
+              {t("homeMoodsAll")} →
+            </Text>
+          </View>
         </Pressable>
       </View>
       <ScrollView
@@ -397,17 +411,17 @@ export function HomeHero({
               style={({ pressed }) => [
                 styles.moodChip,
                 {
-                  borderColor: colors.line,
+                  borderColor: "rgba(201,162,39,0.28)",
                   backgroundColor: pressed
-                    ? "rgba(255,255,255,0.08)"
-                    : "rgba(255,255,255,0.04)",
+                    ? "rgba(7,9,15,0.72)"
+                    : "rgba(7,9,15,0.58)",
                 },
               ]}
             >
               <MoodIcon id={mood.id} size={18} color={accent} />
               <Text
                 variant="body"
-                color={colors.text}
+                color="rgba(232,228,220,0.96)"
                 style={{ fontSize: 13, fontFamily: "Sora_600SemiBold" }}
               >
                 {lang === "hi" ? mood.labelHi : mood.label}
@@ -480,6 +494,15 @@ const styles = StyleSheet.create({
     fontSize: 72,
     lineHeight: 88,
     opacity: 0.055,
+  },
+  /** Per-line dark plate for small labels only (not greeting / hero body). */
+  textScrim: {
+    alignSelf: "flex-start",
+    maxWidth: "100%",
+    backgroundColor: "rgba(7,9,15,0.55)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radii.sm,
   },
   tagline: {
     fontSize: 20,

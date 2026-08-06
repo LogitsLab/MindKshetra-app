@@ -8,6 +8,13 @@ const AUTH_PARAM_KEYS = [
   "error_description",
 ] as const;
 
+/** Codes already exchanged in this JS runtime (Google AuthSession + deep-link race). */
+const consumedAuthCodes = new Set<string>();
+
+export function markAuthCodeConsumed(code: string | null | undefined) {
+  if (code) consumedAuthCodes.add(code);
+}
+
 function getUrlParams(url: string): URLSearchParams {
   const hashIdx = url.indexOf("#");
   const queryIdx = url.indexOf("?");
@@ -16,6 +23,10 @@ function getUrlParams(url: string): URLSearchParams {
     queryIdx >= 0
       ? url.slice(queryIdx + 1, hashIdx >= 0 ? hashIdx : undefined)
       : "";
+  // Prefer query (PKCE `code=`) over hash; some clients append both.
+  if (query && /(?:^|&)(code|access_token|error)=/.test(query)) {
+    return new URLSearchParams(query);
+  }
   return new URLSearchParams(hash || query);
 }
 
@@ -44,13 +55,19 @@ export function authErrorCode(params: URLSearchParams): string | null {
   return null;
 }
 
+type SessionLike = {
+  user?: { is_anonymous?: boolean | null } | null;
+} | null;
+
 export async function completeAuthFromUrl(
   url: string,
   exchangeCodeForSession: (code: string) => Promise<{ error: { message: string } | null }>,
   setSession: (session: {
     access_token: string;
     refresh_token: string;
-  }) => Promise<{ error: { message: string } | null }>
+  }) => Promise<{ error: { message: string } | null }>,
+  /** When the code was already spent by AuthSession, treat an existing login as success. */
+  getExistingSession?: () => Promise<SessionLike>
 ): Promise<"ok" | string> {
   const params = getUrlParams(url);
   const failed = authErrorCode(params);
@@ -60,9 +77,15 @@ export async function completeAuthFromUrl(
   const refresh_token = params.get("refresh_token");
   const code = params.get("code");
 
+  const existingIsSignedIn = async () => {
+    const session = await getExistingSession?.();
+    return Boolean(session?.user && !session.user.is_anonymous);
+  };
+
   if (access_token && refresh_token) {
     const { error } = await setSession({ access_token, refresh_token });
     if (error) {
+      if (await existingIsSignedIn()) return "ok";
       const msg = error.message.toLowerCase();
       if (msg.includes("expired") || msg.includes("invalid")) return "otp_expired";
       return "auth_failed";
@@ -71,15 +94,25 @@ export async function completeAuthFromUrl(
   }
 
   if (code) {
+    if (consumedAuthCodes.has(code)) {
+      if (await existingIsSignedIn()) return "ok";
+    }
     const { error } = await exchangeCodeForSession(code);
     if (error) {
+      // Typical race: WebBrowser AuthSession exchanged first; deep link retries.
+      if (await existingIsSignedIn()) {
+        markAuthCodeConsumed(code);
+        return "ok";
+      }
       const msg = error.message.toLowerCase();
       if (msg.includes("expired") || msg.includes("invalid")) return "otp_expired";
       return "auth_failed";
     }
+    markAuthCodeConsumed(code);
     return "ok";
   }
 
+  if (await existingIsSignedIn()) return "ok";
   return "auth_failed";
 }
 

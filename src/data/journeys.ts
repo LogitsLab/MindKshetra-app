@@ -1,7 +1,7 @@
 import type { MeditationSession } from "@/data/meditation";
 
 /**
- * The unified journey model — a faithful port of the web's lib/journeys/core.ts.
+ * The unified journey model, a faithful port of the web's lib/journeys/core.ts.
  * Pure: no storage, no network, no React.
  *
  * A journey is a container of days; days differ by KIND, not by engine. Before
@@ -11,7 +11,7 @@ import type { MeditationSession } from "@/data/meditation";
  * had what the other lacked, and the shared arithmetic existed in five copies.
  * Journeys keep both day kinds and give both sides the whole feature set.
  *
- * Keep this in step with MindKshetra/lib/journeys/core.ts — the server enforces
+ * Keep this in step with MindKshetra/lib/journeys/core.ts, the server enforces
  * the same rules, and a client that disagrees will offer days the API rejects.
  */
 
@@ -19,7 +19,7 @@ export type JourneyKind = "scripture" | "meditation";
 
 /**
  * "chain" gates day N behind day N-1 (the meditation course's rule, and what a
- * 21-day arc needs to mean anything). "open" leaves every day reachable — the
+ * 21-day arc needs to mean anything). "open" leaves every day reachable, the
  * 7-day themed paths shipped that way and people use them as a menu.
  */
 export type JourneyUnlock = "chain" | "open";
@@ -52,7 +52,7 @@ export type MeditationDay = {
   title_hi: string;
   /** The guided session; phases drive the player. */
   session: MeditationSession;
-  /** Optional verse companion — meditation days had no scripture link before. */
+  /** Optional verse companion, meditation days had no scripture link before. */
   ref?: { chapter: number; verse: number };
 };
 

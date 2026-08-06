@@ -84,9 +84,9 @@ export const sittingProgram: MeditationProgram = {
         ? "बैठने के इक्कीस दिन"
         : (foundation7 as MeditationProgram).title_hi,
   intro_en:
-    "A free progressive sit — foundation, habit, and deepening. Finish a day to unlock the next. Missing a calendar day never erases your place.",
+    "A free progressive sit, foundation, habit, and deepening. Finish a day to unlock the next. Missing a calendar day never erases your place.",
   intro_hi:
-    "मुफ़्त क्रमिक बैठक — नींव, आदत, और गहराई। दिन पूर्ण होने पर अगला खुलता है। कैलेंडर का दिन छूटने से प्रगति नहीं मिटती।",
+    "मुफ़्त क्रमिक बैठक, नींव, आदत, और गहराई। दिन पूर्ण होने पर अगला खुलता है। कैलेंडर का दिन छूटने से प्रगति नहीं मिटती।",
   days: composedDays,
 };
 

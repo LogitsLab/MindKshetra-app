@@ -37,9 +37,9 @@ export const GUIDANCE_STYLES = [
     en: "Balanced",
     hi: "संतुलित",
     blurbEn:
-      "Verse and practice together — a Gita teaching, then a short sit, japa, or breath.",
+      "Verse and practice together, a Gita teaching, then a short sit, japa, or breath.",
     blurbHi:
-      "श्लोक और अभ्यास साथ — गीता की शिक्षा, फिर छोटी बैठक, जप या श्वास।",
+      "श्लोक और अभ्यास साथ, गीता की शिक्षा, फिर छोटी बैठक, जप या श्वास।",
   },
   {
     id: "gita_first",
@@ -55,9 +55,9 @@ export const GUIDANCE_STYLES = [
     en: "Practice-first",
     hi: "अभ्यास पहले",
     blurbEn:
-      "Lead with the body and breath — japa (mantra on the beads), sits, and pranayama — then meet the verse.",
+      "Lead with the body and breath, japa (mantra on the beads), sits, and pranayama, then meet the verse.",
     blurbHi:
-      "पहले शरीर और श्वास — जप (मनके पर मंत्र), बैठक और प्राणायाम — फिर श्लोक।",
+      "पहले शरीर और श्वास, जप (मनके पर मंत्र), बैठक और प्राणायाम, फिर श्लोक।",
   },
 ] as const;
 
@@ -69,7 +69,7 @@ export const ONBOARDING_COPY = {
     subtitle: { en: "by LogitsLab", hi: "by LogitsLab" },
     tagline: {
       en: "Clarity from the Gita, for the battlefield of the mind.",
-      hi: "गीता से स्पष्टता — मन के युद्धक्षेत्र के लिए।",
+      hi: "गीता से स्पष्टता, मन के युद्धक्षेत्र के लिए।",
     },
     continue: { en: "Continue", hi: "आगे बढ़ें" },
     skip: { en: "Skip", hi: "छोड़ें" },
@@ -87,8 +87,8 @@ export const ONBOARDING_COPY = {
       hi: "जब सब खिलाफ लगे",
     },
     body: {
-      en: "The Gita begins here — doubt meets clarity.",
-      hi: "गीता यहीं से शुरू होती है — संशय और स्पष्टता।",
+      en: "The Gita begins here, doubt meets clarity.",
+      hi: "गीता यहीं से शुरू होती है, संशय और स्पष्टता।",
     },
     dialogue: {
       arjun: {
@@ -107,7 +107,7 @@ export const ONBOARDING_COPY = {
       sanskrit:
         "क्लैब्यं मा स्म गमः पार्थ नैतत्त्वय्युपपद्यते।\nक्षुद्रं हृदयदौर्बल्यं त्यक्त्वोत्तिष्ठ परन्तप॥",
       en: "Do not yield to this weakness, O Partha. It does not become you. Cast it off and stand up, conqueror of foes.",
-      hi: "हे पार्थ! इस दुर्बलता को मत अपनाओ — यह तुम्हें शोभा नहीं देती। इसे त्याग कर खड़े हो जाओ, हे परंतप!",
+      hi: "हे पार्थ! इस दुर्बलता को मत अपनाओ, यह तुम्हें शोभा नहीं देती। इसे त्याग कर खड़े हो जाओ, हे परंतप!",
     },
     none: { en: "No Preference", hi: "कोई प्राथमिकता नहीं" },
     next: { en: "Continue with Madhav", hi: "माधव के साथ आगे" },
@@ -128,8 +128,8 @@ export const ONBOARDING_COPY = {
     language: { en: "Preferred language", hi: "पसंदीदा भाषा" },
     guidance: { en: "How should we guide you?", hi: "हम कैसे मार्गदर्शन करें?" },
     guidanceBody: {
-      en: "Gita brings teaching through verse. Practice is what you do with the body and breath — including japa, the quiet repetition of a mantra on a mala.",
-      hi: "गीता श्लोक से शिक्षा देती है। अभ्यास वह है जो आप शरीर और श्वास से करते हैं — इसमें जप भी है: माला पर मंत्र का शांत दोहराव।",
+      en: "Gita brings teaching through verse. Practice is what you do with the body and breath, including japa, the quiet repetition of a mantra on a mala.",
+      hi: "गीता श्लोक से शिक्षा देती है। अभ्यास वह है जो आप शरीर और श्वास से करते हैं, इसमें जप भी है: माला पर मंत्र का शांत दोहराव।",
     },
     name: { en: "Your name", hi: "आपका नाम" },
     namePlaceholder: { en: "Optional", hi: "वैकल्पिक" },

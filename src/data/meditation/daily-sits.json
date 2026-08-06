@@ -2,8 +2,8 @@
   "id": "daily-sits",
   "title_en": "One-off sits",
   "title_hi": "एक-बार बैठकें",
-  "intro_en": "Short sits outside the unlock path. Always available — for days you already finished the course, or when you only want five quiet minutes.",
-  "intro_hi": "अनलॉक श्रृंखला के बाहर छोटी बैठकें। सदैव उपलब्ध — पाठ्यक्रम पूरा होने के बाद, या जब केवल पाँच शांत मिनट चाहें।",
+  "intro_en": "Short sits outside the unlock path. Always available, for days you already finished the course, or when you only want five quiet minutes.",
+  "intro_hi": "अनलॉक श्रृंखला के बाहर छोटी बैठकें। सदैव उपलब्ध, पाठ्यक्रम पूरा होने के बाद, या जब केवल पाँच शांत मिनट चाहें।",
   "sessions": [
     {
       "id": "daily-breath-5",

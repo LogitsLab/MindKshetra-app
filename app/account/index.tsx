@@ -130,10 +130,13 @@ export default function AccountScreen() {
       ? params.auth_error[0]
       : params.auth_error;
     if (!authError) return;
+    // Google AuthSession can succeed while a stale callback still lands with
+    // auth_error — don't scare a signed-in account holder.
+    if (isSignedIn && !isAnonymous) return;
     if (authError === "otp_expired") setMessage(t("authLinkExpired"));
     else setMessage(t("authLinkFailed"));
     setEmailOpen(true);
-  }, [params.auth_error, t]);
+  }, [params.auth_error, t, isSignedIn, isAnonymous]);
   useEffect(() => {
     if (!isSignedIn) {
       setStreak(0);

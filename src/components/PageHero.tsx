@@ -24,14 +24,14 @@ type Props = {
   meta?: ReactNode;
   actions?: ReactNode;
   children?: ReactNode;
-  /** Slightly shorter — for quiet pages like Care. */
+  /** Slightly shorter, for quiet pages like Care. */
   compact?: boolean;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 };
 
 /**
- * Shared field hero for lifestyle surfaces — ports web ImmersiveHero:
+ * Shared field hero for lifestyle surfaces, ports web ImmersiveHero:
  * tall image, scrim, brass CTAs, optional meta/actions.
  *
  * Devanagari never takes the tracked, uppercased eyebrow: Fraunces has no

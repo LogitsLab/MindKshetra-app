@@ -1,16 +1,15 @@
 /**
  * Quiet milestones: private marks for staying with the practice. No points,
- * no levels, no leaderboards — the ladder below is the entire system, and
+ * no levels, no leaderboards, the ladder below is the entire system, and
  * everything computed from it is shown only to its own user.
  *
  * A faithful port of the web's lib/milestones.ts. Pure module: no I/O, no
  * React. GET /api/account/milestones composes stats from Supabase and returns
  * the marks already computed; this copy exists so a device with no session can
  * still compose the same shape from its own logs, and so the motif vocabulary
- * has one home on both sides. Keep the ladders and copy in step with the web —
- * a mark that says something different on each surface is worse than no mark.
+ * has one home on both sides. Keep the ladders and copy in step with the web, * a mark that says something different on each surface is worse than no mark.
  *
- * Streak marks read LONGEST streaks — a mark, once earned, is never un-earned
+ * Streak marks read LONGEST streaks, a mark, once earned, is never un-earned
  * by a streak resetting (invitational, never guilt).
  */
 
@@ -75,33 +74,33 @@ export type MilestoneStats = {
 
 const VISIT_TEXT: Record<number, Milestone["en"] & { hiName: string; hiLine: string }> = {
   2: {
-    name: "Punaḥ — the return",
+    name: "Punaḥ, the return",
     line: "Two days, one after the other. Returning is the practice.",
-    hiName: "पुनः — वापसी",
+    hiName: "पुनः, वापसी",
     hiLine: "दो दिन, एक के बाद एक। लौटना ही अभ्यास है।",
   },
   7: {
-    name: "Sthira — a steady week",
+    name: "Sthira, a steady week",
     line: "Seven days of showing up.",
-    hiName: "स्थिर — एक सधा सप्ताह",
+    hiName: "स्थिर, एक सधा सप्ताह",
     hiLine: "सात दिन, हर दिन उपस्थित।",
   },
   21: {
-    name: "Abhyāsa — three weeks",
+    name: "Abhyāsa, three weeks",
     line: "Twenty-one days, practice becoming habit.",
-    hiName: "अभ्यास — तीन सप्ताह",
-    hiLine: "इक्कीस दिन — अभ्यास स्वभाव बनता हुआ।",
+    hiName: "अभ्यास, तीन सप्ताह",
+    hiLine: "इक्कीस दिन, अभ्यास स्वभाव बनता हुआ।",
   },
   49: {
-    name: "Dhairya — seven weeks",
+    name: "Dhairya, seven weeks",
     line: "Forty-nine days of quiet constancy.",
-    hiName: "धैर्य — सात सप्ताह",
+    hiName: "धैर्य, सात सप्ताह",
     hiLine: "उनचास दिन की शांत निरंतरता।",
   },
   108: {
-    name: "Akhaṇḍa — one hundred and eight",
+    name: "Akhaṇḍa, one hundred and eight",
     line: "A mala of days, unbroken.",
-    hiName: "अखण्ड — एक सौ आठ",
+    hiName: "अखण्ड, एक सौ आठ",
     hiLine: "दिनों की एक माला, अखंड।",
   },
 };
@@ -120,21 +119,21 @@ function practiceMilestone(
   const label = PRACTICE_LABELS[practice];
   const text = {
     7: {
-      name: `Niyama — a week of ${label.en}`,
+      name: `Niyama, a week of ${label.en}`,
       line: `Seven days with ${label.en}.`,
-      hiName: `नियम — ${label.hi} का एक सप्ताह`,
+      hiName: `नियम, ${label.hi} का एक सप्ताह`,
       hiLine: `${label.hi} के साथ सात दिन।`,
     },
     21: {
-      name: `Tapas — three weeks of ${label.en}`,
+      name: `Tapas, three weeks of ${label.en}`,
       line: "Twenty-one days, held gently.",
-      hiName: `तपस् — ${label.hi} के तीन सप्ताह`,
+      hiName: `तपस्, ${label.hi} के तीन सप्ताह`,
       hiLine: "इक्कीस दिन, सहजता से निभाए।",
     },
     108: {
-      name: `Vrata — 108 days of ${label.en}`,
+      name: `Vrata, 108 days of ${label.en}`,
       line: "A vow kept, day after day.",
-      hiName: `व्रत — ${label.hi} के १०८ दिन`,
+      hiName: `व्रत, ${label.hi} के १०८ दिन`,
       hiLine: "एक व्रत, दिन-प्रतिदिन निभाया।",
     },
   }[days];
@@ -149,9 +148,9 @@ function practiceMilestone(
 const MALA_TEXT: Record<number, { name: string; line: string; hiName: string; hiLine: string }> = {
   1: {
     name: "Prathamā mālā",
-    line: "Your first full mala — 108 counted.",
+    line: "Your first full mala, 108 counted.",
     hiName: "प्रथमा माला",
-    hiLine: "आपकी पहली पूर्ण माला — १०८।",
+    hiLine: "आपकी पहली पूर्ण माला, १०८।",
   },
   11: {
     name: "Ekādaśa mālā",
@@ -227,7 +226,7 @@ export function milestonesFor(stats: MilestoneStats): Milestone[] {
     earned.push({
       key: "reading-1",
       motif: "veena",
-      en: { name: "Prārambha — a beginning", line: "Your first verse, complete." },
+      en: { name: "Prārambha, a beginning", line: "Your first verse, complete." },
       hi: { name: "प्रारम्भ", line: "आपका पहला श्लोक पूर्ण।" },
     });
   }
@@ -235,8 +234,8 @@ export function milestonesFor(stats: MilestoneStats): Milestone[] {
     earned.push({
       key: "reading-108",
       motif: "veena",
-      en: { name: "Aṣṭottara — 108 verses", line: "A mala of verses read." },
-      hi: { name: "अष्टोत्तर — १०८ श्लोक", line: "श्लोकों की एक माला पूर्ण।" },
+      en: { name: "Aṣṭottara, 108 verses", line: "A mala of verses read." },
+      hi: { name: "अष्टोत्तर, १०८ श्लोक", line: "श्लोकों की एक माला पूर्ण।" },
     });
   }
 
@@ -251,10 +250,10 @@ export function milestonesFor(stats: MilestoneStats): Milestone[] {
       key: "reading-all",
       motif: "kalasha",
       en: {
-        name: "Pūrṇatā — the whole Gītā",
+        name: "Pūrṇatā, the whole Gītā",
         line: "Every verse, met at least once.",
       },
-      hi: { name: "पूर्णता — सम्पूर्ण गीता", line: "हर श्लोक से भेंट हुई।" },
+      hi: { name: "पूर्णता, सम्पूर्ण गीता", line: "हर श्लोक से भेंट हुई।" },
     });
   }
 
@@ -262,8 +261,8 @@ export function milestonesFor(stats: MilestoneStats): Milestone[] {
     earned.push({
       key: `path-${path.id}`,
       motif: "patha",
-      en: { name: `Mārga — ${path.titleEn}`, line: "Walked to its last day." },
-      hi: { name: `मार्ग — ${path.titleHi}`, line: "अंतिम दिन तक चला।" },
+      en: { name: `Mārga, ${path.titleEn}`, line: "Walked to its last day." },
+      hi: { name: `मार्ग, ${path.titleHi}`, line: "अंतिम दिन तक चला।" },
     });
   }
 
@@ -273,7 +272,7 @@ export function milestonesFor(stats: MilestoneStats): Milestone[] {
 /**
  * The nearest not-yet-earned mark, by proportional progress on the numeric
  * ladders (visit, practice, malas, reading). Chapter and path marks carry no
- * scalar progress in stats, so they are never proposed — they announce
+ * scalar progress in stats, so they are never proposed, they announce
  * themselves when crossed.
  */
 export function nextMilestone(stats: MilestoneStats): Milestone | null {
@@ -331,7 +330,7 @@ export function nextMilestone(stats: MilestoneStats): Milestone | null {
         key: "reading-1",
         motif: "veena",
         en: {
-          name: "Prārambha — a beginning",
+          name: "Prārambha, a beginning",
           line: "Your first verse, complete.",
         },
         hi: { name: "प्रारम्भ", line: "आपका पहला श्लोक पूर्ण।" },
@@ -342,8 +341,8 @@ export function nextMilestone(stats: MilestoneStats): Milestone | null {
       milestone: {
         key: "reading-108",
         motif: "veena",
-        en: { name: "Aṣṭottara — 108 verses", line: "A mala of verses read." },
-        hi: { name: "अष्टोत्तर — १०८ श्लोक", line: "श्लोकों की एक माला पूर्ण।" },
+        en: { name: "Aṣṭottara, 108 verses", line: "A mala of verses read." },
+        hi: { name: "अष्टोत्तर, १०८ श्लोक", line: "श्लोकों की एक माला पूर्ण।" },
       },
     },
     {
@@ -352,10 +351,10 @@ export function nextMilestone(stats: MilestoneStats): Milestone | null {
         key: "reading-all",
         motif: "kalasha",
         en: {
-          name: "Pūrṇatā — the whole Gītā",
+          name: "Pūrṇatā, the whole Gītā",
           line: "Every verse, met at least once.",
         },
-        hi: { name: "पूर्णता — सम्पूर्ण गीता", line: "हर श्लोक से भेंट हुई।" },
+        hi: { name: "पूर्णता, सम्पूर्ण गीता", line: "हर श्लोक से भेंट हुई।" },
       },
     },
   ];
@@ -368,8 +367,7 @@ export function nextMilestone(stats: MilestoneStats): Milestone | null {
   }
 
   if (candidates.length === 0) return null;
-  // Ties (e.g. everything at zero) resolve to the earliest ladder above —
-  // the first "next" a new practice meets is simply returning tomorrow.
+  // Ties (e.g. everything at zero) resolve to the earliest ladder above, // the first "next" a new practice meets is simply returning tomorrow.
   let best = candidates[0];
   for (const c of candidates) {
     if (c.fraction > best.fraction) best = c;
@@ -378,7 +376,7 @@ export function nextMilestone(stats: MilestoneStats): Milestone | null {
 }
 
 /**
- * Marks earned by `after` that `before` had not earned — the "newly crossed"
+ * Marks earned by `after` that `before` had not earned, the "newly crossed"
  * set a completion moment may show (at most one of, per DESIGN's quiet rule).
  */
 export function newlyCrossed(

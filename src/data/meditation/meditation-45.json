@@ -5,8 +5,8 @@
   "days_count": 45,
   "title_en": "Forty-five days of sitting",
   "title_hi": "बैठने के पैंतालीस दिन",
-  "intro_en": "The deepening arc — days twenty-two to forty-five — after foundation and habit. Sits lengthen toward twenty-five minutes. Guidance thins. Kindness, steadiness, and a few verse companions. Finish a day to unlock the next; a missed calendar day never erases your place.",
-  "intro_hi": "गहराई का चाप — बाईसवें से पैंतालीसवें दिन — नींव और आदत के बाद। बैठक पच्चीस मिनट की ओर बढ़ती है। निर्देश पतले होते हैं। करुणा, स्थिरता, और कुछ श्लोक साथी। दिन पूर्ण होने पर अगला खुलता है; कैलेंडर का छूटा दिन प्रगति नहीं मिटाता।",
+  "intro_en": "The deepening arc, days twenty-two to forty-five, after foundation and habit. Sits lengthen toward twenty-five minutes. Guidance thins. Kindness, steadiness, and a few verse companions. Finish a day to unlock the next; a missed calendar day never erases your place.",
+  "intro_hi": "गहराई का चाप, बाईसवें से पैंतालीसवें दिन, नींव और आदत के बाद। बैठक पच्चीस मिनट की ओर बढ़ती है। निर्देश पतले होते हैं। करुणा, स्थिरता, और कुछ श्लोक साथी। दिन पूर्ण होने पर अगला खुलता है; कैलेंडर का छूटा दिन प्रगति नहीं मिटाता।",
   "days": [
     {
       "id": "meditation-45-d22",
@@ -56,13 +56,13 @@
       "duration_minutes": 20,
       "title_en": "The whole breath",
       "title_hi": "पूरी श्वास",
-      "theme_en": "Not counting — simply riding the whole length of one breath after another.",
-      "theme_hi": "गिनती नहीं — केवल एक के बाद एक श्वास की पूरी लंबाई पर चलना।",
+      "theme_en": "Not counting, simply riding the whole length of one breath after another.",
+      "theme_hi": "गिनती नहीं, केवल एक के बाद एक श्वास की पूरी लंबाई पर चलना।",
       "phases": [
         {
           "type": "speak",
-          "text_en": "Take your seat for day 23. Spine easy, hands soft. Let the breath be as it is. Today’s theme: Not counting — simply riding the whole length of one breath after another.",
-          "text_hi": "दिन 23 के लिए आसन लें। रीढ़ सहज, हाथ कोमल। श्वास जैसी है वैसी रहने दें। आज का विषय: गिनती नहीं — केवल एक के बाद एक श्वास की पूरी लंबाई पर चलना।"
+          "text_en": "Take your seat for day 23. Spine easy, hands soft. Let the breath be as it is. Today’s theme: Not counting, simply riding the whole length of one breath after another.",
+          "text_hi": "दिन 23 के लिए आसन लें। रीढ़ सहज, हाथ कोमल। श्वास जैसी है वैसी रहने दें। आज का विषय: गिनती नहीं, केवल एक के बाद एक श्वास की पूरी लंबाई पर चलना।"
         },
         {
           "type": "silence",
@@ -132,13 +132,13 @@
       "duration_minutes": 21,
       "title_en": "The body at rest",
       "title_hi": "विश्राम में शरीर",
-      "theme_en": "A soft scan from crown to soles — notice, do not fix.",
-      "theme_hi": "शीर्ष से तलवों तक कोमल स्कैन — देखें, ठीक न करें।",
+      "theme_en": "A soft scan from crown to soles, notice, do not fix.",
+      "theme_hi": "शीर्ष से तलवों तक कोमल स्कैन, देखें, ठीक न करें।",
       "phases": [
         {
           "type": "speak",
-          "text_en": "Take your seat for day 25. Spine easy, hands soft. Let the breath be as it is. Today’s theme: A soft scan from crown to soles — notice, do not fix.",
-          "text_hi": "दिन 25 के लिए आसन लें। रीढ़ सहज, हाथ कोमल। श्वास जैसी है वैसी रहने दें। आज का विषय: शीर्ष से तलवों तक कोमल स्कैन — देखें, ठीक न करें।"
+          "text_en": "Take your seat for day 25. Spine easy, hands soft. Let the breath be as it is. Today’s theme: A soft scan from crown to soles, notice, do not fix.",
+          "text_hi": "दिन 25 के लिए आसन लें। रीढ़ सहज, हाथ कोमल। श्वास जैसी है वैसी रहने दें। आज का विषय: शीर्ष से तलवों तक कोमल स्कैन, देखें, ठीक न करें।"
         },
         {
           "type": "silence",
@@ -222,8 +222,8 @@
         },
         {
           "type": "speak",
-          "text_en": "Name restlessness once — ‘restless’ — and stay. The urge to stand will pass or soften.",
-          "text_hi": "एक बार नाम लें — ‘बेचैन’ — और ठहरें। खड़े होने की इच्छा गुज़रेगी या नरम होगी।"
+          "text_en": "Name restlessness once, ‘restless’, and stay. The urge to stand will pass or soften.",
+          "text_hi": "एक बार नाम लें, ‘बेचैन’, और ठहरें। खड़े होने की इच्छा गुज़रेगी या नरम होगी।"
         },
         {
           "type": "silence",
@@ -246,13 +246,13 @@
       "duration_minutes": 22,
       "title_en": "Open and quiet",
       "title_hi": "खुला और शांत",
-      "theme_en": "No technique for a stretch of time — only sitting, and knowing you sit.",
-      "theme_hi": "कुछ समय के लिए कोई विधि नहीं — केवल बैठना, और जानना कि आप बैठे हैं।",
+      "theme_en": "No technique for a stretch of time, only sitting, and knowing you sit.",
+      "theme_hi": "कुछ समय के लिए कोई विधि नहीं, केवल बैठना, और जानना कि आप बैठे हैं।",
       "phases": [
         {
           "type": "speak",
-          "text_en": "Take your seat for day 28. Spine easy, hands soft. Let the breath be as it is. Today’s theme: No technique for a stretch of time — only sitting, and knowing you sit.",
-          "text_hi": "दिन 28 के लिए आसन लें। रीढ़ सहज, हाथ कोमल। श्वास जैसी है वैसी रहने दें। आज का विषय: कुछ समय के लिए कोई विधि नहीं — केवल बैठना, और जानना कि आप बैठे हैं।"
+          "text_en": "Take your seat for day 28. Spine easy, hands soft. Let the breath be as it is. Today’s theme: No technique for a stretch of time, only sitting, and knowing you sit.",
+          "text_hi": "दिन 28 के लिए आसन लें। रीढ़ सहज, हाथ कोमल। श्वास जैसी है वैसी रहने दें। आज का विषय: कुछ समय के लिए कोई विधि नहीं, केवल बैठना, और जानना कि आप बैठे हैं।"
         },
         {
           "type": "silence",
@@ -664,13 +664,13 @@
       "duration_minutes": 25,
       "title_en": "Verse and silence",
       "title_hi": "श्लोक और मौन",
-      "theme_en": "A short Gita companion — then silence that does not explain it.",
-      "theme_hi": "गीता का छोटा साथ — फिर मौन जो उसकी व्याख्या नहीं करता।",
+      "theme_en": "A short Gita companion, then silence that does not explain it.",
+      "theme_hi": "गीता का छोटा साथ, फिर मौन जो उसकी व्याख्या नहीं करता।",
       "phases": [
         {
           "type": "speak",
-          "text_en": "Take your seat for day 39. Spine easy, hands soft. Let the breath be as it is. Today’s theme: A short Gita companion — then silence that does not explain it.",
-          "text_hi": "दिन 39 के लिए आसन लें। रीढ़ सहज, हाथ कोमल। श्वास जैसी है वैसी रहने दें। आज का विषय: गीता का छोटा साथ — फिर मौन जो उसकी व्याख्या नहीं करता।"
+          "text_en": "Take your seat for day 39. Spine easy, hands soft. Let the breath be as it is. Today’s theme: A short Gita companion, then silence that does not explain it.",
+          "text_hi": "दिन 39 के लिए आसन लें। रीढ़ सहज, हाथ कोमल। श्वास जैसी है वैसी रहने दें। आज का विषय: गीता का छोटा साथ, फिर मौन जो उसकी व्याख्या नहीं करता।"
         },
         {
           "type": "silence",

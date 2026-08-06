@@ -2,18 +2,18 @@ export const en = {
   onboardingWelcomeEyebrow: "Welcome to MindKshetra",
   onboardingWelcomeTitle: "Clarity for the battlefield of the mind",
   onboardingBrandStory:
-    "MindKshetra is the field of the mind — a calm Bhagavad Gita companion for moments of duty, doubt, and confusion. Read, reflect, sit for a short daily sādhana, and return when life feels heavy.",
+    "MindKshetra is the field of the mind, a calm Bhagavad Gita companion for moments of duty, doubt, and confusion. Read, reflect, sit for a short daily sādhana, and return when life feels heavy.",
   onboardingPathsEyebrow: "Six paths in",
   onboardingPathsTitle: "How MindKshetra helps",
   onboardingPathExploreTitle: "Explore",
   onboardingPathExploreBlurb:
-    "All 18 chapters — Sanskrit, transliteration, Hindi and English.",
+    "All 18 chapters, Sanskrit, transliteration, Hindi and English.",
   onboardingPathMoodTitle: "Mood",
   onboardingPathMoodBlurb:
     "Name how you feel. Find verses that meet you there.",
   onboardingPathMeditationTitle: "Meditation",
   onboardingPathMeditationBlurb:
-    "A seven-day course — a short sit with scripture, one day at a time.",
+    "A seven-day course, a short sit with scripture, one day at a time.",
   onboardingPathMadhavTitle: "Ask Madhav",
   onboardingPathMadhavBlurb:
     "Guidance in Krishna’s voice, grounded in real teachings.",
@@ -22,7 +22,7 @@ export const en = {
     "Birth chart, dasha, and a verse chosen by today’s moon.",
   onboardingPathPathsTitle: "Themed paths",
   onboardingPathPathsBlurb:
-    "Anxiety, grief, purpose, relationships — seven days each.",
+    "Anxiety, grief, purpose, relationships, seven days each.",
   onboardingLangEyebrow: "Your preference",
   onboardingLangTitle: "Choose your language",
   onboardingLangBody:
@@ -34,7 +34,7 @@ export const en = {
   onboardingAuthEyebrow: "One last step",
   onboardingAuthTitle: "Save your path",
   onboardingAuthBody:
-    "Sign in to keep bookmarks, reflections, Madhav chats, and reading progress — then pick up on any device.",
+    "Sign in to keep bookmarks, reflections, Madhav chats, and reading progress, then pick up on any device.",
   onboardingContinue: "Continue",
   onboardingGetStarted: "Enter MindKshetra",
   onboardingContinueGuest: "Continue as guest",
@@ -51,18 +51,18 @@ export const hi: Record<keyof typeof en, string> = {
   onboardingWelcomeEyebrow: "MindKshetra में स्वागत है",
   onboardingWelcomeTitle: "मन के कुरुक्षेत्र के लिए स्पष्टता",
   onboardingBrandStory:
-    "MindKshetra मन का क्षेत्र है — कर्तव्य, संशय और उलझन के क्षणों के लिए एक शांत भगवद्गीता साथी। पढ़ें, चिंतन करें, रोज़ एक छोटी साधना करें, और जब जीवन भारी लगे तब लौटें।",
+    "MindKshetra मन का क्षेत्र है, कर्तव्य, संशय और उलझन के क्षणों के लिए एक शांत भगवद्गीता साथी। पढ़ें, चिंतन करें, रोज़ एक छोटी साधना करें, और जब जीवन भारी लगे तब लौटें।",
   onboardingPathsEyebrow: "छह मार्ग",
   onboardingPathsTitle: "MindKshetra कैसे मदद करता है",
   onboardingPathExploreTitle: "अन्वेषण",
   onboardingPathExploreBlurb:
-    "सभी १८ अध्याय — संस्कृत, लिप्यंतरण, हिंदी और अंग्रेज़ी।",
+    "सभी १८ अध्याय, संस्कृत, लिप्यंतरण, हिंदी और अंग्रेज़ी।",
   onboardingPathMoodTitle: "मनोदशा",
   onboardingPathMoodBlurb:
     "अपनी भावना बताएँ। उसी से जुड़ते श्लोक पाएँ।",
   onboardingPathMeditationTitle: "ध्यान",
   onboardingPathMeditationBlurb:
-    "सात दिन का पाठ्यक्रम — शास्त्र के साथ एक छोटी बैठक, हर दिन।",
+    "सात दिन का पाठ्यक्रम, शास्त्र के साथ एक छोटी बैठक, हर दिन।",
   onboardingPathMadhavTitle: "माधव से पूछें",
   onboardingPathMadhavBlurb:
     "कृष्ण की वाणी में मार्गदर्शन, वास्तविक शिक्षाओं पर आधारित।",
@@ -71,11 +71,11 @@ export const hi: Record<keyof typeof en, string> = {
     "जन्म कुंडली, दशा और आज के चंद्र नक्षत्र से चुना श्लोक।",
   onboardingPathPathsTitle: "विषयगत मार्ग",
   onboardingPathPathsBlurb:
-    "चिंता, शोक, उद्देश्य, संबंध — प्रत्येक सात दिन।",
+    "चिंता, शोक, उद्देश्य, संबंध, प्रत्येक सात दिन।",
   onboardingLangEyebrow: "आपकी पसंद",
   onboardingLangTitle: "भाषा चुनें",
   onboardingLangBody:
-    "श्लोक, अर्थ और ऐप किस भाषा में दिखें — चुनें। बाद में प्रोफ़ाइल से बदल सकते हैं।",
+    "श्लोक, अर्थ और ऐप किस भाषा में दिखें, चुनें। बाद में प्रोफ़ाइल से बदल सकते हैं।",
   onboardingLangEn: "English",
   onboardingLangHi: "हिंदी",
   onboardingLangPreviewEn: "The field of the mind awaits.",
@@ -83,7 +83,7 @@ export const hi: Record<keyof typeof en, string> = {
   onboardingAuthEyebrow: "आखिरी कदम",
   onboardingAuthTitle: "अपना मार्ग सहेजें",
   onboardingAuthBody:
-    "साइन इन करें ताकि बुकमार्क, चिंतन, माधव वार्ता और पठन प्रगति सुरक्षित रहे — फिर किसी भी उपकरण पर जारी रखें।",
+    "साइन इन करें ताकि बुकमार्क, चिंतन, माधव वार्ता और पठन प्रगति सुरक्षित रहे, फिर किसी भी उपकरण पर जारी रखें।",
   onboardingContinue: "आगे बढ़ें",
   onboardingGetStarted: "MindKshetra में प्रवेश करें",
   onboardingContinueGuest: "अतिथि के रूप में जारी रखें",

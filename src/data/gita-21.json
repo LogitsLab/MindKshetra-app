@@ -5,8 +5,8 @@
   "days_count": 21,
   "title_en": "Twenty-one days with the Gita",
   "title_hi": "गीता के साथ इक्कीस दिन",
-  "intro_en": "Three weeks along the Gita’s own arc — a week inside Arjuna’s collapse and his question, a week inside the teaching, a week walking back into ordinary life. One verse, one short practice, one honest line a day. Days open one at a time, and a day that goes unpracticed never erases your place.",
-  "intro_hi": "तीन सप्ताह, गीता के अपने क्रम में — पहला सप्ताह अर्जुन के टूटने और उसके प्रश्न के भीतर, दूसरा शिक्षा के भीतर, तीसरा साधारण जीवन में लौटते हुए। प्रतिदिन एक श्लोक, एक छोटा अभ्यास, एक सच्ची पंक्ति। दिन एक-एक कर खुलते हैं, और कोई दिन बिना अभ्यास बीत जाए तो आपकी जगह नहीं मिटती।",
+  "intro_en": "Three weeks along the Gita’s own arc, a week inside Arjuna’s collapse and his question, a week inside the teaching, a week walking back into ordinary life. One verse, one short practice, one honest line a day. Days open one at a time, and a day that goes unpracticed never erases your place.",
+  "intro_hi": "तीन सप्ताह, गीता के अपने क्रम में, पहला सप्ताह अर्जुन के टूटने और उसके प्रश्न के भीतर, दूसरा शिक्षा के भीतर, तीसरा साधारण जीवन में लौटते हुए। प्रतिदिन एक श्लोक, एक छोटा अभ्यास, एक सच्ची पंक्ति। दिन एक-एक कर खुलते हैं, और कोई दिन बिना अभ्यास बीत जाए तो आपकी जगह नहीं मिटती।",
   "days": [
     {
       "day": 1,
@@ -25,8 +25,8 @@
       "minutes": 5,
       "title_en": "Between the two armies",
       "title_hi": "दोनों सेनाओं के बीच",
-      "prompt_en": "Arjuna asks to be placed where he can see both sides before anything begins. Sit still and look at your situation without deciding anything — only see who is actually standing there.",
-      "prompt_hi": "अर्जुन कुछ भी शुरू होने से पहले वहीं खड़ा होना चाहता है जहाँ से दोनों पक्ष दिखें। स्थिर बैठें और अपनी स्थिति को बिना कोई निर्णय लिए देखें — केवल यह देखें कि वहाँ सचमुच कौन-कौन खड़ा है।"
+      "prompt_en": "Arjuna asks to be placed where he can see both sides before anything begins. Sit still and look at your situation without deciding anything, only see who is actually standing there.",
+      "prompt_hi": "अर्जुन कुछ भी शुरू होने से पहले वहीं खड़ा होना चाहता है जहाँ से दोनों पक्ष दिखें। स्थिर बैठें और अपनी स्थिति को बिना कोई निर्णय लिए देखें, केवल यह देखें कि वहाँ सचमुच कौन-कौन खड़ा है।"
     },
     {
       "day": 3,
@@ -35,8 +35,8 @@
       "minutes": 6,
       "title_en": "The body speaks first",
       "title_hi": "शरीर पहले बोलता है",
-      "prompt_en": "Before the mind admits anything, the body has already said it — dry mouth, weak limbs, the skin alive. Breathe slowly today and let the breath find where fear is actually sitting in you.",
-      "prompt_hi": "मन जो स्वीकार नहीं करता, शरीर उसे पहले ही कह देता है — सूखा गला, ढीले अंग, रोमांचित त्वचा। आज धीमी श्वास लें और श्वास को वहाँ पहुँचने दें जहाँ भय सचमुच बैठा है।"
+      "prompt_en": "Before the mind admits anything, the body has already said it, dry mouth, weak limbs, the skin alive. Breathe slowly today and let the breath find where fear is actually sitting in you.",
+      "prompt_hi": "मन जो स्वीकार नहीं करता, शरीर उसे पहले ही कह देता है, सूखा गला, ढीले अंग, रोमांचित त्वचा। आज धीमी श्वास लें और श्वास को वहाँ पहुँचने दें जहाँ भय सचमुच बैठा है।"
     },
     {
       "day": 4,
@@ -45,8 +45,8 @@
       "minutes": 6,
       "title_en": "He set the bow down",
       "title_hi": "उसने धनुष रख दिया",
-      "prompt_en": "Arjuna neither fights nor runs — he sits down in the middle of the field. Put down the one thing you have been carrying all day, literally, and sit for a while with empty hands.",
-      "prompt_hi": "अर्जुन न लड़ता है, न भागता है — वह बीच मैदान में बैठ जाता है। आज दिन भर जो एक चीज़ आप उठाए रहे, उसे सचमुच नीचे रखें और कुछ देर खाली हाथ बैठें।"
+      "prompt_en": "Arjuna neither fights nor runs, he sits down in the middle of the field. Put down the one thing you have been carrying all day, literally, and sit for a while with empty hands.",
+      "prompt_hi": "अर्जुन न लड़ता है, न भागता है, वह बीच मैदान में बैठ जाता है। आज दिन भर जो एक चीज़ आप उठाए रहे, उसे सचमुच नीचे रखें और कुछ देर खाली हाथ बैठें।"
     },
     {
       "day": 5,
@@ -65,8 +65,8 @@
       "minutes": 7,
       "title_en": "Grief and its object",
       "title_hi": "शोक और उसका विषय",
-      "prompt_en": "The first teaching does not console — it asks what the sorrow is aimed at. Sit and ask yourself once, plainly: what exactly am I grieving, and is it as permanent as it feels?",
-      "prompt_hi": "पहली शिक्षा सांत्वना नहीं देती — वह पूछती है कि शोक किस पर है। बैठकर स्वयं से एक बार सीधे पूछें: मैं ठीक-ठीक किसका शोक कर रहा हूँ, और क्या वह उतना स्थायी है जितना लगता है?"
+      "prompt_en": "The first teaching does not console, it asks what the sorrow is aimed at. Sit and ask yourself once, plainly: what exactly am I grieving, and is it as permanent as it feels?",
+      "prompt_hi": "पहली शिक्षा सांत्वना नहीं देती, वह पूछती है कि शोक किस पर है। बैठकर स्वयं से एक बार सीधे पूछें: मैं ठीक-ठीक किसका शोक कर रहा हूँ, और क्या वह उतना स्थायी है जितना लगता है?"
     },
     {
       "day": 7,
@@ -86,7 +86,7 @@
       "title_en": "Work without gripping",
       "title_hi": "बिना पकड़ के काम",
       "prompt_en": "Choose one task that is waiting for you tomorrow. Sit with it and picture doing it well, without needing to know how it will land.",
-      "prompt_hi": "कल का कोई एक काम चुनें जो आपकी प्रतीक्षा में है। उसके साथ बैठें और कल्पना करें कि आप उसे अच्छे से कर रहे हैं — बिना यह जाने कि उसका फल क्या होगा।"
+      "prompt_hi": "कल का कोई एक काम चुनें जो आपकी प्रतीक्षा में है। उसके साथ बैठें और कल्पना करें कि आप उसे अच्छे से कर रहे हैं, बिना यह जाने कि उसका फल क्या होगा।"
     },
     {
       "day": 9,
@@ -105,8 +105,8 @@
       "minutes": 9,
       "title_en": "Like a lotus leaf",
       "title_hi": "कमल-पत्र की तरह",
-      "prompt_en": "Breathe evenly and let each out-breath hand over one piece of the day’s work. The leaf sits in water all day and stays dry — not by refusing the water, but by not soaking it in.",
-      "prompt_hi": "सम श्वास लें और हर निःश्वास के साथ दिन के काम का एक हिस्सा सौंपते जाएँ। पत्ता दिन भर जल में रहकर भी सूखा रहता है — जल से बचकर नहीं, उसे सोखे बिना।"
+      "prompt_en": "Breathe evenly and let each out-breath hand over one piece of the day’s work. The leaf sits in water all day and stays dry, not by refusing the water, but by not soaking it in.",
+      "prompt_hi": "सम श्वास लें और हर निःश्वास के साथ दिन के काम का एक हिस्सा सौंपते जाएँ। पत्ता दिन भर जल में रहकर भी सूखा रहता है, जल से बचकर नहीं, उसे सोखे बिना।"
     },
     {
       "day": 11,
@@ -115,8 +115,8 @@
       "minutes": 9,
       "title_en": "Lamp out of the wind",
       "title_hi": "निर्वात में दीपक",
-      "prompt_en": "Sit somewhere nothing will interrupt you and let your attention be the flame. When it wavers, do not straighten it — just notice which wind moved it.",
-      "prompt_hi": "ऐसी जगह बैठें जहाँ कोई बाधा न आए और अपने ध्यान को ही दीपक की लौ मानें। जब वह काँपे, उसे सीधा करने की चेष्टा न करें — केवल देखें कि कौन-सी हवा चली।"
+      "prompt_en": "Sit somewhere nothing will interrupt you and let your attention be the flame. When it wavers, do not straighten it, just notice which wind moved it.",
+      "prompt_hi": "ऐसी जगह बैठें जहाँ कोई बाधा न आए और अपने ध्यान को ही दीपक की लौ मानें। जब वह काँपे, उसे सीधा करने की चेष्टा न करें, केवल देखें कि कौन-सी हवा चली।"
     },
     {
       "day": 12,
@@ -126,7 +126,7 @@
       "title_en": "The same everywhere",
       "title_hi": "सर्वत्र वही",
       "prompt_en": "Bring to mind three people you saw today, including one you barely noticed. Hold each for a single breath and look for the one thing that is the same in all of you.",
-      "prompt_hi": "आज देखे हुए तीन लोगों को याद करें — उनमें एक ऐसा भी जिस पर आपकी दृष्टि मुश्किल से पड़ी। हर एक पर एक श्वास ठहरें और वह एक बात खोजें जो आप सबमें समान है।"
+      "prompt_hi": "आज देखे हुए तीन लोगों को याद करें, उनमें एक ऐसा भी जिस पर आपकी दृष्टि मुश्किल से पड़ी। हर एक पर एक श्वास ठहरें और वह एक बात खोजें जो आप सबमें समान है।"
     },
     {
       "day": 13,
@@ -135,8 +135,8 @@
       "minutes": 10,
       "title_en": "Offer what you do",
       "title_hi": "जो करें, अर्पित करें",
-      "prompt_en": "Repeat your chosen name with the beads or with the breath. Before you rise, pick one ordinary act of tomorrow — a meal, a message, a chore — and resolve to do it as an offering rather than an errand.",
-      "prompt_hi": "माला या श्वास के साथ अपना चुना हुआ नाम दोहराएँ। उठने से पहले कल का कोई एक साधारण काम चुनें — भोजन, संदेश, या घर का कोई काम — और उसे काम की तरह नहीं, भेंट की तरह करने का संकल्प लें।"
+      "prompt_en": "Repeat your chosen name with the beads or with the breath. Before you rise, pick one ordinary act of tomorrow, a meal, a message, a chore, and resolve to do it as an offering rather than an errand.",
+      "prompt_hi": "माला या श्वास के साथ अपना चुना हुआ नाम दोहराएँ। उठने से पहले कल का कोई एक साधारण काम चुनें, भोजन, संदेश, या घर का कोई काम, और उसे काम की तरह नहीं, भेंट की तरह करने का संकल्प लें।"
     },
     {
       "day": 14,
@@ -155,8 +155,8 @@
       "minutes": 11,
       "title_en": "Dear beyond measure",
       "title_hi": "अत्यंत प्रिय",
-      "prompt_en": "The chapter on devotion ends by calling the ordinary practitioner dear — no special gift required, only faith and following. Repeat your name or mantra for the full time and let it be enough that you came.",
-      "prompt_hi": "भक्ति का अध्याय साधारण साधक को ही अत्यंत प्रिय कहकर समाप्त होता है — कोई विशेष योग्यता नहीं चाहिए, केवल श्रद्धा और अनुसरण। पूरे समय अपना नाम या मंत्र दोहराएँ, और इतना ही पर्याप्त मानें कि आप आए।"
+      "prompt_en": "The chapter on devotion ends by calling the ordinary practitioner dear, no special gift required, only faith and following. Repeat your name or mantra for the full time and let it be enough that you came.",
+      "prompt_hi": "भक्ति का अध्याय साधारण साधक को ही अत्यंत प्रिय कहकर समाप्त होता है, कोई विशेष योग्यता नहीं चाहिए, केवल श्रद्धा और अनुसरण। पूरे समय अपना नाम या मंत्र दोहराएँ, और इतना ही पर्याप्त मानें कि आप आए।"
     },
     {
       "day": 16,
@@ -166,7 +166,7 @@
       "title_en": "Roots above",
       "title_hi": "जड़ें ऊपर",
       "prompt_en": "The tree is described upside down: roots in the unseen, branches spreading into the visible world. Sit and trace one thing you did today back to what it actually grew out of.",
-      "prompt_hi": "यह वृक्ष उलटा बताया गया है: जड़ें अदृश्य में, शाखाएँ दृश्य जगत में फैली हुईं। बैठें और आज के किसी एक काम को पीछे तक ले जाएँ — देखें, वह वास्तव में किस जड़ से उगा।"
+      "prompt_hi": "यह वृक्ष उलटा बताया गया है: जड़ें अदृश्य में, शाखाएँ दृश्य जगत में फैली हुईं। बैठें और आज के किसी एक काम को पीछे तक ले जाएँ, देखें, वह वास्तव में किस जड़ से उगा।"
     },
     {
       "day": 17,
@@ -175,8 +175,8 @@
       "minutes": 12,
       "title_en": "Free of the pairs",
       "title_hi": "द्वंद्वों से मुक्त",
-      "prompt_en": "Breathe until the in-breath and the out-breath feel the same length. Then name one pair you have been swinging between today — praise and blame, wanting and dreading — and set both on the same shelf.",
-      "prompt_hi": "तब तक श्वास लें जब तक श्वास और निःश्वास बराबर न लगने लगें। फिर आज जिस एक जोड़े के बीच आप झूलते रहे — प्रशंसा और निंदा, चाह और भय — उन दोनों को एक ही ताक पर रख दें।"
+      "prompt_en": "Breathe until the in-breath and the out-breath feel the same length. Then name one pair you have been swinging between today, praise and blame, wanting and dreading, and set both on the same shelf.",
+      "prompt_hi": "तब तक श्वास लें जब तक श्वास और निःश्वास बराबर न लगने लगें। फिर आज जिस एक जोड़े के बीच आप झूलते रहे, प्रशंसा और निंदा, चाह और भय, उन दोनों को एक ही ताक पर रख दें।"
     },
     {
       "day": 18,
@@ -185,8 +185,8 @@
       "minutes": 13,
       "title_en": "Speech that does not wound",
       "title_hi": "जो वाणी चुभे नहीं",
-      "prompt_en": "Here the austerity is of the tongue: true, kind, useful, and calm — all four at once. Move gently for a while, then settle on one sentence you owe someone, and say it silently first.",
-      "prompt_hi": "यहाँ तप वाणी का है: सत्य, प्रिय, हितकर और शांत — चारों एक साथ। कुछ देर कोमलता से हिलें-डुलें, फिर वह एक वाक्य तय करें जो किसी से कहना है, और उसे पहले मन में कहकर देखें।"
+      "prompt_en": "Here the austerity is of the tongue: true, kind, useful, and calm, all four at once. Move gently for a while, then settle on one sentence you owe someone, and say it silently first.",
+      "prompt_hi": "यहाँ तप वाणी का है: सत्य, प्रिय, हितकर और शांत, चारों एक साथ। कुछ देर कोमलता से हिलें-डुलें, फिर वह एक वाक्य तय करें जो किसी से कहना है, और उसे पहले मन में कहकर देखें।"
     },
     {
       "day": 19,
@@ -195,8 +195,8 @@
       "minutes": 13,
       "title_en": "Your own work, offered",
       "title_hi": "अपना कर्म, अर्पित",
-      "prompt_en": "Perfection is not found inside somebody else’s duty. Sit and name your actual work — paid or unpaid, chosen or inherited — and offer today’s portion of it without apology.",
-      "prompt_hi": "सिद्धि किसी और के कर्म में नहीं मिलती। बैठें और अपने वास्तविक काम का नाम लें — वेतन वाला हो या बिना वेतन का, चुना हुआ हो या मिला हुआ — और आज का उसका हिस्सा बिना संकोच अर्पित करें।"
+      "prompt_en": "Perfection is not found inside somebody else’s duty. Sit and name your actual work, paid or unpaid, chosen or inherited, and offer today’s portion of it without apology.",
+      "prompt_hi": "सिद्धि किसी और के कर्म में नहीं मिलती। बैठें और अपने वास्तविक काम का नाम लें, वेतन वाला हो या बिना वेतन का, चुना हुआ हो या मिला हुआ, और आज का उसका हिस्सा बिना संकोच अर्पित करें।"
     },
     {
       "day": 20,
@@ -205,8 +205,8 @@
       "minutes": 14,
       "title_en": "Now act as you wish",
       "title_hi": "अब जैसा चाहें, वैसा करें",
-      "prompt_en": "After eighteen chapters the teaching hands the choice straight back: reflect fully, then do as you wish. Sit with one decision that is genuinely yours and notice that nobody will make it for you — and that this is a kindness.",
-      "prompt_hi": "अठारह अध्यायों के बाद शिक्षा चुनाव सीधे आपके ही हाथ लौटा देती है: भलीभाँति विचार करो, फिर जैसा चाहो वैसा करो। किसी एक ऐसे निर्णय के साथ बैठें जो सचमुच आपका है, और देखें कि उसे कोई और नहीं करेगा — और यह भी एक कृपा है।"
+      "prompt_en": "After eighteen chapters the teaching hands the choice straight back: reflect fully, then do as you wish. Sit with one decision that is genuinely yours and notice that nobody will make it for you, and that this is a kindness.",
+      "prompt_hi": "अठारह अध्यायों के बाद शिक्षा चुनाव सीधे आपके ही हाथ लौटा देती है: भलीभाँति विचार करो, फिर जैसा चाहो वैसा करो। किसी एक ऐसे निर्णय के साथ बैठें जो सचमुच आपका है, और देखें कि उसे कोई और नहीं करेगा, और यह भी एक कृपा है।"
     },
     {
       "day": 21,
@@ -215,8 +215,8 @@
       "minutes": 15,
       "title_en": "I will act",
       "title_hi": "अब मैं करूँगा",
-      "prompt_en": "Arjuna ends where he began — same field, same war — but standing. Sit for the longest stretch of these three weeks, then write one line: what you will actually do tomorrow.",
-      "prompt_hi": "अर्जुन वहीं समाप्त करता है जहाँ से शुरू हुआ था — वही क्षेत्र, वही युद्ध — पर अब खड़ा होकर। इन तीन सप्ताहों की सबसे लंबी बैठक करें, फिर एक पंक्ति लिखें: कल आप वास्तव में क्या करेंगे।"
+      "prompt_en": "Arjuna ends where he began, same field, same war, but standing. Sit for the longest stretch of these three weeks, then write one line: what you will actually do tomorrow.",
+      "prompt_hi": "अर्जुन वहीं समाप्त करता है जहाँ से शुरू हुआ था, वही क्षेत्र, वही युद्ध, पर अब खड़ा होकर। इन तीन सप्ताहों की सबसे लंबी बैठक करें, फिर एक पंक्ति लिखें: कल आप वास्तव में क्या करेंगे।"
     }
   ]
 }

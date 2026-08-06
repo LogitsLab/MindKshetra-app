@@ -2,7 +2,7 @@
   "expo": {
     "name": "MindKshetra",
     "slug": "mindkshetra",
-    "version": "2.0.5",
+    "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "mindkshetra",
@@ -18,9 +18,11 @@
       "bundleIdentifier": "app.mindkshetra.mobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSUserNotificationsUsageDescription": "MindKshetra sends gentle reminders for your daily verse and practice streak."
+        "NSUserNotificationsUsageDescription": "MindKshetra sends gentle reminders for your daily verse and practice streak.",
+        "NSMicrophoneUsageDescription": "MindKshetra uses the microphone so you can speak to Madhav instead of typing.",
+        "NSSpeechRecognitionUsageDescription": "MindKshetra turns your speech into text so Madhav can answer."
       },
-      "buildNumber": "23"
+      "buildNumber": "24"
     },
     "android": {
       "adaptiveIcon": {
@@ -34,9 +36,10 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "RECORD_AUDIO"
       ],
-      "versionCode": 28
+      "versionCode": 29
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -65,7 +68,17 @@
       ],
       "expo-asset",
       "expo-audio",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "MindKshetra uses the microphone so you can speak to Madhav instead of typing.",
+          "speechRecognitionPermission": "MindKshetra turns your speech into text so Madhav can answer.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

@@ -27,7 +27,7 @@ export type HomePathEntry = {
 };
 
 /**
- * Paths Into — Home + Path tab (six tiles, including Ask Madhav).
+ * Paths Into, Home + Path tab (six tiles, including Ask Madhav).
  */
 export const HOME_PATHS: HomePathEntry[] = [
   {

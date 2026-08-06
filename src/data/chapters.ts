@@ -38,7 +38,7 @@ export function chapterTitle(
   return meta.name?.trim() || meta.name_sanskrit || fallback;
 }
 
-/** Secondary line under the title — never switches to the other language’s prose. */
+/** Secondary line under the title, never switches to the other language’s prose. */
 export function chapterSubtitle(
   meta: ChapterMeta | undefined,
   lang: "en" | "hi"

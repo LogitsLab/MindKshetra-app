@@ -29,8 +29,8 @@ type Props = {
   /** Hide the section title (when the parent already shows one). */
   hideHeader?: boolean;
   /**
-   * `featured` — Home web layout (2 wide + 3 thirds).
-   * `grid2` — equal 2-column tiles (Practise tab).
+   * `featured`, Home web layout (2 wide + 3 thirds).
+   * `grid2`, equal 2-column tiles (Practise tab).
    */
   layout?: Layout;
   style?: StyleProp<ViewStyle>;
@@ -46,7 +46,7 @@ type TileSpec = {
 };
 
 /**
- * Practice & lifestyle tiles — shared by Home and Practise tab.
+ * Practice & lifestyle tiles, shared by Home and Practise tab.
  */
 export function PracticeLifestyleGrid({
   hideHeader = false,

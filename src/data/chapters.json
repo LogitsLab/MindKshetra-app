@@ -6,9 +6,9 @@
     "name_sanskrit": "अर्जुनविषादयोग",
     "verses_count": 47,
     "summary": "The first chapter of the Bhagavad Gita - \"Arjuna Vishada Yoga\" introduces the setup, the setting, the characters and the circumstances that led to the epic battle of Mahabharata, fought between the Pandavas and the Kauravas. It outlines the reasons that led to the revelation of the Bhagavad Gita.",
-    "summary_hi": "भगवद्गीता का पहला अध्याय — अर्जुनविषादयोग — महाभारत के युद्ध की पृष्ठभूमि, पात्रों और परिस्थितियों का परिचय देता है, जहाँ अर्जुन का शोक गीता के उपदेश का आरंभ बनता है।",
-    "moral": "Honest sorrow is not weakness — naming your fear is the first step onto the field.",
-    "moral_hi": "सच्चा शोक कमज़ोरी नहीं — अपने भय को नाम देना ही क्षेत्र में पहला कदम है।"
+    "summary_hi": "भगवद्गीता का पहला अध्याय, अर्जुनविषादयोग, महाभारत के युद्ध की पृष्ठभूमि, पात्रों और परिस्थितियों का परिचय देता है, जहाँ अर्जुन का शोक गीता के उपदेश का आरंभ बनता है।",
+    "moral": "Honest sorrow is not weakness, naming your fear is the first step onto the field.",
+    "moral_hi": "सच्चा शोक कमज़ोरी नहीं, अपने भय को नाम देना ही क्षेत्र में पहला कदम है।"
   },
   {
     "number": 2,
@@ -17,9 +17,9 @@
     "name_sanskrit": "सांख्ययोग",
     "verses_count": 72,
     "summary": "The second chapter of the Bhagavad Gita is \"Sankhya Yoga\". This is the most important chapter of the Bhagavad Gita as Lord Krishna condenses the teachings of the entire Gita in this chapter.",
-    "summary_hi": "दूसरा अध्याय सांख्ययोग है। यहाँ श्रीकृष्ण आत्मा, कर्म और स्थिर बुद्धि का सार बताते हैं — पूरे गीता-उपदेश का बीज इसी अध्याय में है।",
-    "moral": "You have a right to action, not to fruits — steady wisdom acts without clinging to results.",
-    "moral_hi": "कर्म पर अधिकार है, फल पर नहीं — स्थिर बुद्धि परिणाम की आसक्ति के बिना कर्म करती है।"
+    "summary_hi": "दूसरा अध्याय सांख्ययोग है। यहाँ श्रीकृष्ण आत्मा, कर्म और स्थिर बुद्धि का सार बताते हैं, पूरे गीता-उपदेश का बीज इसी अध्याय में है।",
+    "moral": "You have a right to action, not to fruits, steady wisdom acts without clinging to results.",
+    "moral_hi": "कर्म पर अधिकार है, फल पर नहीं, स्थिर बुद्धि परिणाम की आसक्ति के बिना कर्म करती है।"
   },
   {
     "number": 3,
@@ -28,7 +28,7 @@
     "name_sanskrit": "कर्मयोग",
     "verses_count": 43,
     "summary": "The third chapter of the Bhagavad Gita is \"Karma Yoga\" or the \"Path of Selfless Service\". Here Lord Krishna emphasizes the importance of karma in life. He reveals that it is important for every human being to engage in some sort of activity in this material world.",
-    "summary_hi": "तीसरा अध्याय कर्मयोग है — निष्काम सेवा का मार्ग। श्रीकृष्ण बताते हैं कि संसार में रहकर भी कर्तव्य-कर्म आवश्यक है; निष्क्रियता मुक्ति नहीं।",
+    "summary_hi": "तीसरा अध्याय कर्मयोग है, निष्काम सेवा का मार्ग। श्रीकृष्ण बताते हैं कि संसार में रहकर भी कर्तव्य-कर्म आवश्यक है; निष्क्रियता मुक्ति नहीं।",
     "moral": "Inaction is not freedom; selfless action done as duty purifies and uplifts life.",
     "moral_hi": "निष्क्रियता मुक्ति नहीं; कर्तव्य रूप में किया निष्काम कर्म जीवन को शुद्ध और ऊँचा करता है।"
   },
@@ -40,8 +40,8 @@
     "verses_count": 42,
     "summary": "The fourth chapter of the Bhagavad Gita is \"Jnana Karma Sanyasa Yoga\". In this chapter, Krishna glorifies the Karma Yoga and imparts the Transcendental Knowledge (the knowledge of the soul and the Ultimate Truth) to Arjuna.",
     "summary_hi": "चौथा अध्याय ज्ञानकर्मसंन्यासयोग है। इसमें श्रीकृष्ण कर्मयोग की महिमा और आत्मा तथा परम सत्य का ज्ञान अर्जुन को देते हैं।",
-    "moral": "True knowledge ends the cycle of bondage — act with understanding, not blind habit.",
-    "moral_hi": "सच्चा ज्ञान बंधन का अंत करता है — अंधी आदत से नहीं, समझ के साथ कर्म करो।"
+    "moral": "True knowledge ends the cycle of bondage, act with understanding, not blind habit.",
+    "moral_hi": "सच्चा ज्ञान बंधन का अंत करता है, अंधी आदत से नहीं, समझ के साथ कर्म करो।"
   },
   {
     "number": 5,
@@ -50,7 +50,7 @@
     "name_sanskrit": "कर्मसंन्यासयोग",
     "verses_count": 29,
     "summary": "The fifth chapter of the Bhagavad Gita is \"Karma Sanyasa Yoga\". In this chapter, Krishna compares the paths of renunciation in actions (Karma Sanyas) and actions with detachment (Karma Yoga) and explains that both are means to reach the same goal and we can choose either.",
-    "summary_hi": "पाँचवाँ अध्याय कर्मसंन्यासयोग है। श्रीकृष्ण कर्म-संन्यास और अनासक्त कर्मयोग की तुलना करते हैं — दोनों एक ही लक्ष्य तक पहुँचाते हैं।",
+    "summary_hi": "पाँचवाँ अध्याय कर्मसंन्यासयोग है। श्रीकृष्ण कर्म-संन्यास और अनासक्त कर्मयोग की तुलना करते हैं, दोनों एक ही लक्ष्य तक पहुँचाते हैं।",
     "moral": "Renunciation and engaged work meet in the same peace when the ego drops the claim of doership.",
     "moral_hi": "संन्यास और कर्मयोग एक ही शांति में मिलते हैं जब अहंकार कर्तृत्व का दावा छोड़ देता है।"
   },
@@ -61,9 +61,9 @@
     "name_sanskrit": "ध्यानयोग",
     "verses_count": 47,
     "summary": "The sixth chapter of the Bhagavad Gita is \"Dhyana Yoga\". In this chapter, Krishna reveals the \"Yoga of Meditation\" and how to practise this Yoga. He discusses the role of action in preparing for Meditation, how performing duties in devotion purifies one's mind and heightens one's spiritual consciousness.",
-    "summary_hi": "छठा अध्याय ध्यानयोग है। श्रीकृष्ण ध्यान की साधना बताते हैं — भक्तिपूर्ण कर्तव्य मन को शुद्ध कर आध्यात्मिक चेतना को ऊँचा करते हैं।",
-    "moral": "Master the mind gently through practice and detachment — the self is both friend and enemy.",
-    "moral_hi": "अभ्यास और वैराग्य से मन को कोमलता से साधो — आत्मा मित्र भी है और शत्रु भी।"
+    "summary_hi": "छठा अध्याय ध्यानयोग है। श्रीकृष्ण ध्यान की साधना बताते हैं, भक्तिपूर्ण कर्तव्य मन को शुद्ध कर आध्यात्मिक चेतना को ऊँचा करते हैं।",
+    "moral": "Master the mind gently through practice and detachment, the self is both friend and enemy.",
+    "moral_hi": "अभ्यास और वैराग्य से मन को कोमलता से साधो, आत्मा मित्र भी है और शत्रु भी।"
   },
   {
     "number": 7,
@@ -72,7 +72,7 @@
     "name_sanskrit": "ज्ञानविज्ञानयोग",
     "verses_count": 30,
     "summary": "The seventh chapter of the Bhagavad Gita is \"Gyaan Vigyana Yoga \". In this chapter, Krishna reveals that he is the Supreme Truth, the principal cause and the sustaining force of everything.",
-    "summary_hi": "सातवाँ अध्याय ज्ञानविज्ञानयोग है। श्रीकृष्ण प्रकट करते हैं कि वे परम सत्य हैं — सबके मूल कारण और धारण करने वाली शक्ति।",
+    "summary_hi": "सातवाँ अध्याय ज्ञानविज्ञानयोग है। श्रीकृष्ण प्रकट करते हैं कि वे परम सत्य हैं, सबके मूल कारण और धारण करने वाली शक्ति।",
     "moral": "See the One behind the many; devotion rooted in knowledge frees you from Maya’s spell.",
     "moral_hi": "अनेक के पीछे एक को देखो; ज्ञान-युक्त भक्ति माया के मोह से मुक्त करती है।"
   },
@@ -83,9 +83,9 @@
     "name_sanskrit": "अक्षरब्रह्मयोग",
     "verses_count": 28,
     "summary": "The eighth chapter of the Bhagavad Gita is \"Akshara Brahma Yoga\". In this chapter, Krishna reveals the importance of the last thought before death. If we can remember Krishna at the time of death, we will certainly attain him.",
-    "summary_hi": "आठवाँ अध्याय अक्षरब्रह्मयोग है। इसमें अंतिम विचार का महत्त्व बताया गया है — मृत्यु के समय कृष्ण-स्मरण से उन्हें अवश्य प्राप्त किया जा सकता है।",
-    "moral": "How you live shapes how you leave — remember the Divine in life, and at the last breath.",
-    "moral_hi": "जैसे जीते हो, वैसा ही अंतिम क्षण बनता है — जीवन में और अंतिम श्वास में भी ईश्वर को याद रखो।"
+    "summary_hi": "आठवाँ अध्याय अक्षरब्रह्मयोग है। इसमें अंतिम विचार का महत्त्व बताया गया है, मृत्यु के समय कृष्ण-स्मरण से उन्हें अवश्य प्राप्त किया जा सकता है।",
+    "moral": "How you live shapes how you leave, remember the Divine in life, and at the last breath.",
+    "moral_hi": "जैसे जीते हो, वैसा ही अंतिम क्षण बनता है, जीवन में और अंतिम श्वास में भी ईश्वर को याद रखो।"
   },
   {
     "number": 9,
@@ -94,9 +94,9 @@
     "name_sanskrit": "राजविद्याराजगुह्ययोग",
     "verses_count": 34,
     "summary": "The ninth chapter of the Bhagavad Gita is \"Raja Vidya Yoga\". In this chapter, Krishna explains that He is Supreme and how this material existence is created, maintained and destroyed by His Yogmaya and all beings come and go under his supervision.",
-    "summary_hi": "नौवाँ अध्याय राजविद्याराजगुह्ययोग है। श्रीकृष्ण बताते हैं कि वे परम हैं — योगमाया से सृष्टि का निर्माण, पालन और संहार होता है।",
-    "moral": "The Divine receives even the simplest offering given with love — no one is shut out of grace.",
-    "moral_hi": "प्रेम से दिया गया साधारण अर्पण भी स्वीकार होता है — कृपा से कोई वंचित नहीं।"
+    "summary_hi": "नौवाँ अध्याय राजविद्याराजगुह्ययोग है। श्रीकृष्ण बताते हैं कि वे परम हैं, योगमाया से सृष्टि का निर्माण, पालन और संहार होता है।",
+    "moral": "The Divine receives even the simplest offering given with love, no one is shut out of grace.",
+    "moral_hi": "प्रेम से दिया गया साधारण अर्पण भी स्वीकार होता है, कृपा से कोई वंचित नहीं।"
   },
   {
     "number": 10,
@@ -116,9 +116,9 @@
     "name_sanskrit": "विश्वरूपदर्शनयोग",
     "verses_count": 55,
     "summary": "The eleventh chapter of the Bhagavad Gita is \"Vishwaroopa Darshana Yoga\". In this chapter, Arjuna requests Krishna to reveal His Universal Cosmic Form that encompasses all the universes, the entire existence.",
-    "summary_hi": "ग्यारहवाँ अध्याय विश्वरूपदर्शनयोग है। अर्जुन श्रीकृष्ण से उनका विश्वरूप दिखाने का अनुरोध करते हैं — जो समस्त सृष्टि को समेटे हुए है।",
+    "summary_hi": "ग्यारहवाँ अध्याय विश्वरूपदर्शनयोग है। अर्जुन श्रीकृष्ण से उनका विश्वरूप दिखाने का अनुरोध करते हैं, जो समस्त सृष्टि को समेटे हुए है।",
     "moral": "Awe humbles the ego: the universe is vast, and surrender is wiser than control.",
-    "moral_hi": "विस्मय अहंकार को नम्र करता है — ब्रह्मांड विशाल है, और समर्पण नियंत्रण से बुद्धिमान है।"
+    "moral_hi": "विस्मय अहंकार को नम्र करता है, ब्रह्मांड विशाल है, और समर्पण नियंत्रण से बुद्धिमान है।"
   },
   {
     "number": 12,
@@ -138,9 +138,9 @@
     "name_sanskrit": "क्षेत्र-क्षेत्रज्ञविभागयोग",
     "verses_count": 35,
     "summary": "The thirteenth chapter of the Bhagavad Gita is \"Ksetra Ksetrajna Vibhaaga Yoga\". The word \"kshetra\" means \"the field\", and the \"kshetrajna\" means \"the knower of the field\". We can think of our material body as the field and our immortal soul as the knower of the field.",
-    "summary_hi": "तेरहवाँ अध्याय क्षेत्र-क्षेत्रज्ञविभागयोग है। शरीर क्षेत्र है और अमर आत्मा क्षेत्रज्ञ — इसी भेद से ज्ञान आरंभ होता है।",
-    "moral": "Know the body as the field and the Self as its knower — wisdom begins with this distinction.",
-    "moral_hi": "शरीर को क्षेत्र और आत्मा को क्षेत्रज्ञ जानो — ज्ञान इसी भेद से शुरू होता है।"
+    "summary_hi": "तेरहवाँ अध्याय क्षेत्र-क्षेत्रज्ञविभागयोग है। शरीर क्षेत्र है और अमर आत्मा क्षेत्रज्ञ, इसी भेद से ज्ञान आरंभ होता है।",
+    "moral": "Know the body as the field and the Self as its knower, wisdom begins with this distinction.",
+    "moral_hi": "शरीर को क्षेत्र और आत्मा को क्षेत्रज्ञ जानो, ज्ञान इसी भेद से शुरू होता है।"
   },
   {
     "number": 14,
@@ -149,7 +149,7 @@
     "name_sanskrit": "गुणत्रयविभागयोग",
     "verses_count": 27,
     "summary": "The fourteenth chapter of the Bhagavad Gita is \"Gunatraya Vibhaga Yoga\". In this chapter, Krishna reveals the three gunas (modes) of the material nature - goodness, passion and ignorance which everything in the material existence is influenced by.",
-    "summary_hi": "चौदहवाँ अध्याय गुणत्रयविभागयोग है। श्रीकृष्ण प्रकृति के तीन गुण — सत्त्व, रजस् और तमस् — बताते हैं जो भौतिक जीवन को प्रभावित करते हैं।",
+    "summary_hi": "चौदहवाँ अध्याय गुणत्रयविभागयोग है। श्रीकृष्ण प्रकृति के तीन गुण, सत्त्व, रजस् और तमस्, बताते हैं जो भौतिक जीवन को प्रभावित करते हैं।",
     "moral": "Rise above the three gunas; do not be tossed by restless passion or dull inertia.",
     "moral_hi": "तीनों गुणों से ऊपर उठो; चंचल रजस् या जड़ तमस् में मत बहो।"
   },
@@ -171,9 +171,9 @@
     "name_sanskrit": "दैवासुरसम्पद्विभागयोग",
     "verses_count": 24,
     "summary": "The sixteenth chapter of the Bhagavad Gita is \"Daivasura Sampad Vibhaga Yoga\". In this chapter, Krishna describes explicitly the two kinds of natures among human beings - divine and demoniac.",
-    "summary_hi": "सोलहवाँ अध्याय दैवासुरसम्पद्विभागयोग है। श्रीकृष्ण स्पष्ट रूप से दो प्रकृतियाँ बताते हैं — दैवी और आसुरी।",
-    "moral": "Choose divine qualities — truth, restraint, compassion — over arrogance and harm.",
-    "moral_hi": "अहंकार और हिंसा के बजाय सत्य, संयम और करुणा — दैवी गुण चुनो।"
+    "summary_hi": "सोलहवाँ अध्याय दैवासुरसम्पद्विभागयोग है। श्रीकृष्ण स्पष्ट रूप से दो प्रकृतियाँ बताते हैं, दैवी और आसुरी।",
+    "moral": "Choose divine qualities, truth, restraint, compassion, over arrogance and harm.",
+    "moral_hi": "अहंकार और हिंसा के बजाय सत्य, संयम और करुणा, दैवी गुण चुनो।"
   },
   {
     "number": 17,
@@ -184,7 +184,7 @@
     "summary": "The seventeenth chapter of the Bhagavad Gita is \"Sraddhatraya Vibhaga Yoga\". In this chapter, Krishna describes the three types of faith corresponding to the three modes of the material nature.",
     "summary_hi": "सत्रहवाँ अध्याय श्रद्धात्रयविभागयोग है। श्रीकृष्ण प्रकृति के तीन गुणों के अनुरूप तीन प्रकार की श्रद्धा का वर्णन करते हैं।",
     "moral": "Faith shapes destiny; purify what you trust, eat, give, and offer.",
-    "moral_hi": "श्रद्धा भाग्य गढ़ती है — जिस पर विश्वास, आहार, दान और यज्ञ हो, उसे शुद्ध करो।"
+    "moral_hi": "श्रद्धा भाग्य गढ़ती है, जिस पर विश्वास, आहार, दान और यज्ञ हो, उसे शुद्ध करो।"
   },
   {
     "number": 18,
@@ -193,8 +193,8 @@
     "name_sanskrit": "मोक्षसंन्यासयोग",
     "verses_count": 78,
     "summary": "The eighteenth chapter of the Bhagavad Gita is \"Moksha Sanyas Yoga\". Arjuna requests the Lord to explain the difference between the two types of renunciations - sanyaas(renunciation of actions) and tyaag(renunciation of desires).",
-    "summary_hi": "अठारहवाँ अध्याय मोक्षसंन्यासयोग है। अर्जुन संन्यास (कर्मों का त्याग) और त्याग (फल-आसक्ति का त्याग) का भेद जानना चाहते हैं — यही गीता का समापन अध्याय है।",
-    "moral": "Surrender the fruits, fulfill your own duty, and rest in grace — that is liberation in action.",
-    "moral_hi": "फल छोड़ो, अपना स्वधर्म निभाओ, और कृपा में विश्राम करो — यही कर्म में मोक्ष है।"
+    "summary_hi": "अठारहवाँ अध्याय मोक्षसंन्यासयोग है। अर्जुन संन्यास (कर्मों का त्याग) और त्याग (फल-आसक्ति का त्याग) का भेद जानना चाहते हैं, यही गीता का समापन अध्याय है।",
+    "moral": "Surrender the fruits, fulfill your own duty, and rest in grace, that is liberation in action.",
+    "moral_hi": "फल छोड़ो, अपना स्वधर्म निभाओ, और कृपा में विश्राम करो, यही कर्म में मोक्ष है।"
   }
 ]

@@ -1,4 +1,4 @@
-# Goal tracks (Tier 3) — deferred
+# Goal tracks (Tier 3), deferred
 
 See web docs: MindKshetra/docs/goal-tracks.md
 

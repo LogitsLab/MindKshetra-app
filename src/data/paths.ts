@@ -21,8 +21,8 @@ export type PracticePath = {
   id: string;
   days_count: number;
   /**
-   * Per journey, not per engine. The themed weeks stay open — people use them
-   * as a menu — while the 21-day arc chains, which is the only way three
+   * Per journey, not per engine. The themed weeks stay open, people use them
+   * as a menu, while the 21-day arc chains, which is the only way three
    * movements in sequence mean anything.
    */
   unlock: JourneyUnlock;
@@ -39,7 +39,7 @@ function openPath(raw: unknown): PracticePath {
 }
 
 /**
- * Ordered catalog — the long arc first, then the themed weeks, matching the
+ * Ordered catalog, the long arc first, then the themed weeks, matching the
  * order the web's journeys loader declares. Keep in sync with
  * MindKshetra/data/journeys/ and MindKshetra/data/paths/.
  */

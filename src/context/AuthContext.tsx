@@ -9,12 +9,16 @@ import React, {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import * as WebBrowser from "expo-web-browser";
-import { makeRedirectUri } from "expo-auth-session";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
-import { getAuthCallbackRedirect } from "@/auth/redirect";
+import {
+  completeAuthFromUrl,
+  getAuthCallbackRedirect,
+  markAuthCodeConsumed,
+} from "@/auth/redirect";
+import { resolveAuthRedirectUri } from "@/auth/oauthRedirect";
 import { shouldMerge } from "@/auth/should-merge";
 import {
   chatApi,
@@ -85,6 +89,14 @@ function friendlyAuthError(
     (lower.includes("disabled") || lower.includes("not enabled"))
   ) {
     return "Guest sign-in is not enabled yet. Use email below.";
+  }
+  if (
+    kind === "anonymous" &&
+    (lower.includes("fetch failed") ||
+      lower.includes("network request failed") ||
+      lower.includes("failed to fetch"))
+  ) {
+    return "Could not reach MindKshetra auth. Check your connection and try again.";
   }
   if (
     kind === "google" &&
@@ -357,56 +369,80 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInAnonymously = useCallback(async () => {
     if (!supabaseConfigured) return;
-    const { error } = await supabase.auth.signInAnonymously();
+
+    // Stale sessions from a previous Supabase project (paused post-migration)
+    // can leave Auth in a bad state on device. Clear first, then mint guest.
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      /* ignore — no session or storage glitch */
+    }
+
+    let { data, error } = await supabase.auth.signInAnonymously();
+    if (error && /fetch failed|network request failed|failed to fetch/i.test(error.message)) {
+      // One retry after a brief pause — cold DNS / flaky mobile radios.
+      await new Promise((r) => setTimeout(r, 400));
+      ({ data, error } = await supabase.auth.signInAnonymously());
+    }
     if (error) throw new Error(friendlyAuthError(error.message, "anonymous"));
+    if (!data.session) {
+      throw new Error("Guest sign-in did not return a session. Try again.");
+    }
   }, []);
 
   /** Resolves false when the person backed out, true when a session started. */
   const signInWithGoogle = useCallback(async () => {
     if (!supabaseConfigured) return false;
-    const redirectTo = makeRedirectUri({
-      scheme: "mindkshetra",
-      path: "auth/callback",
-    });
+    const redirectTo = resolveAuthRedirectUri();
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo, skipBrowserRedirect: true },
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+        queryParams: { prompt: "select_account" },
+      },
     });
     if (error) throw new Error(friendlyAuthError(error.message, "google"));
     if (!data.url) throw new Error("Google sign-in failed to start.");
 
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== "success" || !result.url) return false;
-
-    const hashIdx = result.url.indexOf("#");
-    const queryIdx = result.url.indexOf("?");
-    const hash = hashIdx >= 0 ? result.url.slice(hashIdx + 1) : "";
-    const query =
-      queryIdx >= 0
-        ? result.url.slice(queryIdx + 1, hashIdx >= 0 ? hashIdx : undefined)
-        : "";
-    const params = new URLSearchParams(hash || query);
-    const access_token = params.get("access_token");
-    const refresh_token = params.get("refresh_token");
-    const code = params.get("code");
-
-    if (access_token && refresh_token) {
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token,
-        refresh_token,
-      });
-      if (sessionError) {
-        throw new Error(friendlyAuthError(sessionError.message, "google"));
+    if (result.type !== "success" || !result.url) {
+      // iOS sometimes dismisses after a successful HTTPS return that Linking
+      // still delivers — or the in-app callback route already exchanged.
+      const { data: raced } = await supabase.auth.getSession();
+      if (raced.session?.user && !raced.session.user.is_anonymous) {
+        await mergeForUser(raced.session.user.id);
+        return true;
       }
-    } else if (code) {
-      const { error: exchangeError } =
-        await supabase.auth.exchangeCodeForSession(code);
-      if (exchangeError) {
-        throw new Error(friendlyAuthError(exchangeError.message, "google"));
-      }
-    } else {
-      throw new Error("Google sign-in did not return a session.");
+      return false;
     }
+
+    const outcome = await completeAuthFromUrl(
+      result.url,
+      (code) => supabase.auth.exchangeCodeForSession(code),
+      ({ access_token, refresh_token }) =>
+        supabase.auth.setSession({ access_token, refresh_token }),
+      async () => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        return sessionData.session;
+      }
+    );
+    if (outcome !== "ok") {
+      const { data: raced } = await supabase.auth.getSession();
+      if (!raced.session?.user || raced.session.user.is_anonymous) {
+        throw new Error(
+          outcome === "otp_expired"
+            ? "Google sign-in expired. Try again."
+            : "Google sign-in did not return a session."
+        );
+      }
+    }
+
+    const codeMatch = result.url.match(/[?&#]code=([^&]+)/);
+    markAuthCodeConsumed(
+      codeMatch?.[1] ? decodeURIComponent(codeMatch[1]) : null
+    );
+
     // The SIGNED_IN listener also merges; mergeForUser dedupes by user id.
     const { data: sessionData } = await supabase.auth.getSession();
     if (sessionData.session?.user) {
@@ -425,10 +461,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error("RATE_LIMITED");
     }
 
-    const redirectTo = makeRedirectUri({
-      scheme: "mindkshetra",
-      path: "auth/callback",
-    });
+    const redirectTo = resolveAuthRedirectUri();
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmed,
       options: { emailRedirectTo: redirectTo },

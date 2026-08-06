@@ -36,7 +36,7 @@ export const en = {
   notifDailyVerse: "Daily verse push",
   notifDailyVerseBlurb: "A gentle nudge with today’s verse at your chosen hour.",
   notifDailyVerseHour: "Delivery hour",
-  notifDailyVerseHourBlurb: "Local hour of day (4–21).",
+  notifDailyVerseHourBlurb: "Local hour of day (4, 21).",
   notifStreakReminder: "Streak reminder",
   notifStreakReminderBlurb: "A soft nudge when your day streak needs a visit.",
   notifOn: "On",
@@ -70,7 +70,7 @@ export const en = {
   signOut: "Sign out",
   deleteAccount: "Delete account",
   deleteAccountBlurb:
-    "Permanently removes your account and all data — favorites, reflections, progress, charts and chats. This cannot be undone.",
+    "Permanently removes your account and all data, favorites, reflections, progress, charts and chats. This cannot be undone.",
   deleteAccountConfirm: "Yes, delete everything",
   deleteAccountCancel: "Keep my account",
   deleteAccountFailed: "Deletion failed. Try again or contact the maintainers.",
@@ -84,7 +84,7 @@ export const en = {
   hideEmailSignIn: "Hide email sign-in",
   emailLabel: "Email",
   emailPlaceholder: "you@example.com",
-  magicLinkSent: "Magic link sent. Open it on this device to finish signing in — links expire after about an hour.",
+  magicLinkSent: "Magic link sent. Open it on this device to finish signing in, links expire after about an hour.",
   useDifferentEmail: "Use a different email",
   sendingLink: "Sending…",
   orDivider: "or",
@@ -93,7 +93,7 @@ export const en = {
   upgradeAccountBlurb:
     "You’re browsing as a guest. Continue with Google to keep favorites, reflections, and chats across devices.",
   accountSignInBlurb:
-    "Continue with Google to save favorites, reflections, and Madhav chats — then pick up on any device.",
+    "Continue with Google to save favorites, reflections, and Madhav chats, then pick up on any device.",
   authNotConfigured: "Sign-in isn’t configured for this environment yet.",
   authLinkExpired:
     "That sign-in link is invalid or has expired. Try Google, or request a new email link below.",
@@ -101,10 +101,10 @@ export const en = {
   authRateLimited:
     "Too many sign-in emails were requested. Check your inbox for an earlier link, or wait about a minute before trying again.",
   authEmailQuota:
-    "Sign-in email limit reached (default Supabase mail allows only a couple per hour). Check inbox/spam for an earlier link, or wait up to an hour — then try once.",
+    "Sign-in email limit reached (default Supabase mail allows only a couple per hour). Check inbox/spam for an earlier link, or wait up to an hour, then try once.",
   authCooldown: "Wait {seconds}s before requesting another link",
   authPrivacyNote:
-    "Google shares your name and email to sign you in. Magic-link email is only used for sign-in — no spam, no public profile.",
+    "Google shares your name and email to sign you in. Magic-link email is only used for sign-in, no spam, no public profile.",
   favorites: "Favorites",
   favoritesBlurb: "Verses you have bookmarked.",
   noFavorites: "No bookmarks yet.",
@@ -127,14 +127,14 @@ export const en = {
   textSizeLarge: "Large",
   marksTitle: "Practice marks",
   marksBlurb:
-    "Quiet marks for staying with it. Everything here is private to you — no leaderboards, by design.",
+    "Quiet marks for staying with it. Everything here is private to you, no leaderboards, by design.",
   marksStreakLine: "Longest: {longest} days · currently {current}",
   marksVersesLine: "{n} of {total} verses read",
   marksNext: "Next: {name}",
   marksEmpty:
-    "Marks appear as the practice deepens — begin with today’s sādhana.",
+    "Marks appear as the practice deepens, begin with today’s sādhana.",
   marksGuestHint:
-    "These marks live on this device for now — sign in to keep them.",
+    "These marks live on this device for now, sign in to keep them.",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -166,9 +166,9 @@ export const hi: Record<keyof typeof en, string> = {
   notifTitle: "सूचनाएँ",
   notifBlurb: "इस खाते तक कौन-सी याद दिलाने वाली सूचनाएँ पहुँचें, चुनें।",
   notifDailyVerse: "दैनिक श्लोक पुश",
-  notifDailyVerseBlurb: "आपके चुने घंटे पर आज का श्लोक — एक सौम्य स्मरण।",
+  notifDailyVerseBlurb: "आपके चुने घंटे पर आज का श्लोक, एक सौम्य स्मरण।",
   notifDailyVerseHour: "भेजने का घंटा",
-  notifDailyVerseHourBlurb: "स्थानीय दिन का घंटा (4–21)।",
+  notifDailyVerseHourBlurb: "स्थानीय दिन का घंटा (4, 21)।",
   notifStreakReminder: "लकीर स्मरण",
   notifStreakReminderBlurb: "जब दिन की लकीर के लिए भेंट चाहिए, एक हल्का स्मरण।",
   notifOn: "चालू",
@@ -202,7 +202,7 @@ export const hi: Record<keyof typeof en, string> = {
   signOut: "साइन आउट",
   deleteAccount: "खाता हटाएँ",
   deleteAccountBlurb:
-    "आपका खाता और सारा डेटा स्थायी रूप से हट जाएगा — पसंद, चिन्तन, प्रगति, कुंडलियाँ और चैट। इसे पूर्ववत नहीं किया जा सकता।",
+    "आपका खाता और सारा डेटा स्थायी रूप से हट जाएगा, पसंद, चिन्तन, प्रगति, कुंडलियाँ और चैट। इसे पूर्ववत नहीं किया जा सकता।",
   deleteAccountConfirm: "हाँ, सब हटाएँ",
   deleteAccountCancel: "खाता रखें",
   deleteAccountFailed: "हटाना विफल रहा। फिर कोशिश करें या मेंटेनर से संपर्क करें।",
@@ -216,7 +216,7 @@ export const hi: Record<keyof typeof en, string> = {
   hideEmailSignIn: "ईमेल साइन-इन छिपाएँ",
   emailLabel: "ईमेल",
   emailPlaceholder: "you@example.com",
-  magicLinkSent: "मैजिक लिंक भेज दिया। साइन इन पूरा करने के लिए इसी उपकरण पर खोलें — लिंक लगभग एक घंटे में समाप्त हो जाता है।",
+  magicLinkSent: "मैजिक लिंक भेज दिया। साइन इन पूरा करने के लिए इसी उपकरण पर खोलें, लिंक लगभग एक घंटे में समाप्त हो जाता है।",
   useDifferentEmail: "दूसरा ईमेल उपयोग करें",
   sendingLink: "भेजा जा रहा है…",
   orDivider: "या",
@@ -225,7 +225,7 @@ export const hi: Record<keyof typeof en, string> = {
   upgradeAccountBlurb:
     "आप अतिथि के रूप में ब्राउज़ कर रहे हैं। पसंदीदा, चिंतन और वार्ता सभी उपकरणों पर रखने के लिए Google से जारी रखें।",
   accountSignInBlurb:
-    "पसंदीदा, चिंतन और माधव वार्ता सहेजने के लिए Google से जारी रखें — फिर किसी भी उपकरण पर आगे बढ़ें।",
+    "पसंदीदा, चिंतन और माधव वार्ता सहेजने के लिए Google से जारी रखें, फिर किसी भी उपकरण पर आगे बढ़ें।",
   authNotConfigured: "इस वातावरण में साइन-इन अभी कॉन्फ़िगर नहीं है।",
   authLinkExpired:
     "वह साइन-इन लिंक अमान्य है या समाप्त हो गया है। Google आज़माएँ, या नीचे नया ईमेल लिंक माँगें।",
@@ -236,7 +236,7 @@ export const hi: Record<keyof typeof en, string> = {
     "साइन-इन ईमेल सीमा पूरी हो गई (डिफ़ॉल्ट Supabase मेल पर प्रति घंटे केवल कुछ ईमेल)। इनबॉक्स/स्पैम में पहले का लिंक देखें, या लगभग एक घंटा रुककर एक बार कोशिश करें।",
   authCooldown: "दूसरा लिंक माँगने से पहले {seconds} सेकंड रुकें",
   authPrivacyNote:
-    "Google साइन इन के लिए आपका नाम और ईमेल साझा करता है। मैजिक-लिंक ईमेल केवल साइन इन के लिए है — कोई स्पैम नहीं, कोई सार्वजनिक प्रोफ़ाइल नहीं।",
+    "Google साइन इन के लिए आपका नाम और ईमेल साझा करता है। मैजिक-लिंक ईमेल केवल साइन इन के लिए है, कोई स्पैम नहीं, कोई सार्वजनिक प्रोफ़ाइल नहीं।",
   favorites: "पसंदीदा",
   favoritesBlurb: "आपके द्वारा सहेजे गए श्लोक।",
   noFavorites: "अभी कोई बुकमार्क नहीं।",
@@ -259,11 +259,11 @@ export const hi: Record<keyof typeof en, string> = {
   textSizeLarge: "बड़ा",
   marksTitle: "साधना चिह्न",
   marksBlurb:
-    "साथ बने रहने के शांत चिह्न। यहाँ सब कुछ केवल आपके लिए निजी है — कोई लीडरबोर्ड नहीं, यही रचना है।",
+    "साथ बने रहने के शांत चिह्न। यहाँ सब कुछ केवल आपके लिए निजी है, कोई लीडरबोर्ड नहीं, यही रचना है।",
   marksStreakLine: "सबसे लंबी: {longest} दिन · अभी {current}",
   marksVersesLine: "{total} में से {n} श्लोक पढ़े",
   marksNext: "आगे: {name}",
-  marksEmpty: "अभ्यास गहराने पर चिह्न यहाँ दिखेंगे — आज की साधना से आरंभ करें।",
+  marksEmpty: "अभ्यास गहराने पर चिह्न यहाँ दिखेंगे, आज की साधना से आरंभ करें।",
   marksGuestHint:
-    "ये चिह्न अभी इसी डिवाइस पर हैं — सहेजे रखने के लिए साइन इन करें।",
+    "ये चिह्न अभी इसी डिवाइस पर हैं, सहेजे रखने के लिए साइन इन करें।",
 };

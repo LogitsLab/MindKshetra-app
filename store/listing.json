@@ -18,19 +18,19 @@
   "privacyPolicyUrl": "https://mind.logitslab.com/privacy",
   "en": {
     "title": "MindKshetra",
-    "shortDescription": "Clarity from the Gita — verses, Madhav chat, and Jyotish charts.",
-    "fullDescription": "MindKshetra is a calm companion for the battlefield of the mind.\n\nExplore the Bhagavad Gita with Sanskrit, Hindi, and English. Match how you feel to verses. Ask Madhav — a warm, citation-grounded guide. Cast Jyotish birth charts with dashas and structured predictions.\n\n• Explore — 701 verses by chapter, search, favorites, and journal reflections\n• Mood — find verses that meet you where you are\n• Ask Madhav — chat grounded in retrieved Gita teachings\n• Astrology — birth charts, dasha timelines, life-area predictions, and Madhav chart chat\n• Light and dark themes, English and Hindi\n\nWeb: https://mind.logitslab.com",
+    "shortDescription": "Clarity from the Gita, verses, Madhav chat, and Jyotish charts.",
+    "fullDescription": "MindKshetra is a calm companion for the battlefield of the mind.\n\nExplore the Bhagavad Gita with Sanskrit, Hindi, and English. Match how you feel to verses. Ask Madhav, a warm, citation-grounded guide. Cast Jyotish birth charts with dashas and structured predictions.\n\n• Explore, 701 verses by chapter, search, favorites, and journal reflections\n• Mood, find verses that meet you where you are\n• Ask Madhav, chat grounded in retrieved Gita teachings\n• Astrology, birth charts, dasha timelines, life-area predictions, and Madhav chart chat\n• Light and dark themes, English and Hindi\n\nWeb: https://mind.logitslab.com",
     "whatsNewFallback": "Bug fixes and improvements for a calmer reading experience."
   },
   "hi": {
     "title": "MindKshetra",
-    "shortDescription": "गीता से स्पष्टता — श्लोक, माधव चैट, और ज्योतिष कुंडली।",
-    "fullDescription": "MindKshetra मन के युद्धक्षेत्र के लिए एक शांत साथी है।\n\nभगवद्गीता को संस्कृत, हिंदी और अंग्रेज़ी में पढ़ें। मूड के अनुसार श्लोक पाएँ। माधव से पूछें — उद्धरणों पर आधारित मार्गदर्शन। ज्योतिष जन्म कुंडली, दशा और संरचित भविष्यवाणियाँ।\n\nवेब: https://mind.logitslab.com",
+    "shortDescription": "गीता से स्पष्टता, श्लोक, माधव चैट, और ज्योतिष कुंडली।",
+    "fullDescription": "MindKshetra मन के युद्धक्षेत्र के लिए एक शांत साथी है।\n\nभगवद्गीता को संस्कृत, हिंदी और अंग्रेज़ी में पढ़ें। मूड के अनुसार श्लोक पाएँ। माधव से पूछें, उद्धरणों पर आधारित मार्गदर्शन। ज्योतिष जन्म कुंडली, दशा और संरचित भविष्यवाणियाँ।\n\nवेब: https://mind.logitslab.com",
     "whatsNewFallback": "बेहतर अनुभव के लिए सुधार और बग फिक्स।"
   },
   "ios": {
     "bundleId": "app.mindkshetra.mobile",
-    "submitNotes": "No third-party login required for guest use. Sign-in optional (Google / email). Astrology charts are informational only — not medical or financial advice."
+    "submitNotes": "No third-party login required for guest use. Sign-in optional (Google / email). Astrology charts are informational only, not medical or financial advice."
   },
   "android": {
     "package": "app.mindkshetra.mobile",

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AppState,
@@ -17,6 +17,7 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -26,6 +27,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTextScale } from "@/context/TextScaleContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useMadhavVoiceInput } from "@/hooks/useMadhavVoiceInput";
 import { detectUserCrisis, mentionsCrisisResource } from "@/safety/crisis";
 import {
   getChatSessionId,
@@ -35,6 +37,34 @@ import { images } from "@/theme/assets";
 import { radii, spacing } from "@/theme/tokens";
 import type { ChatMessage, Citation } from "@/types";
 import { TokenBuffer } from "@/utils/TokenBuffer";
+
+function MicIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"
+        stroke={color}
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M19 10v1a7 7 0 0 1-14 0v-1"
+        stroke={color}
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M12 18v3"
+        stroke={color}
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 type UiMessage = ChatMessage & { id: string };
 
@@ -81,18 +111,43 @@ export default function MadhavScreen() {
   const backgroundAbort = useRef(false);
   const nearBottom = useRef(true);
 
+  const voiceLabels = useMemo(
+    () => ({
+      unsupported: t("voiceUnsupported"),
+      error: t("voiceError"),
+    }),
+    [t]
+  );
+
+  const {
+    listening,
+    supported: voiceSupported,
+    toggleListening,
+    stopListening,
+    syncBaseInput,
+  } = useMadhavVoiceInput({
+    lang,
+    disabled: loading,
+    onTranscript: setInput,
+    onError: setError,
+    labels: voiceLabels,
+  });
+
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next) => {
       const leaving =
         appState.current === "active" && next.match(/inactive|background/);
       appState.current = next;
-      if (leaving && abortRef.current && sending.current) {
-        backgroundAbort.current = true;
-        abortRef.current.abort();
+      if (leaving) {
+        stopListening();
+        if (abortRef.current && sending.current) {
+          backgroundAbort.current = true;
+          abortRef.current.abort();
+        }
       }
     });
     return () => sub.remove();
-  }, []);
+  }, [stopListening]);
 
   useEffect(() => {
     let alive = true;
@@ -129,10 +184,12 @@ export default function MadhavScreen() {
     async (raw: string) => {
       const trimmed = raw.trim();
       if (!trimmed || sending.current) return;
+      stopListening();
       sending.current = true;
       backgroundAbort.current = false;
       setError(null);
       setInput("");
+      syncBaseInput("");
 
       const userCrisis = detectUserCrisis(trimmed);
       setCrisisBanner(userCrisis ? t("crisisBody") : null);
@@ -309,6 +366,8 @@ export default function MadhavScreen() {
       slokaId,
       setStreaming,
       t,
+      stopListening,
+      syncBaseInput,
     ]
   );
 
@@ -511,17 +570,48 @@ export default function MadhavScreen() {
             },
           ]}
         >
+          {voiceSupported ? (
+            <Pressable
+              onPress={() => toggleListening(input)}
+              disabled={loading}
+              accessibilityRole="button"
+              accessibilityState={{ selected: listening }}
+              accessibilityLabel={listening ? t("voiceStop") : t("voiceListen")}
+              testID="madhav-voice"
+              style={[
+                styles.mic,
+                {
+                  borderColor: listening ? colors.brass : colors.line,
+                  backgroundColor: listening
+                    ? "rgba(201, 162, 39, 0.22)"
+                    : colors.panelStrong,
+                  opacity: loading ? 0.5 : 1,
+                },
+              ]}
+            >
+              <MicIcon color={listening ? colors.brassSoft : colors.textMuted} />
+            </Pressable>
+          ) : null}
           <TextInput
             value={input}
-            onChangeText={setInput}
-            placeholder={lang === "hi" ? "पार्थ, लिखें…" : "Speak freely…"}
+            onChangeText={(value) => {
+              setInput(value);
+              syncBaseInput(value);
+            }}
+            placeholder={
+              listening
+                ? t("voiceListening")
+                : lang === "hi"
+                  ? "पार्थ, लिखें या बोलें…"
+                  : "Type or speak…"
+            }
             placeholderTextColor={colors.textMuted}
             multiline
             style={[
               styles.input,
               {
                 color: colors.text,
-                borderColor: colors.line,
+                borderColor: listening ? colors.brass : colors.line,
                 backgroundColor: colors.panelStrong,
                 fontSize: 15 * multiplier,
               },
@@ -611,6 +701,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     flexShrink: 0,
+  },
+  mic: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
   input: {
     flex: 1,

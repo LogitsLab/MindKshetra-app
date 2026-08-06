@@ -3,8 +3,8 @@
   "days_count": 7,
   "title_en": "Seven days for the student mind",
   "title_hi": "विद्यार्थी मन के लिए सात दिन",
-  "intro_en": "A week for exams, ambition, comparison, and the fear of falling behind — focus without panic, effort without self-hatred. One verse, one sit, one honest line. If pressure feels crushing, talk to a counselor or someone you trust.",
-  "intro_hi": "परीक्षा, महत्वाकांक्षा, तुलना और पिछड़ने के भय के लिए एक सप्ताह — घबराहट के बिना एकाग्रता, आत्म-घृणा के बिना प्रयास। प्रतिदिन श्लोक, बैठक, एक सच्ची पंक्ति। यदि दबाव कुचलता लगे, किसी परामर्शदाता या विश्वसनीय व्यक्ति से बात करें।",
+  "intro_en": "A week for exams, ambition, comparison, and the fear of falling behind, focus without panic, effort without self-hatred. One verse, one sit, one honest line. If pressure feels crushing, talk to a counselor or someone you trust.",
+  "intro_hi": "परीक्षा, महत्वाकांक्षा, तुलना और पिछड़ने के भय के लिए एक सप्ताह, घबराहट के बिना एकाग्रता, आत्म-घृणा के बिना प्रयास। प्रतिदिन श्लोक, बैठक, एक सच्ची पंक्ति। यदि दबाव कुचलता लगे, किसी परामर्शदाता या विश्वसनीय व्यक्ति से बात करें।",
   "days": [
     {
       "day": 1,
@@ -13,8 +13,8 @@
       "minutes": 3,
       "title_en": "One-pointed resolve",
       "title_hi": "एकनिष्ठ संकल्प",
-      "prompt_en": "What is the one study or duty that matters most today — name only that?",
-      "prompt_hi": "आज का सबसे ज़रूरी अध्ययन या कर्तव्य क्या है — केवल वही लिखें?"
+      "prompt_en": "What is the one study or duty that matters most today, name only that?",
+      "prompt_hi": "आज का सबसे ज़रूरी अध्ययन या कर्तव्य क्या है, केवल वही लिखें?"
     },
     {
       "day": 2,
@@ -53,8 +53,8 @@
       "minutes": 5,
       "title_en": "The restless mind can be trained",
       "title_hi": "चंचल मन साधा जा सकता है",
-      "prompt_en": "Each time attention fled the page, what brought it back — even once?",
-      "prompt_hi": "जब-जब ध्यान पृष्ठ से भागा, उसे वापस क्या लाया — भले एक बार?"
+      "prompt_en": "Each time attention fled the page, what brought it back, even once?",
+      "prompt_hi": "जब-जब ध्यान पृष्ठ से भागा, उसे वापस क्या लाया, भले एक बार?"
     },
     {
       "day": 6,

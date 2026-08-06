@@ -18,7 +18,6 @@ import Svg, { Circle, Path } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { Button } from "@/components/Button";
 import { BrandMark } from "@/components/BrandMark";
 import { GoalIcon } from "@/components/GoalIcon";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
@@ -189,10 +188,18 @@ export default function OnboardingScreen() {
     } catch (error) {
       if (action === "guest") {
         setGuestFailed(true);
+        const detail =
+          error instanceof Error && error.message.trim()
+            ? error.message.trim()
+            : null;
         setMessage(
           lang === "hi"
-            ? "अतिथि साइन-इन नहीं हो सका। फिर भी जारी रखें।"
-            : "Guest sign-in failed. You can continue anyway."
+            ? detail
+              ? `अतिथि साइन-इन नहीं हो सका: ${detail} फिर भी जारी रखें।`
+              : "अतिथि साइन-इन नहीं हो सका। फिर भी जारी रखें।"
+            : detail
+              ? `Guest sign-in failed: ${detail} You can continue anyway.`
+              : "Guest sign-in failed. You can continue anyway."
         );
       } else {
         setMessage(error instanceof Error ? error.message : "Something went wrong");
@@ -228,17 +235,15 @@ export default function OnboardingScreen() {
         </Text>
         <View style={styles.welcomeActions}>
           <OnboardingProgress step={0} total={STEPS.length} />
-          <Button
+          <OnboardingNextBar
             testID="onboarding-continue"
-            label={`${copy.welcome.continue[L]}  →`}
-            onPress={() => goTo(1)}
-            style={styles.primaryButton}
+            label={copy.welcome.continue[L]}
+            onNext={() => goTo(1)}
+            skipLabel={copy.welcome.skip[L]}
+            onSkip={() => finish(true)}
+            styles={styles}
+            skipColor={colors.onMediaMuted}
           />
-          <Pressable onPress={() => finish(true)} hitSlop={12} style={styles.skipLink}>
-            <Text variant="eyebrow" color={colors.onMediaMuted}>
-              {copy.welcome.skip[L]}
-            </Text>
-          </Pressable>
         </View>
       </View>
     );
@@ -296,19 +301,15 @@ export default function OnboardingScreen() {
             );
           })}
         </View>
-        <View style={styles.bottomActions}>
-          <Button
-            testID="onboarding-goals-next"
-            label={copy.goals.next[L]}
-            onPress={() => goTo(2)}
-            style={styles.primaryButton}
-          />
-          <Pressable onPress={() => finish(true)} style={styles.skipLink}>
-            <Text variant="eyebrow" color={colors.onMediaMuted}>
-              {copy.welcome.skip[L]}
-            </Text>
-          </Pressable>
-        </View>
+        <OnboardingNextBar
+          testID="onboarding-goals-next"
+          label={copy.goals.next[L]}
+          onNext={() => goTo(2)}
+          skipLabel={copy.welcome.skip[L]}
+          onSkip={() => finish(true)}
+          styles={styles}
+          skipColor={colors.onMediaMuted}
+        />
       </ScrollView>
     );
   }
@@ -409,28 +410,21 @@ export default function OnboardingScreen() {
           </Text>
         </View>
 
-        <View style={styles.bottomActions}>
-          <Button
-            testID="onboarding-inspirations-next"
-            label={copy.inspirations.next[L]}
-            onPress={() => {
-              setDraft((current) => ({ ...current, inspirations: ["krishna"] }));
-              goTo(3);
-            }}
-            style={styles.primaryButton}
-          />
-          <Pressable
-            onPress={() => {
-              setDraft((current) => ({ ...current, inspirations: [] }));
-              goTo(3);
-            }}
-            style={styles.skipLink}
-          >
-            <Text variant="eyebrow" color={colors.onMediaMuted}>
-              {copy.welcome.skip[L]}
-            </Text>
-          </Pressable>
-        </View>
+        <OnboardingNextBar
+          testID="onboarding-inspirations-next"
+          label={copy.inspirations.next[L]}
+          onNext={() => {
+            setDraft((current) => ({ ...current, inspirations: ["krishna"] }));
+            goTo(3);
+          }}
+          skipLabel={copy.welcome.skip[L]}
+          onSkip={() => {
+            setDraft((current) => ({ ...current, inspirations: [] }));
+            goTo(3);
+          }}
+          styles={styles}
+          skipColor={colors.onMediaMuted}
+        />
       </ScrollView>
     );
   }
@@ -490,19 +484,15 @@ export default function OnboardingScreen() {
             );
           })}
         </View>
-        <View style={styles.bottomActions}>
-          <Button
-            testID="onboarding-time-next"
-            label={copy.time.next[L]}
-            onPress={() => goTo(4)}
-            style={styles.primaryButton}
-          />
-          <Pressable onPress={() => goTo(4)} style={styles.skipLink}>
-            <Text variant="eyebrow" color={colors.onMediaMuted}>
-              {copy.welcome.skip[L]}
-            </Text>
-          </Pressable>
-        </View>
+        <OnboardingNextBar
+          testID="onboarding-time-next"
+          label={copy.time.next[L]}
+          onNext={() => goTo(4)}
+          skipLabel={copy.welcome.skip[L]}
+          onSkip={() => goTo(4)}
+          styles={styles}
+          skipColor={colors.onMediaMuted}
+        />
       </ScrollView>
     );
   }
@@ -621,19 +611,15 @@ export default function OnboardingScreen() {
           placeholderTextColor={colors.onMediaMuted}
           style={[styles.input, { color: colors.onMedia }]}
         />
-        <View style={styles.bottomActions}>
-          <Button
-            testID="onboarding-setup-next"
-            label={copy.setup.start[L]}
-            onPress={() => goTo(5)}
-            style={styles.primaryButton}
-          />
-          <Pressable onPress={() => goTo(5)} style={styles.skipLink}>
-            <Text variant="eyebrow" color={colors.onMediaMuted}>
-              {copy.welcome.skip[L]}
-            </Text>
-          </Pressable>
-        </View>
+        <OnboardingNextBar
+          testID="onboarding-setup-next"
+          label={copy.setup.start[L]}
+          onNext={() => goTo(5)}
+          skipLabel={copy.welcome.skip[L]}
+          onSkip={() => goTo(5)}
+          styles={styles}
+          skipColor={colors.onMediaMuted}
+        />
       </ScrollView>
     );
   }
@@ -731,6 +717,49 @@ export default function OnboardingScreen() {
           />
         </View>
       </Screen>
+    </View>
+  );
+}
+
+function OnboardingNextBar({
+  testID,
+  label,
+  onNext,
+  skipLabel,
+  onSkip,
+  styles,
+  skipColor,
+}: {
+  testID: string;
+  label: string;
+  onNext: () => void;
+  skipLabel: string;
+  onSkip: () => void;
+  styles: ReturnType<typeof createStyles>;
+  skipColor: string;
+}) {
+  return (
+    <View style={styles.nextBar}>
+      <Pressable onPress={onSkip} hitSlop={12} style={styles.skipBeside}>
+        <Text variant="eyebrow" color={skipColor}>
+          {skipLabel}
+        </Text>
+      </Pressable>
+      <Pressable
+        testID={testID}
+        onPress={onNext}
+        hitSlop={8}
+        style={({ pressed }) => [
+          styles.nextButton,
+          pressed && styles.nextButtonPressed,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+      >
+        <Text variant="body" style={styles.nextButtonLabel}>
+          {label} →
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -862,11 +891,38 @@ function createStyles(colors: ThemeColors) {
     welcomeActions: {
       width: "100%",
       gap: spacing.md,
-      alignItems: "center",
+      alignItems: "stretch",
     },
-    primaryButton: {
+    nextBar: {
+      marginTop: "auto",
+      paddingTop: spacing.xl,
       width: "100%",
-      minHeight: 54,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    nextButton: {
+      alignSelf: "flex-end",
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      minHeight: 36,
+      borderRadius: radii.sm,
+      backgroundColor: colors.brass,
+      justifyContent: "center",
+    },
+    nextButtonPressed: {
+      opacity: 0.8,
+    },
+    nextButtonLabel: {
+      fontFamily: "Sora_600SemiBold",
+      fontSize: 13,
+      lineHeight: 18,
+      color: colors.onBrass,
+    },
+    skipBeside: {
+      minHeight: 36,
+      justifyContent: "center",
+      paddingHorizontal: spacing.xs,
     },
     pageTitle: {
       textAlign: "center",
@@ -906,16 +962,6 @@ function createStyles(colors: ThemeColors) {
       textAlign: "center",
       fontSize: 10,
       lineHeight: 13,
-    },
-    bottomActions: {
-      marginTop: "auto",
-      paddingTop: spacing.xl,
-      gap: spacing.md,
-    },
-    skipLink: {
-      minHeight: 30,
-      alignItems: "center",
-      justifyContent: "center",
     },
     sceneEyebrow: {
       marginBottom: spacing.xs,

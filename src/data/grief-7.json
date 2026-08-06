@@ -3,8 +3,8 @@
   "days_count": 7,
   "title_en": "Seven days with grief",
   "title_hi": "शोक के साथ सात दिन",
-  "intro_en": "A week for the mind that has lost someone or something — one verse, one short sit, one honest line. Grief is not a problem to solve; it is love with nowhere to go. If you feel unsafe or unable to cope, please reach a helpline or a professional.",
-  "intro_hi": "जिस मन ने किसी को या कुछ खोया है — उसके लिए एक सप्ताह: एक श्लोक, छोटी बैठक, एक सच्ची पंक्ति। शोक कोई हल करने योग्य समस्या नहीं; यह प्रेम है जिसे जाने की जगह नहीं मिली। यदि आप असुरक्षित महसूस करें, हेल्पलाइन या विशेषज्ञ से बात करें।",
+  "intro_en": "A week for the mind that has lost someone or something, one verse, one short sit, one honest line. Grief is not a problem to solve; it is love with nowhere to go. If you feel unsafe or unable to cope, please reach a helpline or a professional.",
+  "intro_hi": "जिस मन ने किसी को या कुछ खोया है, उसके लिए एक सप्ताह: एक श्लोक, छोटी बैठक, एक सच्ची पंक्ति। शोक कोई हल करने योग्य समस्या नहीं; यह प्रेम है जिसे जाने की जगह नहीं मिली। यदि आप असुरक्षित महसूस करें, हेल्पलाइन या विशेषज्ञ से बात करें।",
   "days": [
     {
       "day": 1,
@@ -13,8 +13,8 @@
       "minutes": 3,
       "title_en": "The body changes; the self continues",
       "title_hi": "देह बदलती है; आत्मा चलती है",
-      "prompt_en": "What changed that you are mourning — and what, if anything, still feels present?",
-      "prompt_hi": "क्या बदला जिस पर शोक है — और क्या अभी भी उपस्थित लगता है?"
+      "prompt_en": "What changed that you are mourning, and what, if anything, still feels present?",
+      "prompt_hi": "क्या बदला जिस पर शोक है, और क्या अभी भी उपस्थित लगता है?"
     },
     {
       "day": 2,
@@ -43,8 +43,8 @@
       "minutes": 5,
       "title_en": "Steady in sorrow",
       "title_hi": "दुःख में भी स्थिर",
-      "prompt_en": "Where did sorrow visit today — and where did you stay without hardening?",
-      "prompt_hi": "आज दुःख कहाँ आया — और आप कहाँ कठोर हुए बिना रहे?"
+      "prompt_en": "Where did sorrow visit today, and where did you stay without hardening?",
+      "prompt_hi": "आज दुःख कहाँ आया, और आप कहाँ कठोर हुए बिना रहे?"
     },
     {
       "day": 5,
@@ -63,7 +63,7 @@
       "minutes": 5,
       "title_en": "Equal to friend and foe",
       "title_hi": "मित्र-शत्रु में सम",
-      "prompt_en": "Is there a story about this loss you are ready to soften — not erase?",
+      "prompt_en": "Is there a story about this loss you are ready to soften, not erase?",
       "prompt_hi": "इस हानि की कौन-सी कथा आप मिटाने नहीं, कोमल करने को तैयार हैं?"
     },
     {
@@ -73,8 +73,8 @@
       "minutes": 10,
       "title_en": "Hand over what you cannot carry",
       "title_hi": "जो न उठा सकें, सौंप दें",
-      "prompt_en": "What one piece of this grief are you willing to set down for today — without pretending it is gone?",
-      "prompt_hi": "इस शोक का कौन-सा एक अंश आज के लिए रख देने को तैयार हैं — यह दिखावा किए बिना कि वह चला गया?"
+      "prompt_en": "What one piece of this grief are you willing to set down for today, without pretending it is gone?",
+      "prompt_hi": "इस शोक का कौन-सा एक अंश आज के लिए रख देने को तैयार हैं, यह दिखावा किए बिना कि वह चला गया?"
     }
   ]
 }
