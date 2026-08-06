@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
+import { requireOptionalNativeModule } from "expo-modules-core";
 
 type Options = {
   lang: "en" | "hi";
@@ -25,14 +26,20 @@ type SpeechModule = {
 };
 
 /**
- * Lazy-load so Expo Go (no native module) does not crash on import.
- * Voice works in a dev/production build that includes expo-speech-recognition.
+ * Expo Go has no ExpoSpeechRecognition native module. The package's top-level
+ * `requireNativeModule(...)` throws on load — and Metro can hoist `require()`
+ * out of try/catch — so probe with requireOptionalNativeModule first.
  */
 function getSpeechModule(): SpeechModule | null {
   if (Platform.OS === "web") return null;
+  if (!requireOptionalNativeModule("ExpoSpeechRecognition")) {
+    return null;
+  }
   try {
+    // Indirect require so Metro cannot hoist it above the native-module guard.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require("expo-speech-recognition") as {
+    const req = require as typeof require;
+    const mod = req("expo-speech-recognition") as {
       ExpoSpeechRecognitionModule: SpeechModule;
     };
     return mod.ExpoSpeechRecognitionModule ?? null;
@@ -80,6 +87,7 @@ export function useMadhavVoiceInput({
       setSupported(Boolean(mod.isRecognitionAvailable()));
     } catch {
       setSupported(false);
+      return;
     }
 
     const subs = [

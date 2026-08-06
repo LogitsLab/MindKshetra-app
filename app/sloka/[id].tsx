@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import Svg, { Path } from "react-native-svg";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
@@ -407,15 +408,8 @@ export default function SlokaScreen() {
               accessibilityLabel={t("verseTools")}
               style={styles.tools}
             >
-              <QuietTool
-                label={lang === "hi" ? "पूर्ण" : "Complete"}
-                testID="sloka-complete"
-                onPress={() => void markComplete()}
-              />
-              <Text variant="muted" color={colors.textMuted} style={styles.dot}>
-                ·
-              </Text>
-              <QuietTool
+              <IconTool
+                icon="heart"
                 label={
                   favorited
                     ? lang === "hi"
@@ -426,12 +420,24 @@ export default function SlokaScreen() {
                       : "Favorite"
                 }
                 testID="sloka-favorite"
+                active={favorited}
                 onPress={() => void toggleFavorite()}
               />
-              <Text variant="muted" color={colors.textMuted} style={styles.dot}>
-                ·
-              </Text>
-              <QuietTool
+              <IconTool
+                icon="pencil"
+                label={lang === "hi" ? "जर्नल" : "Journal"}
+                testID="sloka-journal"
+                active={showJournal}
+                onPress={() => setShowJournal((v) => !v)}
+              />
+              <IconTool
+                icon="check"
+                label={lang === "hi" ? "पूर्ण" : "Complete"}
+                testID="sloka-complete"
+                onPress={() => void markComplete()}
+              />
+              <IconTool
+                icon="share"
                 label={t("verseShare")}
                 testID="sloka-share"
                 onPress={() => {
@@ -448,14 +454,6 @@ export default function SlokaScreen() {
                     })
                     .catch(() => undefined);
                 }}
-              />
-              <Text variant="muted" color={colors.textMuted} style={styles.dot}>
-                ·
-              </Text>
-              <QuietTool
-                label={lang === "hi" ? "जर्नल" : "Journal"}
-                testID="sloka-journal"
-                onPress={() => setShowJournal((v) => !v)}
               />
             </View>
 
@@ -756,28 +754,90 @@ export default function SlokaScreen() {
   );
 }
 
-function QuietTool({
+type ToolIcon = "check" | "heart" | "share" | "pencil";
+
+function IconTool({
+  icon,
   label,
   onPress,
   testID,
+  active = false,
 }: {
+  icon: ToolIcon;
   label: string;
   onPress: () => void;
   testID: string;
+  active?: boolean;
 }) {
   const { colors } = useTheme();
+  const stroke = active ? colors.brass : colors.brassSoft;
+  const fill = active && icon === "heart" ? colors.brass : "none";
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
       testID={testID}
       onPress={onPress}
-      hitSlop={8}
-      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+      hitSlop={6}
+      style={({ pressed }) => [
+        styles.toolBtn,
+        {
+          borderColor: active ? colors.brass : colors.line,
+          backgroundColor: colors.panel,
+          opacity: pressed ? 0.8 : 1,
+        },
+      ]}
     >
-      <Text variant="soft" color={colors.textSoft} style={styles.quietLabel}>
-        {label}
-      </Text>
+      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+        {icon === "check" ? (
+          <Path
+            d="M5 13l4 4L19 7"
+            stroke={stroke}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : null}
+        {icon === "heart" ? (
+          <Path
+            d="M12 21s-6.5-4.35-9.33-8.22C.8 10.2 1.2 6.8 4.05 5.1A4.6 4.6 0 0 1 12 6.2a4.6 4.6 0 0 1 7.95-1.1c2.85 1.7 3.25 5.1 1.38 7.68C18.5 16.65 12 21 12 21z"
+            stroke={stroke}
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill={fill}
+          />
+        ) : null}
+        {icon === "share" ? (
+          <>
+            <Path
+              d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"
+              stroke={stroke}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <Path
+              d="M16 6l-4-4-4 4M12 2v13"
+              stroke={stroke}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </>
+        ) : null}
+        {icon === "pencil" ? (
+          <Path
+            d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+            stroke={stroke}
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : null}
+      </Svg>
     </Pressable>
   );
 }
@@ -858,17 +918,17 @@ const styles = StyleSheet.create({
   tools: {
     marginTop: spacing.md,
     flexDirection: "row",
-    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.sm,
   },
-  quietLabel: {
-    fontSize: 14,
-  },
-  dot: {
-    opacity: 0.35,
-    fontSize: 14,
+  toolBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
   prevNext: {
     marginTop: spacing.lg,
