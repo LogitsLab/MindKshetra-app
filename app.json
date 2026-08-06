@@ -2,7 +2,7 @@
   "expo": {
     "name": "MindKshetra",
     "slug": "mindkshetra",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "mindkshetra",
