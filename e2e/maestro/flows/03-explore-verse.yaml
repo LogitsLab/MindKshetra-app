@@ -23,3 +23,13 @@ tags:
     id: verse-card
 - assertVisible:
     id: screen-sloka
+- tapOn:
+    id: sloka-narration
+- assertVisible:
+    id: sloka-narration
+- tapOn:
+    id: sloka-ask-madhav
+- assertVisible:
+    id: screen-madhav
+- tapOn:
+    id: madhav-close

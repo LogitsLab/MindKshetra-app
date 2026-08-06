@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import { resolveRecitationUrl } from "@/audio/manifest";
 import {
+  getNarrationSession,
   playOrSpeak,
   playUrl,
   prefetchAudioUrl,
   stopNarration,
+  stopNarrationIfOwner,
 } from "@/audio/narration";
 import { Text } from "@/components/Text";
 import { useTheme } from "@/context/ThemeContext";
@@ -27,6 +29,8 @@ type Props = {
 
 /**
  * Web-parity Speak control — Sanskrit recitation (file only) or story TTS.
+ * Only stops global narration when this instance owns the active session, so a
+ * late-mounting story Listen cannot kill Sanskrit playback mid-verse.
  */
 export function SpeakButton({
   text,
@@ -43,13 +47,28 @@ export function SpeakButton({
   const { colors } = useTheme();
   const [speaking, setSpeaking] = useState(false);
   const [recitationReady, setRecitationReady] = useState(!recitationOnly);
+  const ownerSessionRef = useRef<number | null>(null);
+  const genRef = useRef(0);
 
+  // When verse/lang/text changes: stop only if we own the player.
   useEffect(() => {
-    stopNarration();
+    if (ownerSessionRef.current != null) {
+      stopNarrationIfOwner(ownerSessionRef.current);
+      ownerSessionRef.current = null;
+    }
     setSpeaking(false);
   }, [text, lang, chapter, verseNumber]);
 
-  useEffect(() => () => stopNarration(), []);
+  // Unmount: stop only our session (another SpeakButton may still be playing).
+  useEffect(
+    () => () => {
+      if (ownerSessionRef.current != null) {
+        stopNarrationIfOwner(ownerSessionRef.current);
+        ownerSessionRef.current = null;
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (!recitationOnly || chapter == null || verseNumber == null) {
@@ -70,15 +89,33 @@ export function SpeakButton({
 
   const toggle = useCallback(async () => {
     if (speaking) {
-      stopNarration();
+      if (ownerSessionRef.current != null) {
+        stopNarrationIfOwner(ownerSessionRef.current);
+      } else {
+        stopNarration();
+      }
+      ownerSessionRef.current = null;
       setSpeaking(false);
       return;
     }
+
+    const myGen = ++genRef.current;
 
     const url =
       chapter != null && verseNumber != null
         ? await resolveRecitationUrl(chapter, verseNumber)
         : null;
+
+    if (myGen !== genRef.current) return;
+
+    const bindOwner = () => {
+      ownerSessionRef.current = getNarrationSession();
+    };
+
+    const clearOwner = () => {
+      ownerSessionRef.current = null;
+      setSpeaking(false);
+    };
 
     if (recitationOnly) {
       if (!url) {
@@ -86,24 +123,50 @@ export function SpeakButton({
         return;
       }
       const ok = await playUrl(url, {
-        onStart: () => setSpeaking(true),
-        onDone: () => setSpeaking(false),
-        onStopped: () => setSpeaking(false),
-        onError: () => setSpeaking(false),
+        onStart: () => {
+          if (myGen !== genRef.current) return;
+          bindOwner();
+          setSpeaking(true);
+        },
+        onDone: () => {
+          if (myGen !== genRef.current) return;
+          clearOwner();
+        },
+        onStopped: () => {
+          if (myGen !== genRef.current) return;
+          clearOwner();
+        },
+        onError: () => {
+          if (myGen !== genRef.current) return;
+          clearOwner();
+        },
       });
-      if (!ok) setSpeaking(false);
+      if (!ok && myGen === genRef.current) clearOwner();
       return;
     }
 
     const ok = await playOrSpeak(text, {
       lang,
       url,
-      onStart: () => setSpeaking(true),
-      onDone: () => setSpeaking(false),
-      onStopped: () => setSpeaking(false),
-      onError: () => setSpeaking(false),
+      onStart: () => {
+        if (myGen !== genRef.current) return;
+        bindOwner();
+        setSpeaking(true);
+      },
+      onDone: () => {
+        if (myGen !== genRef.current) return;
+        clearOwner();
+      },
+      onStopped: () => {
+        if (myGen !== genRef.current) return;
+        clearOwner();
+      },
+      onError: () => {
+        if (myGen !== genRef.current) return;
+        clearOwner();
+      },
     });
-    if (!ok) setSpeaking(false);
+    if (!ok && myGen === genRef.current) clearOwner();
   }, [speaking, text, lang, chapter, verseNumber, recitationOnly]);
 
   const disabled = recitationOnly ? !recitationReady : !text.trim();

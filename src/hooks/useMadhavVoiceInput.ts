@@ -25,12 +25,14 @@ type SpeechModule = {
   ) => { remove: () => void };
 };
 
+type SpeechSub = { remove: () => void };
+
 /**
  * Expo Go has no ExpoSpeechRecognition native module. The package's top-level
  * `requireNativeModule(...)` throws on load — and Metro can hoist `require()`
  * out of try/catch — so probe with requireOptionalNativeModule first.
  */
-function getSpeechModule(): SpeechModule | null {
+export function getSpeechModule(): SpeechModule | null {
   if (Platform.OS === "web") return null;
   if (!requireOptionalNativeModule("ExpoSpeechRecognition")) {
     return null;
@@ -50,7 +52,8 @@ function getSpeechModule(): SpeechModule | null {
 
 /**
  * On-device speech → text for Madhav (mirrors web ChatWindow STT).
- * Expo Go: unsupported (no native module). Dev/prod native builds: enabled.
+ * Speech native APIs are deferred until the mic is pressed — probing on mount
+ * can native-crash Android (reactContext!!) and kill Ask Madhav on open.
  */
 export function useMadhavVoiceInput({
   lang,
@@ -59,9 +62,12 @@ export function useMadhavVoiceInput({
   onError,
   labels,
 }: Options) {
+  // Optimistic for native builds so the mic is visible before first press.
   const [listening, setListening] = useState(false);
-  const [supported, setSupported] = useState(false);
+  const [supported, setSupported] = useState(() => Platform.OS !== "web");
   const moduleRef = useRef<SpeechModule | null>(null);
+  const subsRef = useRef<SpeechSub[]>([]);
+  const readyRef = useRef(false);
   const baseInputRef = useRef("");
   const wantListenRef = useRef(false);
   const onTranscriptRef = useRef(onTranscript);
@@ -76,21 +82,59 @@ export function useMadhavVoiceInput({
     langRef.current = lang;
   }, [onTranscript, onError, labels, lang]);
 
-  useEffect(() => {
+  const teardownSpeech = useCallback(() => {
+    wantListenRef.current = false;
+    for (const sub of subsRef.current) {
+      try {
+        sub.remove();
+      } catch {
+        /* ignore */
+      }
+    }
+    subsRef.current = [];
+    try {
+      moduleRef.current?.abort();
+    } catch {
+      /* ignore */
+    }
+    readyRef.current = false;
+    setListening(false);
+  }, []);
+
+  useEffect(() => () => teardownSpeech(), [teardownSpeech]);
+
+  const ensureSpeechReady = useCallback((): SpeechModule | null => {
+    if (readyRef.current && moduleRef.current) {
+      return moduleRef.current;
+    }
+
     const mod = getSpeechModule();
     moduleRef.current = mod;
     if (!mod) {
       setSupported(false);
-      return;
-    }
-    try {
-      setSupported(Boolean(mod.isRecognitionAvailable()));
-    } catch {
-      setSupported(false);
-      return;
+      return null;
     }
 
-    const subs = [
+    try {
+      if (!mod.isRecognitionAvailable()) {
+        setSupported(false);
+        return null;
+      }
+    } catch {
+      setSupported(false);
+      return null;
+    }
+
+    // Drop any previous listeners before re-attaching.
+    for (const sub of subsRef.current) {
+      try {
+        sub.remove();
+      } catch {
+        /* ignore */
+      }
+    }
+
+    subsRef.current = [
       mod.addListener("start", () => {
         if (wantListenRef.current) setListening(true);
       }),
@@ -110,24 +154,27 @@ export function useMadhavVoiceInput({
         }
         setListening(false);
       }),
-      mod.addListener("result", (event: {
-        isFinal?: boolean;
-        results?: Array<{ transcript?: string }>;
-      }) => {
-        const transcript = (event.results?.[0]?.transcript ?? "").trim();
-        if (!transcript) return;
+      mod.addListener(
+        "result",
+        (event: {
+          isFinal?: boolean;
+          results?: Array<{ transcript?: string }>;
+        }) => {
+          const transcript = (event.results?.[0]?.transcript ?? "").trim();
+          if (!transcript) return;
 
-        const next = [baseInputRef.current, transcript]
-          .filter(Boolean)
-          .join(" ")
-          .replace(/\s+/g, " ")
-          .trim();
+          const next = [baseInputRef.current, transcript]
+            .filter(Boolean)
+            .join(" ")
+            .replace(/\s+/g, " ")
+            .trim();
 
-        if (event.isFinal) {
-          baseInputRef.current = next;
+          if (event.isFinal) {
+            baseInputRef.current = next;
+          }
+          onTranscriptRef.current(next);
         }
-        onTranscriptRef.current(next);
-      }),
+      ),
       mod.addListener("error", (event: { error?: string }) => {
         const code = event.error;
         if (code === "aborted" || code === "no-speech") return;
@@ -137,21 +184,9 @@ export function useMadhavVoiceInput({
       }),
     ];
 
-    return () => {
-      wantListenRef.current = false;
-      for (const sub of subs) {
-        try {
-          sub.remove();
-        } catch {
-          /* ignore */
-        }
-      }
-      try {
-        mod.abort();
-      } catch {
-        /* ignore */
-      }
-    };
+    readyRef.current = true;
+    setSupported(true);
+    return mod;
   }, []);
 
   const stopListening = useCallback(() => {
@@ -167,8 +202,9 @@ export function useMadhavVoiceInput({
   const startListening = useCallback(
     async (currentInput: string) => {
       if (disabled) return;
-      const mod = moduleRef.current;
-      if (!mod || !supported) {
+
+      const mod = ensureSpeechReady();
+      if (!mod) {
         onErrorRef.current(labelsRef.current.unsupported);
         return;
       }
@@ -203,7 +239,7 @@ export function useMadhavVoiceInput({
         onErrorRef.current(labelsRef.current.error);
       }
     },
-    [disabled, lang, stopListening, supported]
+    [disabled, ensureSpeechReady, lang, stopListening]
   );
 
   const toggleListening = useCallback(

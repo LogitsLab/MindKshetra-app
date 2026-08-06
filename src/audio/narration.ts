@@ -14,6 +14,8 @@ let player: AudioPlayer | null = null;
 let audioModeSet = false;
 /** Bumped on every stop / new play so in-flight awaits can abort. */
 let session = 0;
+/** Active UI callback — notified when something else stops playback. */
+let activeStopped: (() => void) | null = null;
 
 export type NarrationOptions = {
   lang: "en" | "hi";
@@ -26,8 +28,27 @@ export type NarrationOptions = {
   url?: string | null;
 };
 
+function clearActiveCallbacks(): void {
+  activeStopped = null;
+}
+
+function bindActiveCallbacks(options: { onStopped?: () => void }): void {
+  activeStopped = options.onStopped ?? null;
+}
+
+/** Current narration session id (for ownership checks in UI). */
+export function getNarrationSession(): number {
+  return session;
+}
+
+/**
+ * Stop global narration. Notifies the previous owner's onStopped so UI cannot
+ * stay stuck on "Stop" when another SpeakButton (or navigation) ends playback.
+ */
 export function stopNarration(): void {
   session += 1;
+  const prevStopped = activeStopped;
+  clearActiveCallbacks();
   Speech.stop();
   if (player) {
     try {
@@ -43,16 +64,34 @@ export function stopNarration(): void {
     }
     player = null;
   }
+  prevStopped?.();
+}
+
+/** Stop only if `ownerSession` still owns the global player. */
+export function stopNarrationIfOwner(ownerSession: number): void {
+  if (ownerSession === session) {
+    stopNarration();
+  }
 }
 
 function speakFallback(text: string, options: NarrationOptions): void {
+  bindActiveCallbacks(options);
   Speech.speak(text, {
     language: options.lang === "hi" ? "hi-IN" : "en-IN",
     rate: options.rate,
     onStart: options.onStart,
-    onDone: options.onDone,
-    onStopped: options.onStopped,
-    onError: options.onError,
+    onDone: () => {
+      clearActiveCallbacks();
+      options.onDone?.();
+    },
+    onStopped: () => {
+      clearActiveCallbacks();
+      options.onStopped?.();
+    },
+    onError: () => {
+      clearActiveCallbacks();
+      options.onError?.();
+    },
   });
 }
 
@@ -95,12 +134,31 @@ async function playLoaded(
 
   const p = createAudioPlayer({ uri: url });
   player = p;
+  bindActiveCallbacks(options);
 
   let finished = false;
   p.addListener("playbackStatusUpdate", (status) => {
     if (mySession !== session) return;
+    if ("isLoaded" in status && status.isLoaded === false) {
+      const err =
+        "error" in status && status.error ? String(status.error) : null;
+      if (err) {
+        finished = true;
+        clearActiveCallbacks();
+        try {
+          p.removeAllListeners("playbackStatusUpdate");
+          p.remove();
+        } catch {
+          /* ignore */
+        }
+        if (player === p) player = null;
+        options.onError?.();
+        return;
+      }
+    }
     if (status.didJustFinish && !finished) {
       finished = true;
+      clearActiveCallbacks();
       options.onDone?.();
     }
   });
@@ -123,6 +181,7 @@ export async function playUrl(
     return await playLoaded(url, options, mySession);
   } catch {
     if (mySession === session) {
+      clearActiveCallbacks();
       options.onError?.();
     }
     return false;

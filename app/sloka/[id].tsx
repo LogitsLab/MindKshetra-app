@@ -501,6 +501,7 @@ export default function SlokaScreen() {
         <Pressable
           testID="sloka-ask-madhav"
           onPress={() => {
+            stopNarration();
             askAboutVerse(
               sloka.id,
               lang === "hi"
