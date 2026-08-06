@@ -2,6 +2,7 @@ import React from "react";
 import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { BlurView } from "expo-blur";
 import { Redirect, Tabs } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   TabHomeIcon,
   TabPathIcon,
@@ -11,10 +12,15 @@ import {
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useOnboardingDone } from "@/hooks/useOnboardingDone";
+import { spacing } from "@/theme/tokens";
+
+/** Icon + label row above the system gesture / 3-button nav inset. */
+const TAB_BAR_CONTENT_HEIGHT = spacing.tabBar;
 
 export default function TabsLayout() {
   const { colors, mode } = useTheme();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   // Must match index + useOnboardingRouting: signed-in counts as done.
   // Gating on `complete` alone bounced signed-in users home↔onboarding
   // (black flicker / crash) whenever the local flag lagged the session.
@@ -32,6 +38,10 @@ export default function TabsLayout() {
     return <Redirect href="/onboarding" />;
   }
 
+  // Absolute tab bars must include the bottom inset or Android system nav
+  // (3-button / gesture bar) draws on top of Home / Practise / Path / Profile.
+  const bottomInset = Math.max(insets.bottom, Platform.OS === "android" ? 12 : 0);
+
   return (
     <Tabs
       screenOptions={{
@@ -42,8 +52,8 @@ export default function TabsLayout() {
             Platform.OS === "ios" ? "transparent" : colors.navBg,
           borderTopColor: colors.hairline,
           borderTopWidth: StyleSheet.hairlineWidth * 2,
-          height: 64,
-          paddingBottom: 8,
+          height: TAB_BAR_CONTENT_HEIGHT + bottomInset,
+          paddingBottom: bottomInset,
           paddingTop: 8,
           elevation: 0,
         },

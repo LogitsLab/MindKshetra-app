@@ -36,7 +36,7 @@
       "permissions": [
         "POST_NOTIFICATIONS"
       ],
-      "versionCode": 24
+      "versionCode": 28
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -73,9 +73,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "6ab537e8-d074-4e31-bc69-4015ed17f6fe"
+        "projectId": "93fe4bed-65b9-4c63-bac0-8a3c8e6b3a46"
       }
     },
-    "owner": "logitsllab"
+    "owner": "imsaksham.c"
   }
 }

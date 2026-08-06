@@ -2,9 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Easing,
+  Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -160,6 +163,7 @@ export function HomeHero({
   streak = 0,
 }: Props) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const [returning, setReturning] = useState(false);
@@ -169,6 +173,14 @@ export function HomeHero({
   const hour = now.getHours();
   const dayIndex = Math.floor(Date.now() / 86400000);
   const bucket = hourBucket(hour);
+  // Android edge-to-edge can report 0 until layout; StatusBar height is a floor.
+  const safeTop = Math.max(
+    topInset,
+    Platform.OS === "android" ? StatusBar.currentHeight ?? 24 : 0
+  );
+  // Scale the lockup to the row: mark + gap + optional streak leave ~width-120.
+  const brandSize =
+    width < 340 ? 24 : width < 380 ? 28 : width < 420 ? 32 : 34;
 
   useEffect(() => {
     let alive = true;
@@ -253,7 +265,7 @@ export function HomeHero({
   return (
     <Rise
       delay={motion.staggerMs}
-      style={{ ...styles.hero, paddingTop: topInset + spacing.sm }}
+      style={{ ...styles.hero, paddingTop: safeTop + spacing.sm }}
     >
       <LinearGradient
         colors={[tintA, tintB]}
@@ -284,7 +296,10 @@ export function HomeHero({
       </Animated.View>
 
       <Text
-        style={[styles.watermark, { color: colors.text }]}
+        style={[
+          styles.watermark,
+          { color: colors.text, top: safeTop + spacing.md },
+        ]}
         numberOfLines={1}
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
@@ -293,13 +308,19 @@ export function HomeHero({
       </Text>
 
       <View style={styles.brandRow}>
-        <BrandMark size={30} />
+        <BrandMark size={width < 360 ? 26 : 30} />
         <View style={styles.brandCopy}>
           <Text
             variant="display"
             color={colors.onMedia}
             accessibilityRole="header"
-            style={styles.brandName}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+            style={[
+              styles.brandName,
+              { fontSize: brandSize, lineHeight: brandSize + 4 },
+            ]}
           >
             {BRAND_NAME}
           </Text>
@@ -413,12 +434,12 @@ const styles = StyleSheet.create({
   },
   brandCopy: {
     flex: 1,
+    flexShrink: 1,
     minWidth: 0,
   },
   brandName: {
-    fontSize: 34,
-    lineHeight: 38,
     letterSpacing: -0.6,
+    flexShrink: 1,
   },
   credit: {
     marginTop: 2,
@@ -431,6 +452,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.xs,
     flexShrink: 0,
+    maxWidth: "28%",
   },
   brandDot: {
     width: 3,
@@ -454,7 +476,6 @@ const styles = StyleSheet.create({
   watermark: {
     position: "absolute",
     right: -8,
-    top: 48,
     fontFamily: "NotoSerifDevanagari_600SemiBold",
     fontSize: 72,
     lineHeight: 88,

@@ -1,5 +1,12 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Image, Pressable, StyleSheet, View } from "react-native";
+import {
+  Animated,
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -58,8 +65,13 @@ export function MadhavFab() {
 
   if (hide) return null;
 
+  // Match tabs layout: Android system nav must clear the FAB too.
+  const bottomInset = Math.max(
+    insets.bottom,
+    Platform.OS === "android" ? 12 : 0
+  );
   const bottom =
-    insets.bottom + spacing.sm + (onTabs ? TAB_BAR_HEIGHT : spacing.md);
+    bottomInset + spacing.sm + (onTabs ? TAB_BAR_HEIGHT : spacing.md);
 
   return (
     <Animated.View
