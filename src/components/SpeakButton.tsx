@@ -1,7 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import { resolveRecitationUrl } from "@/audio/manifest";
-import { playOrSpeak, playUrl, stopNarration } from "@/audio/narration";
+import {
+  playOrSpeak,
+  playUrl,
+  prefetchAudioUrl,
+  stopNarration,
+} from "@/audio/narration";
 import { Text } from "@/components/Text";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
@@ -53,7 +58,10 @@ export function SpeakButton({
     }
     let cancelled = false;
     void resolveRecitationUrl(chapter, verseNumber).then((url) => {
-      if (!cancelled) setRecitationReady(Boolean(url));
+      if (cancelled) return;
+      setRecitationReady(Boolean(url));
+      // Warm edge/HTTP cache so the first Listen isn’t a cold download.
+      prefetchAudioUrl(url);
     });
     return () => {
       cancelled = true;

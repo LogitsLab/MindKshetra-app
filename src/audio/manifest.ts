@@ -4,8 +4,7 @@ import { speechHash } from "@/audio/hash";
 /**
  * Client view of the audio bucket's manifest.json — pre-generated narration
  * keyed by speech-text hash, Sanskrit recitation keyed "chapter-verse".
- * Cached for a day in AsyncStorage so cold starts stay offline-safe; absence
- * of the manifest or a key means "device TTS as before", never an error.
+ * Cached for a week in AsyncStorage; absence means device TTS / no button.
  */
 export type AudioManifest = {
   version: number;
@@ -14,8 +13,8 @@ export type AudioManifest = {
 };
 
 const CACHE_KEY = "mindkshetra-audio-manifest-v2";
-// Short TTL so newly generated meditation TTS lands without reinstalling.
-const CACHE_MS = 60 * 60 * 1000;
+/** Long TTL — recitation corpus is stable; cuts manifest egress. */
+const CACHE_MS = 7 * 24 * 60 * 60 * 1000;
 
 let cached: AudioManifest | null | undefined;
 let inflight: Promise<AudioManifest | null> | null = null;
@@ -72,6 +71,11 @@ export async function getAudioManifest(): Promise<AudioManifest | null> {
     return manifest;
   });
   return inflight;
+}
+
+/** Warm the in-memory + AsyncStorage manifest on cold start (non-blocking). */
+export function warmAudioManifest(): void {
+  void getAudioManifest();
 }
 
 export async function resolveSpeechUrl(

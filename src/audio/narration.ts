@@ -64,6 +64,93 @@ export type PlayUrlOptions = {
   onError?: () => void;
 };
 
+/**
+ * Warm the HTTP/edge cache for a recitation URL without playing.
+ * Fire-and-forget — safe to call from SpeakButton mount.
+ */
+export function prefetchAudioUrl(url: string | null | undefined): void {
+  if (!url) return;
+  void fetch(url, { method: "GET", headers: { Range: "bytes=0-1" } }).catch(
+    () => undefined
+  );
+}
+
+async function ensureAudioMode(): Promise<void> {
+  if (audioModeSet) return;
+  audioModeSet = true;
+  await setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
+}
+
+/** Play a remote (or local) file once the player reports loaded. */
+async function playLoaded(
+  url: string,
+  options: PlayUrlOptions,
+  mySession: number
+): Promise<boolean> {
+  await ensureAudioMode();
+  if (mySession !== session) {
+    options.onStopped?.();
+    return false;
+  }
+
+  const p = createAudioPlayer({ uri: url });
+  player = p;
+
+  const ready = await new Promise<boolean>((resolve) => {
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      resolve(ok);
+    };
+    const timer = setTimeout(() => finish(true), 4000);
+    p.addListener("playbackStatusUpdate", (status) => {
+      if (mySession !== session) {
+        clearTimeout(timer);
+        finish(false);
+        return;
+      }
+      if (status.isLoaded) {
+        clearTimeout(timer);
+        finish(true);
+      }
+      if ("error" in status && status.error) {
+        clearTimeout(timer);
+        finish(false);
+      }
+    });
+    // Some builds already report loaded synchronously after create.
+    try {
+      if (p.isLoaded) {
+        clearTimeout(timer);
+        finish(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  });
+
+  if (!ready || mySession !== session) {
+    options.onStopped?.();
+    return false;
+  }
+
+  let finished = false;
+  p.addListener("playbackStatusUpdate", (status) => {
+    if (mySession !== session) return;
+    if (status.didJustFinish && !finished) {
+      finished = true;
+      options.onDone?.();
+    }
+  });
+  if (options.rate && options.rate !== 1) {
+    p.setPlaybackRate(options.rate, "high");
+  }
+  p.play();
+  options.onStart?.();
+  return true;
+}
+
 /** Play a single audio file with no TTS fallback (Sanskrit recitation). */
 export async function playUrl(
   url: string,
@@ -72,30 +159,7 @@ export async function playUrl(
   stopNarration();
   const mySession = session;
   try {
-    if (!audioModeSet) {
-      audioModeSet = true;
-      await setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
-    }
-    if (mySession !== session) {
-      options.onStopped?.();
-      return false;
-    }
-    const p = createAudioPlayer({ uri: url });
-    player = p;
-    let finished = false;
-    p.addListener("playbackStatusUpdate", (status) => {
-      if (mySession !== session) return;
-      if (status.didJustFinish && !finished) {
-        finished = true;
-        options.onDone?.();
-      }
-    });
-    if (options.rate && options.rate !== 1) {
-      p.setPlaybackRate(options.rate, "high");
-    }
-    p.play();
-    options.onStart?.();
-    return true;
+    return await playLoaded(url, options, mySession);
   } catch {
     if (mySession === session) {
       options.onError?.();
@@ -132,30 +196,7 @@ export async function playOrSpeak(
   }
 
   try {
-    if (!audioModeSet) {
-      audioModeSet = true;
-      await setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
-    }
-    if (mySession !== session) {
-      options.onStopped?.();
-      return false;
-    }
-    const p = createAudioPlayer({ uri: url });
-    player = p;
-    let finished = false;
-    p.addListener("playbackStatusUpdate", (status) => {
-      if (mySession !== session) return;
-      if (status.didJustFinish && !finished) {
-        finished = true;
-        options.onDone?.();
-      }
-    });
-    if (options.rate && options.rate !== 1) {
-      p.setPlaybackRate(options.rate, "high");
-    }
-    p.play();
-    options.onStart?.();
-    return true;
+    return await playLoaded(url, options, mySession);
   } catch {
     if (mySession !== session) {
       options.onStopped?.();

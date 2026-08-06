@@ -16,6 +16,7 @@ import { TextScaleProvider } from "@/context/TextScaleContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { MadhavProvider } from "@/context/MadhavContext";
+import { warmAudioManifest } from "@/audio/manifest";
 import { BootReveal } from "@/components/BootReveal";
 import { MadhavFab } from "@/components/MadhavFab";
 import { HeaderBrandRight } from "@/components/ScreenHeader";
@@ -44,6 +45,10 @@ function RootNavigator() {
   useDailyVisit();
   // Notification taps → in-app routes (warm and cold start). One mount.
   useNotificationObserver();
+  // Pull audio manifest once so Listen isn’t blocked on first tap.
+  useEffect(() => {
+    warmAudioManifest();
+  }, []);
 
   // Never return bare null — that flashes pure black between splash and Stack.
   if (!ready) {
