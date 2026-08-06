@@ -51,8 +51,17 @@ export const contentApi = {
   },
   sloka: (id: number) => apiFetch<Sloka>(`/api/slokas/${id}`),
   story: (id: number, lang: "en" | "hi") =>
-    apiFetch<{ story: string; language: string }>(
+    apiFetch<{ story: string | null; language?: string }>(
       `/api/slokas/${id}/story?lang=${lang}`
+    ),
+  /** First visit / refresh — server generates when no quality story is cached. */
+  generateStory: (id: number, lang: "en" | "hi", regenerate = false) =>
+    apiFetch<{ story: string | null; language?: string; error?: string }>(
+      `/api/slokas/${id}/story?lang=${lang}`,
+      {
+        method: "POST",
+        body: JSON.stringify({ regenerate }),
+      }
     ),
   moods: async () => {
     const data = await apiFetch<unknown>("/api/moods");

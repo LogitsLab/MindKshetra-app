@@ -59,6 +59,8 @@ export default function SlokaScreen() {
   const { askAboutVerse, setVerseContext } = useMadhav();
   const [sloka, setSloka] = useState<Sloka | null>(null);
   const [story, setStory] = useState<string | null>(null);
+  const [storyLoading, setStoryLoading] = useState(false);
+  const [storyGenerating, setStoryGenerating] = useState(false);
   const [storyLang, setStoryLang] = useState<"en" | "hi">(
     lang === "hi" ? "hi" : "en"
   );
@@ -169,6 +171,7 @@ export default function SlokaScreen() {
     if (!sloka) return;
     let alive = true;
     setStory(null);
+    setStoryLoading(true);
     contentApi
       .story(sloka.id, storyLang)
       .then((r) => {
@@ -176,11 +179,27 @@ export default function SlokaScreen() {
       })
       .catch(() => {
         if (alive) setStory(null);
+      })
+      .finally(() => {
+        if (alive) setStoryLoading(false);
       });
     return () => {
       alive = false;
     };
   }, [sloka, storyLang]);
+
+  async function generateStory(regenerate = false) {
+    if (!sloka || storyGenerating) return;
+    setStoryGenerating(true);
+    try {
+      const r = await contentApi.generateStory(sloka.id, storyLang, regenerate);
+      setStory(r.story?.trim() || null);
+    } catch {
+      setStory(null);
+    } finally {
+      setStoryGenerating(false);
+    }
+  }
 
   const chapterMeta = useMemo(
     () => (sloka ? getChapterMeta(sloka.chapter) : undefined),
@@ -589,13 +608,34 @@ export default function SlokaScreen() {
               ) : null}
             </View>
           </View>
-          <Text variant="soft" style={styles.panelCopy}>
-            {story
-              ? story
-              : lang === "hi"
-                ? "कथा लोड हो रही है…"
-                : "Loading story…"}
-          </Text>
+          {storyLoading || storyGenerating ? (
+            <View style={styles.storyLoading}>
+              <ActivityIndicator color={colors.brass} />
+              <Text variant="soft" style={styles.panelCopy}>
+                {storyGenerating
+                  ? t("writing")
+                  : lang === "hi"
+                    ? "कथा लोड हो रही है…"
+                    : "Loading story…"}
+              </Text>
+            </View>
+          ) : story ? (
+            <Text variant="soft" style={styles.panelCopy}>
+              {story}
+            </Text>
+          ) : (
+            <View style={styles.storyEmpty}>
+              <Text variant="soft" color={colors.textMuted} style={styles.panelCopy}>
+                {t("noStoryYet")}
+              </Text>
+              <Button
+                testID="sloka-story-generate"
+                label={t("generateStory")}
+                onPress={() => void generateStory(false)}
+                style={styles.storyGenerate}
+              />
+            </View>
+          )}
         </Panel>
 
         {showJournal ? (
@@ -866,6 +906,20 @@ const styles = StyleSheet.create({
   panelCopy: {
     marginTop: spacing.md,
     lineHeight: 24,
+  },
+  storyLoading: {
+    marginTop: spacing.md,
+    gap: spacing.sm,
+    alignItems: "flex-start",
+  },
+  storyEmpty: {
+    marginTop: spacing.md,
+    gap: spacing.md,
+  },
+  storyGenerate: {
+    alignSelf: "flex-start",
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
   },
   storyHead: {
     gap: spacing.md,
