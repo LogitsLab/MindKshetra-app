@@ -20,7 +20,8 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserNotificationsUsageDescription": "MindKshetra sends gentle reminders for your daily verse and practice streak.",
         "NSMicrophoneUsageDescription": "MindKshetra uses the microphone so you can speak to Madhav instead of typing.",
-        "NSSpeechRecognitionUsageDescription": "MindKshetra turns your speech into text so Madhav can answer."
+        "NSSpeechRecognitionUsageDescription": "MindKshetra turns your speech into text so Madhav can answer.",
+        "NSPhotoLibraryUsageDescription": "MindKshetra needs photo library access only if you choose to share an image. A linked library may request this even when you are not attaching a photo."
       },
       "buildNumber": "24"
     },
