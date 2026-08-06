@@ -287,7 +287,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
       })
       .finally(() => setLoading(false));
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, next) => {
+    // Do not await merge inside the listener — Supabase can deadlock auth
+    // callbacks that hold the lock across network round-trips, which showed up
+    // as a hard hang/crash right after Google / magic-link sign-in.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
       const prevUser = prevUserRef.current;
       prevUserRef.current = next?.user ?? null;
       setSession(next);
@@ -297,7 +300,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         next?.user &&
         shouldMerge(prevUser, next.user)
       ) {
-        await mergeForUser(next.user.id);
+        void mergeForUser(next.user.id);
       }
     });
     return () => sub.subscription.unsubscribe();

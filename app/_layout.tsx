@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -43,7 +44,10 @@ function RootNavigator() {
   // Notification taps → in-app routes (warm and cold start). One mount.
   useNotificationObserver();
 
-  if (!ready) return null;
+  // Never return bare null — that flashes pure black between splash and Stack.
+  if (!ready) {
+    return <View style={{ flex: 1, backgroundColor: colors.void }} />;
+  }
 
   return (
     <>
@@ -190,10 +194,13 @@ export default function RootLayout() {
     if (ready) SplashScreen.hideAsync().catch(() => undefined);
   }, [ready]);
 
-  if (!ready) return null;
+  // Match splash / theme void so font boot never flashes system black.
+  if (!ready) {
+    return <View style={{ flex: 1, backgroundColor: "#07090f" }} />;
+  }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#07090f" }}>
       <ThemeProvider>
         <TextScaleProvider>
           <LanguageProvider>

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useRootNavigationState, useRouter, useSegments } from "expo-router";
-import { useAuth } from "@/context/AuthContext";
 import { useOnboarding } from "@/context/OnboardingContext";
+import { useOnboardingDone } from "@/hooks/useOnboardingDone";
 
 /**
  * After the root navigator mounts, keep guests and first-time users on
@@ -14,14 +14,22 @@ export function useOnboardingRouting() {
   const router = useRouter();
   const segments = useSegments();
   const rootState = useRootNavigationState();
-  const { ready, complete, forceReplay } = useOnboarding();
-  const { loading: authLoading, isSignedIn } = useAuth();
+  const { markComplete } = useOnboarding();
+  const { ready, authLoading, done, complete, forceReplay, isSignedIn } =
+    useOnboardingDone();
 
   const navigationReady = Boolean(rootState?.key);
   const root = segments[0] as string | undefined;
   const onOnboarding = root === "onboarding";
   const onAuthCallback = root === "auth";
-  const done = forceReplay ? false : complete || isSignedIn;
+
+  // Heal a missing local flag after account restore / interrupted finish().
+  useEffect(() => {
+    if (!ready || authLoading || forceReplay) return;
+    if (isSignedIn && !complete) {
+      void markComplete();
+    }
+  }, [ready, authLoading, forceReplay, isSignedIn, complete, markComplete]);
 
   useEffect(() => {
     if (!ready || authLoading || !navigationReady) return;

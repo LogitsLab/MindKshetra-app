@@ -1,9 +1,8 @@
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
-import { useAuth } from "@/context/AuthContext";
-import { useOnboarding } from "@/context/OnboardingContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useOnboardingDone } from "@/hooks/useOnboardingDone";
 
 /**
  * Sole owner of `/`. Signed-in accounts always land on the home tab — even on
@@ -13,8 +12,7 @@ import { useTheme } from "@/context/ThemeContext";
  * (tabs)/home.tsx must NOT be named index — that caused Expo to open the homepage at `/`.
  */
 export default function RootIndex() {
-  const { ready, complete } = useOnboarding();
-  const { loading: authLoading, isSignedIn } = useAuth();
+  const { ready, authLoading, done } = useOnboardingDone();
   const { colors } = useTheme();
   // A boot signal that never resolves must not strand the app on this
   // spinner — after the deadline, proceed with whatever we know.
@@ -39,7 +37,7 @@ export default function RootIndex() {
     );
   }
 
-  if (!complete && !isSignedIn) {
+  if (!done) {
     return <Redirect href="/onboarding" />;
   }
 

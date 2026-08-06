@@ -9,15 +9,18 @@ import {
   TabProfileIcon,
 } from "@/components/BrandMark";
 import { useLanguage } from "@/context/LanguageContext";
-import { useOnboarding } from "@/context/OnboardingContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useOnboardingDone } from "@/hooks/useOnboardingDone";
 
 export default function TabsLayout() {
   const { colors, mode } = useTheme();
   const { t } = useLanguage();
-  const { ready, complete } = useOnboarding();
+  // Must match index + useOnboardingRouting: signed-in counts as done.
+  // Gating on `complete` alone bounced signed-in users home↔onboarding
+  // (black flicker / crash) whenever the local flag lagged the session.
+  const { ready, authLoading, done } = useOnboardingDone();
 
-  if (!ready) {
+  if (!ready || authLoading) {
     return (
       <View style={[styles.block, { backgroundColor: colors.void }]}>
         <ActivityIndicator color={colors.brass} />
@@ -25,7 +28,7 @@ export default function TabsLayout() {
     );
   }
 
-  if (!complete) {
+  if (!done) {
     return <Redirect href="/onboarding" />;
   }
 
