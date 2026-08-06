@@ -9,13 +9,17 @@ export type SupabaseConfig = {
 };
 
 /**
- * Read the public Supabase configuration at module initialization.
+ * Read the public Supabase configuration.
  *
- * Expo embeds both values in the client bundle, so neither is a server secret.
- * Error messages name missing variables but never include configured values.
+ * Expo/Metro only inlines static `process.env.EXPO_PUBLIC_*` member access into
+ * production bundles. Do not read through an aliased `env` object in the default
+ * path — that leaves keys undefined at runtime and crashes cold start.
  */
 export function getSupabaseConfig(
-  env: SupabasePublicEnv = process.env as SupabasePublicEnv
+  env: SupabasePublicEnv = {
+    EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  }
 ): SupabaseConfig {
   const url = env.EXPO_PUBLIC_SUPABASE_URL?.trim();
   const anonKey = env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim();
