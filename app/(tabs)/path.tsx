@@ -41,6 +41,7 @@ export default function PathTabScreen() {
                   title={t(path.titleKey)}
                   body={t(path.blurbKey)}
                   image={path.image}
+                  imageFocus={path.imageFocus}
                   mark={path.mark}
                   onPress={() => router.push(path.href)}
                   style={pair.length === 1 ? styles.halfAlone : undefined}

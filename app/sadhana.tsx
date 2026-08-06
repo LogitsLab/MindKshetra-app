@@ -408,7 +408,7 @@ export default function SadhanaScreen() {
         {/* (a) Name the mind */}
         <Rise>
           <PageHero
-            image={images.pathSadhana}
+            image={images.krishnaCharan}
             eyebrow={t("homeSadhanaEyebrow")}
             title={t("sadhanaMoodTitle")}
             intro={t("homeSadhanaBody")}

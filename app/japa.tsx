@@ -123,7 +123,7 @@ export default function JapaScreen() {
     <Screen atmosphere="soft" padded>
       <Rise>
         <PageHero
-          image={images.pathPaths}
+          image={images.krishnaCharan}
           eyebrow={lang === "hi" ? "जप" : "Japa"}
           title={t("homeJapaTitle")}
           intro={t("homeJapaBody")}

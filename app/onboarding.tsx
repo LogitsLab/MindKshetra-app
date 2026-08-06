@@ -343,10 +343,10 @@ export default function OnboardingScreen() {
 
         <View style={styles.dialogueHero}>
           <Image
-            source={images.pathMadhav}
+            source={images.krishnaKurukshetra}
             style={styles.dialogueImage}
             resizeMode="cover"
-            accessibilityLabel="Madhav and Arjun on the battlefield of Kurukshetra"
+            accessibilityLabel="Krishna on the battlefield of Kurukshetra"
           />
           <LinearGradient
             colors={["transparent", "rgba(7,9,15,0.45)", "rgba(7,9,15,0.88)"]}

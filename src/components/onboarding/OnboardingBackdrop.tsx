@@ -1,8 +1,19 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, Image, StyleSheet, View } from "react-native";
+import React, { useEffect, useMemo, useRef } from "react";
+import {
+  Animated,
+  Image,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/context/ThemeContext";
 import { images } from "@/theme/assets";
+
+/** Intrinsic size of `krishna-glade.jpg` (keep in sync with the asset). */
+const IMG_W = 895;
+const IMG_H = 1600;
+const IMG_ASPECT = IMG_W / IMG_H;
 
 type Props = {
   /** 0 while the poster is on screen, 1 once the flow is a working surface. */
@@ -12,47 +23,51 @@ type Props = {
 /**
  * The one photograph in onboarding.
  *
- * `hero.jpg` is self-scrimming: near-black sky, near-black ground, and a single
- * bright horizon band about 62% down. A flat heavy veil is what kills it, so the
- * poster veil is darkest exactly where copy sits (top and bottom) and lightest
- * across the horizon. The reading veil then fades in on top for the steps that
- * carry cards, inputs and buttons, which need a calm ground more than they need
- * the glow.
+ * Fits the full glade frame inside the screen (contain) — never cover-crops or
+ * zooms. Void letterboxes any leftover edges. Poster veil keeps copy readable
+ * without hiding Krishna; reading veil calms later steps.
  */
 export function OnboardingBackdrop({ reading }: Props) {
-  const { colors, mode } = useTheme();
+  const { mode } = useTheme();
+  const { width: screenW, height: screenH } = useWindowDimensions();
   const dark = mode === "dark";
 
+  const photoStyle = useMemo(() => {
+    const screenAspect = screenW / screenH;
+    // Contain: scale so the entire image fits; letterbox the rest.
+    if (screenAspect > IMG_ASPECT) {
+      const height = screenH;
+      const width = height * IMG_ASPECT;
+      return { width, height };
+    }
+    const width = screenW;
+    const height = width / IMG_ASPECT;
+    return { width, height };
+  }, [screenW, screenH]);
+
+  // Welcome poster: light touch so the full glade (Krishna + animals) stays
+  // visible. Reading steps get a heavier calm ground for cards/inputs.
   const poster = dark
-    ? (["rgba(7,9,15,0.38)", "rgba(7,9,15,0.18)", "rgba(7,9,15,0.86)"] as const)
-    : (["rgba(7,9,15,0.30)", "rgba(7,9,15,0.14)", "rgba(7,9,15,0.72)"] as const);
+    ? (["rgba(7,9,15,0.48)", "rgba(7,9,15,0.04)", "rgba(7,9,15,0.28)"] as const)
+    : (["rgba(7,9,15,0.36)", "rgba(7,9,15,0.02)", "rgba(7,9,15,0.22)"] as const);
 
   const readingVeil = dark
-    ? (["rgba(7,9,15,0.52)", "rgba(7,9,15,0.66)", "rgba(7,9,15,0.55)"] as const)
-    : (["rgba(7,9,15,0.34)", "rgba(7,9,15,0.46)", "rgba(7,9,15,0.38)"] as const);
+    ? (["rgba(7,9,15,0.58)", "rgba(7,9,15,0.70)", "rgba(7,9,15,0.62)"] as const)
+    : (["rgba(7,9,15,0.38)", "rgba(7,9,15,0.50)", "rgba(7,9,15,0.42)"] as const);
 
   return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Image
-        source={images.hero}
-        style={StyleSheet.absoluteFill}
-        resizeMode="cover"
-      />
-      <LinearGradient
-        colors={[colors.atmosphereTeal, "transparent"]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 0.55 }}
-        style={styles.teal}
-      />
-      <LinearGradient
-        colors={[colors.atmosphereBrass, "transparent"]}
-        start={{ x: 1, y: 0.2 }}
-        end={{ x: 0.3, y: 0.7 }}
-        style={styles.brass}
-      />
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.root]}>
+      <View style={styles.photoWrap}>
+        <Image
+          source={images.onboarding}
+          style={photoStyle}
+          resizeMode="stretch"
+          accessibilityIgnoresInvertColors
+        />
+      </View>
       <LinearGradient
         colors={[...poster]}
-        locations={[0, 0.58, 1]}
+        locations={[0, 0.42, 1]}
         style={StyleSheet.absoluteFill}
       />
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: reading }]}>
@@ -81,18 +96,12 @@ export function useReadingVeil(active: boolean) {
 }
 
 const styles = StyleSheet.create({
-  teal: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 280,
+  root: {
+    backgroundColor: "#07090f",
   },
-  brass: {
-    position: "absolute",
-    top: 40,
-    right: 0,
-    width: 220,
-    height: 220,
+  photoWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

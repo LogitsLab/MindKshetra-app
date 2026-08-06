@@ -1,15 +1,26 @@
+import type { ImageSourcePropType } from "react-native";
+
 /**
  * Path photography — copies of MindKshetra/public/images/paths/* kept under
  * assets/paths/ so Metro can bundle them (sibling requires are unreliable).
  *
  * `madhavMark` is a mobile-only crop with no web peer.
+ * Krishna backgrounds are mobile atmosphere / hero art (v1 pack).
  */
 export const images = {
   hero: require("../../assets/backgrounds/hero.jpg"),
+  /** Onboarding poster — glade flute scene. */
+  onboarding: require("../../assets/backgrounds/krishna-glade.jpg"),
+  krishnaGlade: require("../../assets/backgrounds/krishna-glade.jpg"),
+  krishnaKurukshetra: require("../../assets/backgrounds/krishna-kurukshetra.jpg"),
+  krishnaCharan: require("../../assets/backgrounds/krishna-charan.jpg"),
+  krishnaVishwaroop: require("../../assets/backgrounds/krishna-vishwaroop.jpg"),
   pathExplore: require("../../assets/paths/explore.jpg"),
   pathMood: require("../../assets/paths/mood.jpg"),
   pathMeditation: require("../../assets/paths/meditation.jpg"),
   pathMadhav: require("../../assets/paths/madhav.jpg"),
+  /** Vishwaroop graded to path-tile teal/brass (Ask Madhav tile). */
+  pathMadhavVishwaroop: require("../../assets/paths/madhav-vishwaroop.jpg"),
   pathAstrology: require("../../assets/paths/astrology.jpg"),
   pathCommunity: require("../../assets/paths/community.jpg"),
   pathSadhana: require("../../assets/paths/sadhana.jpg"),
@@ -19,6 +30,14 @@ export const images = {
   arjunPortrait: require("../../assets/brand/arjun.jpg"),
   madhavMark: require("../../assets/paths/path-madhav-mark.jpg"),
 };
+
+/** Calm Krishna stills for the cold-start BootReveal lottery (excludes Vishwaroopam). */
+export const bootRevealPool: ImageSourcePropType[] = [
+  images.hero,
+  images.krishnaGlade,
+  images.krishnaKurukshetra,
+  images.krishnaCharan,
+];
 
 export const moodAccent: Record<string, string> = {
   anxious: "#4a8fa3",

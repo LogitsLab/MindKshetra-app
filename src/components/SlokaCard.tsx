@@ -11,7 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
-import { CoverImage } from "@/components/CoverImage";
+import { CoverImage, type CoverImageFocus } from "@/components/CoverImage";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
 import { useTheme } from "@/context/ThemeContext";
@@ -193,6 +193,7 @@ export function PathTile({
   title,
   body,
   image,
+  imageFocus = "center",
   index,
   onPress,
   mark = "explore",
@@ -202,6 +203,7 @@ export function PathTile({
   title: string;
   body: string;
   image: ImageSourcePropType;
+  imageFocus?: CoverImageFocus;
   index: string;
   onPress: () => void;
   mark?: PathMarkKind;
@@ -224,7 +226,7 @@ export function PathTile({
         },
       ]}
     >
-      <CoverImage source={image} opacity={0.85} />
+      <CoverImage source={image} opacity={0.85} focus={imageFocus} />
       <LinearGradient
         colors={
           wide

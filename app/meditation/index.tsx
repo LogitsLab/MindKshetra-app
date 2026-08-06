@@ -94,7 +94,7 @@ export default function MeditationHubScreen() {
       >
         <Rise>
           <PageHero
-            image={images.pathMeditation}
+            image={images.krishnaGlade}
             eyebrow={t("medEyebrow")}
             title={t("medInnerTemple")}
             intro={lang === "hi" ? program.intro_hi : program.intro_en}

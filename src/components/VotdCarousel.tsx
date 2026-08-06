@@ -165,7 +165,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
   if (!verses.length) {
     return (
       <View style={[styles.band, { borderColor: colors.line }]}>
-        <CoverImage source={images.pathExplore} opacity={0.75} />
+        <CoverImage source={images.krishnaGlade} opacity={0.75} />
         <LinearGradient
           colors={["rgba(7,9,15,0.55)", "rgba(7,9,15,0.82)", "rgba(7,9,15,0.94)"]}
           style={StyleSheet.absoluteFillObject}
@@ -276,7 +276,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
             <View
               style={[styles.band, { width: slideWidth, borderColor: colors.line }]}
             >
-              <CoverImage source={images.pathExplore} opacity={0.75} />
+              <CoverImage source={images.krishnaGlade} opacity={0.75} />
               <LinearGradient
                 colors={[
                   "rgba(7,9,15,0.5)",

@@ -5,6 +5,7 @@ import {
   type AppStateStatus,
   FlatList,
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MessageBubble } from "@/components/chat/MessageBubble";
@@ -357,48 +359,79 @@ export default function MadhavScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={headerHeight}
       >
-        <View
-          style={[
-            styles.header,
-            { borderBottomColor: colors.hairline, backgroundColor: colors.panel },
-          ]}
+        <ImageBackground
+          source={images.krishnaVishwaroop}
+          style={styles.headerHero}
+          imageStyle={styles.headerHeroImage}
+          resizeMode="cover"
         >
-          <Image
-            source={images.madhavPortrait}
-            style={styles.portrait}
-            resizeMode="cover"
+          <LinearGradient
+            colors={[
+              "rgba(7,9,15,0.72)",
+              "rgba(7,9,15,0.88)",
+              "rgba(7,9,15,0.96)",
+            ]}
+            locations={[0, 0.55, 1]}
+            style={StyleSheet.absoluteFill}
           />
-          <View style={{ flex: 1 }}>
-            <Text variant="title" color={colors.brassSoft} style={styles.madhavName}>
-              Madhav
-            </Text>
-            <Text variant="eyebrow" style={styles.guideLabel}>
-              {lang === "hi" ? "गीता मार्गदर्शक" : "Gita guide"}
+          <View style={styles.header}>
+            <Image
+              source={images.madhavPortrait}
+              style={styles.portrait}
+              resizeMode="cover"
+            />
+            <View style={{ flex: 1 }}>
+              <Text
+                variant="title"
+                color={colors.brassSoft}
+                style={styles.madhavName}
+              >
+                Madhav
+              </Text>
+              <Text
+                variant="eyebrow"
+                color={colors.onMediaMuted}
+                style={styles.guideLabel}
+              >
+                {lang === "hi" ? "गीता मार्गदर्शक" : "Gita guide"}
+              </Text>
+            </View>
+            <Pressable
+              testID="madhav-close"
+              accessibilityRole="button"
+              accessibilityLabel="Close Madhav"
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                styles.close,
+                {
+                  borderColor: "rgba(232, 224, 208, 0.28)",
+                  opacity: pressed ? 0.55 : 1,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  color: colors.onMedia,
+                  fontSize: 22,
+                  lineHeight: 24,
+                }}
+              >
+                ×
+              </Text>
+            </Pressable>
+          </View>
+          <View style={styles.disclaimer}>
+            <Text
+              variant="muted"
+              color={colors.onMediaMuted}
+              style={styles.disclaimerText}
+            >
+              {lang === "hi"
+                ? "एक आध्यात्मिक साथी, चिकित्सक नहीं।"
+                : "A spiritual companion, not a therapist."}
             </Text>
           </View>
-          <Pressable
-            testID="madhav-close"
-            accessibilityRole="button"
-            accessibilityLabel="Close Madhav"
-            onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.close,
-              {
-                borderColor: colors.hairline,
-                opacity: pressed ? 0.55 : 1,
-              },
-            ]}
-          >
-            <Text style={{ color: colors.textSoft, fontSize: 22, lineHeight: 24 }}>×</Text>
-          </Pressable>
-        </View>
-        <View style={[styles.disclaimer, { borderBottomColor: colors.hairline }]}>
-          <Text variant="muted" style={styles.disclaimerText}>
-            {lang === "hi"
-              ? "एक आध्यात्मिक साथी, चिकित्सक नहीं।"
-              : "A spiritual companion, not a therapist."}
-          </Text>
-        </View>
+        </ImageBackground>
 
         {crisisBanner ? (
           <View
@@ -514,6 +547,15 @@ export default function MadhavScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerHero: {
+    overflow: "hidden",
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+    borderBottomColor: "rgba(201, 162, 39, 0.22)",
+  },
+  headerHeroImage: {
+    // Keep the cosmic figure in frame under the heavy scrim.
+    top: -36,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -549,7 +591,6 @@ const styles = StyleSheet.create({
   },
   disclaimer: {
     paddingBottom: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
   },
   disclaimerText: {
     textAlign: "center",

@@ -16,6 +16,7 @@ import { TextScaleProvider } from "@/context/TextScaleContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { MadhavProvider } from "@/context/MadhavContext";
+import { BootReveal } from "@/components/BootReveal";
 import { MadhavFab } from "@/components/MadhavFab";
 import { HeaderBrandRight } from "@/components/ScreenHeader";
 import { OnboardingGate } from "@/components/OnboardingGate";
@@ -167,6 +168,19 @@ function RootNavigator() {
   );
 }
 
+/** Cold-start Krishna still over the navigator; once per JS boot. */
+function AppWithBootReveal() {
+  const [revealing, setRevealing] = useState(true);
+  return (
+    <View style={{ flex: 1, backgroundColor: "#07090f" }}>
+      <RootNavigator />
+      {revealing ? (
+        <BootReveal active onFinished={() => setRevealing(false)} />
+      ) : null}
+    </View>
+  );
+}
+
 export default function RootLayout() {
   const [loaded, fontError] = useFonts({
     Fraunces_500Medium,
@@ -208,7 +222,7 @@ export default function RootLayout() {
               <AuthProvider>
                 <MadhavProvider>
                   <OnboardingGate>
-                    <RootNavigator />
+                    <AppWithBootReveal />
                   </OnboardingGate>
                 </MadhavProvider>
               </AuthProvider>

@@ -1,5 +1,6 @@
 import type { Href } from "expo-router";
 import type { ImageSourcePropType } from "react-native";
+import type { CoverImageFocus } from "@/components/CoverImage";
 import { images } from "@/theme/assets";
 
 export type HomePathEntry = {
@@ -19,6 +20,8 @@ export type HomePathEntry = {
     | "homeAstroBlurb"
     | "homeBlockPathsBody";
   image: ImageSourcePropType;
+  /** Cover-crop preference for tall hero art. */
+  imageFocus?: CoverImageFocus;
   mark: "explore" | "mood" | "meditation" | "madhav" | "astrology" | "paths";
   href: Href;
 };
@@ -55,7 +58,8 @@ export const HOME_PATHS: HomePathEntry[] = [
     index: "04",
     titleKey: "homeMadhavTitle",
     blurbKey: "homeMadhavBlurb",
-    image: images.pathMadhav,
+    image: images.pathMadhavVishwaroop,
+    imageFocus: "top",
     mark: "madhav",
     href: "/madhav",
   },
