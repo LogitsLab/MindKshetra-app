@@ -81,7 +81,7 @@ async function ensureAudioMode(): Promise<void> {
   await setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
 }
 
-/** Play a remote (or local) file once the player reports loaded. */
+/** Play a remote (or local) file. Call play() immediately — waiting on isLoaded races with Expo remounts. */
 async function playLoaded(
   url: string,
   options: PlayUrlOptions,
@@ -95,45 +95,6 @@ async function playLoaded(
 
   const p = createAudioPlayer({ uri: url });
   player = p;
-
-  const ready = await new Promise<boolean>((resolve) => {
-    let settled = false;
-    const finish = (ok: boolean) => {
-      if (settled) return;
-      settled = true;
-      resolve(ok);
-    };
-    const timer = setTimeout(() => finish(true), 4000);
-    p.addListener("playbackStatusUpdate", (status) => {
-      if (mySession !== session) {
-        clearTimeout(timer);
-        finish(false);
-        return;
-      }
-      if (status.isLoaded) {
-        clearTimeout(timer);
-        finish(true);
-      }
-      if ("error" in status && status.error) {
-        clearTimeout(timer);
-        finish(false);
-      }
-    });
-    // Some builds already report loaded synchronously after create.
-    try {
-      if (p.isLoaded) {
-        clearTimeout(timer);
-        finish(true);
-      }
-    } catch {
-      /* ignore */
-    }
-  });
-
-  if (!ready || mySession !== session) {
-    options.onStopped?.();
-    return false;
-  }
 
   let finished = false;
   p.addListener("playbackStatusUpdate", (status) => {

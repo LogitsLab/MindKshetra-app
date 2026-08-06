@@ -15,16 +15,18 @@
       "extends": "preview",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://mind-dev.logitslab.com",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://xtadssxgwskyobxmhnxa.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_KBNmCiZpJC6Sqd0-9XF4Lg_qgrJoOz-"
+        "EXPO_PUBLIC_SUPABASE_URL": "https://awqvyohcdxamkacwlsnq.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_sEuLUIynHFGiFogHqN3Xtg_FypVeoGV",
+        "EXPO_PUBLIC_AUDIO_BASE_URL": "https://bpxszivjvexmqznnshlx.supabase.co/storage/v1/object/public/audio"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://mind.logitslab.com",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://rqknmgzdzjpxepjmbzvb.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_jdUBIB53u9sw6TdKAPUfRQ__scR6eRU"
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bpxszivjvexmqznnshlx.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_L0X_m43ta_MKBXWot5Q6Pg__5bB1etv",
+        "EXPO_PUBLIC_AUDIO_BASE_URL": "https://bpxszivjvexmqznnshlx.supabase.co/storage/v1/object/public/audio"
       }
     }
   },

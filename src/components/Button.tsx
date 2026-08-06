@@ -27,6 +27,7 @@ export function Button({
   disabled,
   onPress,
   leading,
+  style,
   ...rest
 }: Props) {
   const { colors } = useTheme();
@@ -46,7 +47,7 @@ export function Button({
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress?.(e);
       }}
-      style={({ pressed }) => [
+      style={(state) => [
         styles.base,
         {
           backgroundColor: isPrimary
@@ -58,8 +59,10 @@ export function Button({
           // Disabled and pressed were both 0.8, so a button you cannot use
           // looked like a button mid-tap. Unavailable has to read as
           // unavailable at rest, without waiting for an interaction.
-          opacity: disabled ? 0.4 : pressed ? 0.75 : 1,
+          opacity: disabled ? 0.4 : state.pressed ? 0.75 : 1,
         },
+        // Merge caller styles — never let `style` replace the brass fill.
+        typeof style === "function" ? style(state) : style,
       ]}
       accessibilityState={{ disabled: Boolean(disabled || loading), busy: Boolean(loading) }}
       {...rest}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -176,12 +176,11 @@ function RootNavigator() {
 /** Cold-start Krishna still over the navigator; once per JS boot. */
 function AppWithBootReveal() {
   const [revealing, setRevealing] = useState(true);
+  const onFinished = useCallback(() => setRevealing(false), []);
   return (
     <View style={{ flex: 1, backgroundColor: "#07090f" }}>
       <RootNavigator />
-      {revealing ? (
-        <BootReveal active onFinished={() => setRevealing(false)} />
-      ) : null}
+      {revealing ? <BootReveal active onFinished={onFinished} /> : null}
     </View>
   );
 }

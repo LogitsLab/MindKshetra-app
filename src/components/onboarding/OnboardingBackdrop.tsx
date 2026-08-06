@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Animated,
   Image,
@@ -10,11 +10,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/context/ThemeContext";
 import { images } from "@/theme/assets";
 
-/** Intrinsic size of `krishna-glade.jpg` (keep in sync with the asset). */
-const IMG_W = 895;
-const IMG_H = 1600;
-const IMG_ASPECT = IMG_W / IMG_H;
-
 type Props = {
   /** 0 while the poster is on screen, 1 once the flow is a working surface. */
   reading: Animated.AnimatedInterpolation<number> | number;
@@ -23,33 +18,20 @@ type Props = {
 /**
  * The one photograph in onboarding.
  *
- * Fits the full glade frame inside the screen (contain) — never cover-crops or
- * zooms. Void letterboxes any leftover edges. Poster veil keeps copy readable
- * without hiding Krishna; reading veil calms later steps.
+ * Stretches to the full window so every phone sees the complete glade
+ * (Krishna + animals) with no letterbox and no cover-crop zoom. Mild aspect
+ * distortion on very tall/wide devices is preferred over losing the subject.
  */
 export function OnboardingBackdrop({ reading }: Props) {
   const { mode } = useTheme();
-  const { width: screenW, height: screenH } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const dark = mode === "dark";
 
-  const photoStyle = useMemo(() => {
-    const screenAspect = screenW / screenH;
-    // Contain: scale so the entire image fits; letterbox the rest.
-    if (screenAspect > IMG_ASPECT) {
-      const height = screenH;
-      const width = height * IMG_ASPECT;
-      return { width, height };
-    }
-    const width = screenW;
-    const height = width / IMG_ASPECT;
-    return { width, height };
-  }, [screenW, screenH]);
-
-  // Welcome poster: light touch so the full glade (Krishna + animals) stays
-  // visible. Reading steps get a heavier calm ground for cards/inputs.
+  // Welcome poster: light touch so the full glade stays vivid.
+  // Reading steps get a heavier calm ground for cards/inputs.
   const poster = dark
-    ? (["rgba(7,9,15,0.48)", "rgba(7,9,15,0.04)", "rgba(7,9,15,0.28)"] as const)
-    : (["rgba(7,9,15,0.36)", "rgba(7,9,15,0.02)", "rgba(7,9,15,0.22)"] as const);
+    ? (["rgba(7,9,15,0.42)", "rgba(7,9,15,0.02)", "rgba(7,9,15,0.22)"] as const)
+    : (["rgba(7,9,15,0.32)", "rgba(7,9,15,0.02)", "rgba(7,9,15,0.18)"] as const);
 
   const readingVeil = dark
     ? (["rgba(7,9,15,0.58)", "rgba(7,9,15,0.70)", "rgba(7,9,15,0.62)"] as const)
@@ -57,14 +39,12 @@ export function OnboardingBackdrop({ reading }: Props) {
 
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.root]}>
-      <View style={styles.photoWrap}>
-        <Image
-          source={images.onboarding}
-          style={photoStyle}
-          resizeMode="stretch"
-          accessibilityIgnoresInvertColors
-        />
-      </View>
+      <Image
+        source={images.onboarding}
+        style={{ width, height }}
+        resizeMode="stretch"
+        accessibilityIgnoresInvertColors
+      />
       <LinearGradient
         colors={[...poster]}
         locations={[0, 0.42, 1]}
@@ -98,10 +78,5 @@ export function useReadingVeil(active: boolean) {
 const styles = StyleSheet.create({
   root: {
     backgroundColor: "#07090f",
-  },
-  photoWrap: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });

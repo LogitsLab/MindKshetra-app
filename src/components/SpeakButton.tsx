@@ -88,6 +88,7 @@ export function SpeakButton({
       const ok = await playUrl(url, {
         onStart: () => setSpeaking(true),
         onDone: () => setSpeaking(false),
+        onStopped: () => setSpeaking(false),
         onError: () => setSpeaking(false),
       });
       if (!ok) setSpeaking(false);
