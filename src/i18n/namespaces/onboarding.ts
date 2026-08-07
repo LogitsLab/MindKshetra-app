@@ -34,7 +34,7 @@ export const en = {
   onboardingAuthEyebrow: "One last step",
   onboardingAuthTitle: "Save your path",
   onboardingAuthBody:
-    "Sign in to keep bookmarks, reflections, Madhav chats, and reading progress, then pick up on any device.",
+    "Sign in to pick up right where you left off — bookmarks, reflections, and your chats with Madhav, saved across every device.",
   onboardingContinue: "Continue",
   onboardingGetStarted: "Enter MindKshetra",
   onboardingContinueGuest: "Continue as guest",
@@ -83,7 +83,7 @@ export const hi: Record<keyof typeof en, string> = {
   onboardingAuthEyebrow: "आखिरी कदम",
   onboardingAuthTitle: "अपना मार्ग सहेजें",
   onboardingAuthBody:
-    "साइन इन करें ताकि बुकमार्क, चिंतन, माधव वार्ता और पठन प्रगति सुरक्षित रहे, फिर किसी भी उपकरण पर जारी रखें।",
+    "जहाँ छोड़ा था वहीं से फिर शुरू करें — बुकमार्क, चिंतन और माधव से आपकी बातें, हर उपकरण पर सहेजी रहें।",
   onboardingContinue: "आगे बढ़ें",
   onboardingGetStarted: "MindKshetra में प्रवेश करें",
   onboardingContinueGuest: "अतिथि के रूप में जारी रखें",

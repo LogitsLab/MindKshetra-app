@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { Text } from "@/components/Text";
 import { Button, Hairline } from "@/components/Button";
-import { BrandMark } from "@/components/BrandMark";
 import { Panel } from "@/components/Panel";
 import { Rise } from "@/components/Rise";
 import { useLanguage } from "@/context/LanguageContext";
@@ -53,26 +52,15 @@ export function OnboardingAuthStep({
 }: Props) {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const [emailFocused, setEmailFocused] = useState(false);
 
   /** Anything running locks the rest, so two sign-ins cannot race. */
   const blocked = (self: AuthAction) => pending !== null && pending !== self;
+  // Email path is active — demote Google so the field becomes the focus.
+  const emailActive = emailOpen && !linkSent;
 
   return (
     <Rise>
-      {/*
-        The step is about saving your own data, so it opens under the brand
-        mark. It previously opened on Madhav's portrait laid over the Madhav
-        path photograph — the same subject twice, and it borrowed the guide's
-        identity for an account system. DESIGN.md is explicit that the portrait
-        means Madhav specifically.
-      */}
-      <View style={styles.brandRow}>
-        <BrandMark size={22} />
-        <Text variant="eyebrow" color={colors.brassSoft}>
-          {t("onboardingAuthEyebrow")}
-        </Text>
-      </View>
-
       <Text
         variant="display"
         color={colors.onMedia}
@@ -109,7 +97,7 @@ export function OnboardingAuthStep({
         <View style={styles.methods}>
           <Button
             label={t("signInGoogle")}
-            variant="primary"
+            variant={emailActive ? "ghost" : "primary"}
             loading={pending === "google"}
             disabled={blocked("google")}
             onPress={onGoogle}
@@ -135,12 +123,19 @@ export function OnboardingAuthStep({
                 accessibilityLabel={t("emailLabel")}
                 placeholder={t("emailPlaceholder")}
                 placeholderTextColor={colors.onMediaMuted}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => setEmailFocused(false)}
                 style={[
                   styles.input,
                   {
                     color: colors.onMedia,
-                    borderColor: colors.line,
+                    borderColor:
+                      emailFocused || emailActive ? colors.brass : colors.line,
                     backgroundColor: colors.inputBg,
+                    borderWidth:
+                      emailFocused || emailActive
+                        ? 1.5
+                        : StyleSheet.hairlineWidth * 2,
                   },
                 ]}
               />
@@ -157,7 +152,7 @@ export function OnboardingAuthStep({
                         )
                       : t("signInEmail")
                 }
-                variant="ghost"
+                variant={email.trim() ? "primary" : "ghost"}
                 loading={pending === "email"}
                 disabled={
                   !email.trim() || emailCooldownSec > 0 || blocked("email")
@@ -236,13 +231,8 @@ export function OnboardingAuthStep({
 }
 
 const styles = StyleSheet.create({
-  brandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
   title: {
-    marginTop: spacing.sm,
+    marginTop: 0,
   },
   body: {
     marginTop: spacing.md,

@@ -133,10 +133,6 @@ export const ONBOARDING_COPY = {
     },
     name: { en: "Your name", hi: "आपका नाम" },
     namePlaceholder: { en: "Optional", hi: "वैकल्पिक" },
-    creating: {
-      en: "Your personal journey is being created.",
-      hi: "आपकी व्यक्तिगत यात्रा बन रही है।",
-    },
     start: { en: "Start My Journey", hi: "यात्रा शुरू करें" },
   },
 } as const;

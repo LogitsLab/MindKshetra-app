@@ -512,9 +512,6 @@ export default function OnboardingScreen() {
         >
           {copy.setup.title[L]}
         </Text>
-        <Text variant="soft" color={colors.onMediaMuted} style={styles.setupIntro}>
-          {copy.setup.creating[L]}
-        </Text>
 
         <Text variant="eyebrow" color={colors.brassSoft} style={styles.fieldLabel}>
           {copy.setup.language[L]}
@@ -1095,10 +1092,6 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 9,
       borderWidth: 1,
       borderColor: colors.textMuted,
-    },
-    setupIntro: {
-      marginTop: spacing.xs,
-      fontStyle: "italic",
     },
     fieldLabel: {
       marginTop: spacing.lg,

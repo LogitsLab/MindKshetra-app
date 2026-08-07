@@ -6,14 +6,13 @@ import {
   FlatList,
   Image,
   ImageBackground,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -76,7 +75,6 @@ function isTransientNetworkError(message: string): boolean {
 
 export default function MadhavScreen() {
   const router = useRouter();
-  const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { multiplier } = useTextScale();
@@ -103,6 +101,9 @@ export default function MadhavScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [crisisBanner, setCrisisBanner] = useState<string | null>(null);
+  // Modal + headerShown:false makes KeyboardAvoidingView under-shift on iOS;
+  // track keyboard height and pad the composer directly instead.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const listRef = useRef<FlatList<UiMessage>>(null);
   const autoSentPrompt = useRef<string | null>(null);
   const sending = useRef(false);
@@ -110,6 +111,21 @@ export default function MadhavScreen() {
   const abortRef = useRef<AbortController | null>(null);
   const backgroundAbort = useRef(false);
   const nearBottom = useRef(true);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const onShow = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, []);
 
   const voiceLabels = useMemo(
     () => ({
@@ -404,7 +420,11 @@ export default function MadhavScreen() {
     );
   };
 
-  const composerPad = Math.max(insets.bottom, spacing.sm);
+  // Android uses softwareKeyboardLayoutMode:"resize", so only iOS needs the
+  // manual lift. When the keyboard is up it covers the home indicator.
+  const keyboardLift = Platform.OS === "ios" ? keyboardHeight : 0;
+  const composerPad =
+    keyboardLift > 0 ? spacing.sm : Math.max(insets.bottom, spacing.sm);
 
   return (
     <Screen
@@ -413,11 +433,7 @@ export default function MadhavScreen() {
       edges={["top", "left", "right"]}
       atmosphere="soft"
     >
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={headerHeight}
-      >
+      <View style={{ flex: 1 }}>
         <ImageBackground
           source={images.krishnaVishwaroop}
           style={styles.headerHero}
@@ -567,6 +583,7 @@ export default function MadhavScreen() {
             {
               backgroundColor: colors.navBg,
               paddingBottom: composerPad,
+              marginBottom: keyboardLift,
             },
           ]}
         >
@@ -631,7 +648,7 @@ export default function MadhavScreen() {
             <Text style={{ color: colors.onBrass, fontSize: 20, lineHeight: 22 }}>➤</Text>
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Screen>
   );
 }
