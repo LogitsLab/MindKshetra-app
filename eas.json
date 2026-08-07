@@ -22,6 +22,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "credentialsSource": "local",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://mind.logitslab.com",
         "EXPO_PUBLIC_SUPABASE_URL": "https://bpxszivjvexmqznnshlx.supabase.co",

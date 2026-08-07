@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path } from "react-native-svg";
 import { BrandMark } from "@/components/BrandMark";
-import { BRAND_CREDIT, BRAND_NAME } from "@/components/BrandWordmark";
+import { BRAND_NAME } from "@/components/BrandWordmark";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { MoodIcon } from "@/components/MoodIcon";
@@ -84,7 +84,8 @@ function greetingFor(
   lang: "en" | "hi"
 ): string {
   const hi = lang === "hi";
-  const who = name?.trim();
+  // Only greet by name when the seeker chose one — never invent "Seeker".
+  const who = name?.trim() || null;
   if (h >= 5 && h < 12) {
     return who
       ? hi
@@ -98,10 +99,10 @@ function greetingFor(
     return who
       ? hi
         ? `नमस्ते, ${who}`
-        : `Welcome back, ${who}`
+        : `Namaste, ${who}`
       : hi
         ? "नमस्ते"
-        : "Welcome back";
+        : "Namaste";
   }
   if (h >= 17 && h < 21) {
     return who
@@ -247,7 +248,7 @@ export function HomeHero({
   const greetingLang = lang === "hi" ? "hi" : "en";
   const greeting = greetingFor(
     hour,
-    displayName?.trim() || (greetingLang === "hi" ? "Parth" : "Seeker"),
+    displayName?.trim() || null,
     greetingLang
   );
   const watermark =
@@ -324,15 +325,6 @@ export function HomeHero({
           >
             {BRAND_NAME}
           </Text>
-          <View style={styles.textScrim}>
-            <Text
-              variant="muted"
-              color="rgba(232,228,220,0.9)"
-              style={styles.credit}
-            >
-              {BRAND_CREDIT}
-            </Text>
-          </View>
         </View>
         {streak > 0 ? (
           <View style={[styles.streakPill, styles.textScrim]}>
@@ -351,7 +343,7 @@ export function HomeHero({
         color={colors.brassSoft}
         style={styles.tagline}
       >
-        {returning ? greeting : t("homeTagline")}
+        {returning ? greeting : t("homeWelcomeFirst")}
       </Text>
       <Text
         variant="soft"
@@ -382,20 +374,9 @@ export function HomeHero({
       <View style={styles.moodHead}>
         <View style={styles.textScrim}>
           <Text variant="eyebrow" color={colors.brassSoft}>
-            {lang === "hi" ? "अभी कैसा लगता है?" : "How are you arriving?"}
+            {t("homeMoodsEyebrow")}
           </Text>
         </View>
-        <Pressable onPress={() => router.push("/(tabs)/mood")} hitSlop={8}>
-          <View style={styles.textScrim}>
-            <Text
-              variant="muted"
-              color="rgba(232,228,220,0.88)"
-              style={styles.allMoods}
-            >
-              {t("homeMoodsAll")} →
-            </Text>
-          </View>
-        </Pressable>
       </View>
       <ScrollView
         horizontal
@@ -430,6 +411,20 @@ export function HomeHero({
           );
         })}
       </ScrollView>
+      <Pressable
+        onPress={() => router.push("/(tabs)/mood")}
+        hitSlop={8}
+        accessibilityRole="link"
+        style={styles.moreFeelings}
+      >
+        <Text
+          variant="muted"
+          color={colors.brassSoft}
+          style={styles.allMoods}
+        >
+          {t("homeMoodsAll")}
+        </Text>
+      </Pressable>
     </Rise>
   );
 }
@@ -454,12 +449,6 @@ const styles = StyleSheet.create({
   brandName: {
     letterSpacing: -0.6,
     flexShrink: 1,
-  },
-  credit: {
-    marginTop: 2,
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: 0.3,
   },
   streakPill: {
     flexDirection: "row",
@@ -525,11 +514,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
   },
   allMoods: {
     fontSize: 12,
+    letterSpacing: 0.2,
+  },
+  moreFeelings: {
+    alignSelf: "flex-end",
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   moodRow: {
     marginTop: spacing.sm,

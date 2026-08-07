@@ -96,6 +96,25 @@ export default function SlokaScreen() {
     setStoryLang(lang === "hi" ? "hi" : "en");
   }, [lang]);
 
+  // Action feedback sits above the fold — clear it so a prior verse's notice
+  // doesn't linger, and auto-dismiss so it doesn't block the verse.
+  useEffect(() => {
+    setProgressNotice(null);
+    setJournalNotice(null);
+  }, [slokaId]);
+
+  useEffect(() => {
+    if (!progressNotice) return;
+    const timer = setTimeout(() => setProgressNotice(null), 3500);
+    return () => clearTimeout(timer);
+  }, [progressNotice]);
+
+  useEffect(() => {
+    if (!journalNotice) return;
+    const timer = setTimeout(() => setJournalNotice(null), 3500);
+    return () => clearTimeout(timer);
+  }, [journalNotice]);
+
   useEffect(() => {
     if (!isSignedIn) {
       setFavorited(false);
@@ -323,6 +342,42 @@ export default function SlokaScreen() {
         </Text>
         <View style={{ width: 40 }} />
       </View>
+
+      {progressNotice || journalNotice ? (
+        <View style={styles.actionNotices} accessibilityLiveRegion="polite">
+          {progressNotice ? (
+            <Pressable
+              accessibilityRole="alert"
+              testID="sloka-progress-notice"
+              onPress={() => setProgressNotice(null)}
+              style={styles.actionNotice}
+            >
+              <Panel>
+                <Text variant="soft" color={colors.brassSoft}>
+                  {progressNotice}
+                </Text>
+              </Panel>
+            </Pressable>
+          ) : null}
+          {journalNotice ? (
+            <Pressable
+              accessibilityRole="button"
+              testID="sloka-journal-notice"
+              onPress={() => {
+                setJournalNotice(null);
+                if (!isSignedIn) router.push("/account");
+              }}
+              style={styles.actionNotice}
+            >
+              <Panel>
+                <Text variant="soft" color={colors.brassSoft}>
+                  {journalNotice}
+                </Text>
+              </Panel>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
 
       <ScrollView
         testID="sloka-scroll"
@@ -687,7 +742,9 @@ export default function SlokaScreen() {
                   if (isSignedIn) {
                     await userApi.addJournal(sloka.id, text);
                     bumpFocusVersion("journal");
-                    setJournalNotice(null);
+                    setJournalNotice(
+                      lang === "hi" ? "चिन्तन सहेजा गया।" : "Reflection saved."
+                    );
                     void Haptics.notificationAsync(
                       Haptics.NotificationFeedbackType.Success
                     );
@@ -715,34 +772,6 @@ export default function SlokaScreen() {
                 }
               }}
             />
-          </View>
-        ) : null}
-
-        {journalNotice ? (
-          <Pressable
-            accessibilityRole="button"
-            testID="sloka-journal-notice"
-            onPress={() => router.push("/account")}
-            style={{ marginTop: spacing.md }}
-          >
-            <Panel>
-              <Text variant="soft" color={colors.brassSoft}>
-                {journalNotice}
-              </Text>
-            </Panel>
-          </Pressable>
-        ) : null}
-        {progressNotice ? (
-          <View
-            accessibilityRole="alert"
-            testID="sloka-progress-notice"
-            style={{ marginTop: spacing.md }}
-          >
-            <Panel>
-              <Text variant="soft" color={colors.brassSoft}>
-                {progressNotice}
-              </Text>
-            </Panel>
           </View>
         ) : null}
       </ScrollView>
@@ -864,6 +893,14 @@ const styles = StyleSheet.create({
   },
   topCitation: {
     letterSpacing: 1.4,
+  },
+  actionNotices: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    gap: spacing.xs,
+  },
+  actionNotice: {
+    width: "100%",
   },
   content: {
     paddingHorizontal: spacing.lg,
