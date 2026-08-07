@@ -12,6 +12,7 @@ import {
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
+import Svg, { Circle } from "react-native-svg";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
@@ -31,12 +32,9 @@ import { images } from "@/theme/assets";
 import { spacing, type ThemeColors } from "@/theme/tokens";
 
 const BEADS_PER_MALA = 108;
-/** Visual beads on the ring — fewer than 108 so each stays readable. */
-const RING_BEADS = 36;
-const RING_SIZE = 228;
-const BEAD_DOT = 7;
-const GURU_DOT = 11;
-const DEGREES_PER_BEAD = 360 / BEADS_PER_MALA;
+const RING_SIZE = 248;
+const BEAD_R = 2.6;
+const GURU_R = 4.5;
 
 export default function JapaScreen() {
   useKeepAwake();
@@ -49,9 +47,11 @@ export default function JapaScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [total, setTotal] = useState(0);
   const [milestone, setMilestone] = useState<Milestone | null>(null);
+  /** Brief full-ring light when a mala completes (count has already wrapped to 0). */
+  const [malaFlash, setMalaFlash] = useState(false);
   const reduceMotion = useRef(false);
-  const rotation = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Everything the leave-time log needs lives in refs so the unmount effect
   // never re-runs — a re-run's cleanup would log mid-practice.
@@ -79,43 +79,34 @@ export default function JapaScreen() {
     return () => {
       alive = false;
       sub.remove();
+      if (flashTimer.current) clearTimeout(flashTimer.current);
     };
   }, []);
 
   const bead = total % BEADS_PER_MALA;
   const malas = Math.floor(total / BEADS_PER_MALA);
+  const litCount = malaFlash ? BEADS_PER_MALA : bead;
 
   const playTapMotion = (nextTotal: number) => {
-    // Cumulative degrees so a full mala keeps turning forward — no snap-back
-    // when the count wraps, and rapid taps never reverse the ring.
-    const angle = nextTotal * DEGREES_PER_BEAD;
+    // Ring stays still — beads light up in place. Only the count pulses.
     if (reduceMotion.current) {
-      rotation.setValue(angle);
       pulse.setValue(1);
       return;
     }
     const malaDone = nextTotal % BEADS_PER_MALA === 0;
-    Animated.parallel([
-      Animated.timing(rotation, {
-        toValue: angle,
-        duration: malaDone ? 320 : 160,
-        easing: Easing.out(Easing.cubic),
+    Animated.sequence([
+      Animated.timing(pulse, {
+        toValue: malaDone ? 1.12 : 1.05,
+        duration: malaDone ? 120 : 70,
+        easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: malaDone ? 1.12 : 1.06,
-          duration: malaDone ? 120 : 70,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: malaDone ? 220 : 140,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
+      Animated.timing(pulse, {
+        toValue: 1,
+        duration: malaDone ? 220 : 140,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
+      }),
     ]).start();
   };
 
@@ -126,7 +117,10 @@ export default function JapaScreen() {
     setTotal(next);
     playTapMotion(next);
     if (next % BEADS_PER_MALA === 0) {
-      // One full mala — a heavier tick, then the bead count starts over.
+      // One full mala — light every bead briefly, then clear for the next round.
+      setMalaFlash(true);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setMalaFlash(false), 420);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // The mala-completion moment: at most one newly-crossed mark. This is
       // where japa gets its quiet line — the screen has no done stage, it
@@ -239,12 +233,7 @@ export default function JapaScreen() {
 
         <View style={styles.counter}>
           <View style={styles.malaStage}>
-            <MalaRing rotation={rotation} colors={colors} />
-            {/* Fixed thumb mark — beads advance past this point on each tap. */}
-            <View
-              pointerEvents="none"
-              style={[styles.thumbMark, { backgroundColor: colors.brass }]}
-            />
+            <MalaRing litCount={litCount} colors={colors} />
             <Animated.View
               style={[
                 styles.countStack,
@@ -363,58 +352,60 @@ export default function JapaScreen() {
   );
 }
 
-/** Quiet ring of beads that advances one step with each tap. */
+/**
+ * Stationary 108-bead jap mala (option 3). Each tap lights the next bead
+ * in place — the ring does not rotate.
+ */
 function MalaRing({
-  rotation,
+  litCount,
   colors,
 }: {
-  rotation: Animated.Value;
+  litCount: number;
   colors: ThemeColors;
 }) {
   const dots = useMemo(() => {
-    const radius = (RING_SIZE - GURU_DOT) / 2;
     const center = RING_SIZE / 2;
-    return Array.from({ length: RING_BEADS }, (_, i) => {
-      const angle = (i / RING_BEADS) * Math.PI * 2 - Math.PI / 2;
-      const size = i === 0 ? GURU_DOT : BEAD_DOT;
+    const radius = center - GURU_R - 2;
+    return Array.from({ length: BEADS_PER_MALA }, (_, i) => {
+      const angle = (i / BEADS_PER_MALA) * Math.PI * 2 - Math.PI / 2;
       return {
         key: i,
-        size,
-        left: center + Math.cos(angle) * radius - size / 2,
-        top: center + Math.sin(angle) * radius - size / 2,
+        cx: center + Math.cos(angle) * radius,
+        cy: center + Math.sin(angle) * radius,
+        r: i === 0 ? GURU_R : BEAD_R,
         guru: i === 0,
       };
     });
   }, []);
 
-  const rotate = rotation.interpolate({
-    inputRange: [0, 360],
-    outputRange: ["0deg", "360deg"],
-  });
-
   return (
-    <Animated.View
+    <Svg
       pointerEvents="none"
-      style={[styles.ring, { transform: [{ rotate }] }]}
+      width={RING_SIZE}
+      height={RING_SIZE}
+      style={styles.ring}
     >
-      {dots.map((dot) => (
-        <View
-          key={dot.key}
-          style={[
-            styles.beadDot,
-            {
-              width: dot.size,
-              height: dot.size,
-              borderRadius: dot.size / 2,
-              left: dot.left,
-              top: dot.top,
-              backgroundColor: dot.guru ? colors.brass : colors.brassSoft,
-              opacity: dot.guru ? 0.95 : 0.42,
-            },
-          ]}
-        />
-      ))}
-    </Animated.View>
+      {dots.map((dot) => {
+        const filled = litCount > 0 && dot.key < litCount;
+        const latest = litCount > 0 && dot.key === litCount - 1;
+        return (
+          <Circle
+            key={dot.key}
+            cx={dot.cx}
+            cy={dot.cy}
+            r={latest ? dot.r + 0.8 : dot.r}
+            fill={
+              latest
+                ? colors.brassSoft
+                : filled || dot.guru
+                  ? colors.brass
+                  : colors.line
+            }
+            opacity={latest ? 1 : filled ? 0.95 : dot.guru ? 0.75 : 0.4}
+          />
+        );
+      })}
+    </Svg>
   );
 }
 
@@ -436,18 +427,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ring: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  beadDot: {
     position: "absolute",
-  },
-  thumbMark: {
-    position: "absolute",
-    bottom: 2,
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    opacity: 0.9,
+    left: 0,
+    top: 0,
   },
   countStack: {
     alignItems: "center",
@@ -455,8 +437,8 @@ const styles = StyleSheet.create({
   },
   bead: {
     fontFamily: "Fraunces_600SemiBold",
-    fontSize: 84,
-    lineHeight: 92,
+    fontSize: 80,
+    lineHeight: 88,
     letterSpacing: -1,
   },
   footer: {
