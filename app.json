@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/backgrounds/krishna-glade.jpg",
+      "image": "./assets/backgrounds/krishna-glade-splash.png",
       "resizeMode": "cover",
       "backgroundColor": "#07090f"
     },
@@ -55,7 +55,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#07090f",
-          "image": "./assets/backgrounds/krishna-glade.jpg",
+          "image": "./assets/backgrounds/krishna-glade-splash.png",
           "imageWidth": 1200,
           "resizeMode": "cover"
         }
