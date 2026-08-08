@@ -1,12 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
   ScrollView,
   Share,
   StyleSheet,
+  Switch,
   TextInput,
   View,
+  type LayoutChangeEvent,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,12 +22,13 @@ import { Rise } from "@/components/Rise";
 import { SpeakButton } from "@/components/SpeakButton";
 import { BackButton } from "@/components/ScreenHeader";
 import { EmptyState } from "@/components/SlokaCard";
+import { VerseReflections } from "@/components/VerseReflections";
 import {
   NotificationPrompt,
   maybeShowNotificationPrompt,
 } from "@/components/NotificationPrompt";
 import { contentApi, eventsApi, progressApi, userApi } from "@/api/endpoints";
-import { getApiUrl } from "@/api/client";
+import { ApiError, getApiUrl } from "@/api/client";
 import { stopNarration } from "@/audio/narration";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -33,13 +36,16 @@ import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
 import { chapterTitle, getChapterMeta } from "@/data/chapters";
 import { bumpFocusVersion } from "@/hooks/useFocusRefresh";
+import { reflectionsOpen } from "@/lib/kill-switch-public";
 import {
   addJournalDraft,
   cacheVerse,
   getCachedVerse,
+  getGuestProgress,
   markGuestComplete,
   queuePendingProgress,
   setGuestCursor,
+  unmarkGuestComplete,
 } from "@/storage/local";
 import { radii, spacing } from "@/theme/tokens";
 import type { Sloka } from "@/types";
@@ -75,8 +81,16 @@ export default function SlokaScreen() {
   const [showJournal, setShowJournal] = useState(false);
   const [journalNotice, setJournalNotice] = useState<string | null>(null);
   const [journalBusy, setJournalBusy] = useState(false);
+  const [savedJournalId, setSavedJournalId] = useState<number | null>(null);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [sharedWithSangha, setSharedWithSangha] = useState(false);
+  const [shareHeld, setShareHeld] = useState(false);
   const [progressNotice, setProgressNotice] = useState<string | null>(null);
+  const [verseComplete, setVerseComplete] = useState(false);
   const [notifPromptVisible, setNotifPromptVisible] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const journalY = useRef(0);
+  const pendingJournalScroll = useRef(false);
 
   const offerNotifications = () => {
     void maybeShowNotificationPrompt().then((show) => {
@@ -101,6 +115,9 @@ export default function SlokaScreen() {
   useEffect(() => {
     setProgressNotice(null);
     setJournalNotice(null);
+    setSavedJournalId(null);
+    setSharedWithSangha(false);
+    setShareHeld(false);
   }, [slokaId]);
 
   useEffect(() => {
@@ -127,6 +144,26 @@ export default function SlokaScreen() {
         if (alive) setFavorited(Boolean(r.saved));
       })
       .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [slokaId, isSignedIn]);
+
+  useEffect(() => {
+    let alive = true;
+    setVerseComplete(false);
+    (async () => {
+      try {
+        const data = isSignedIn
+          ? await progressApi.get()
+          : await getGuestProgress();
+        if (alive) {
+          setVerseComplete((data.completed ?? []).includes(slokaId));
+        }
+      } catch {
+        /* ignore — tick still works optimistically */
+      }
+    })();
     return () => {
       alive = false;
     };
@@ -267,9 +304,12 @@ export default function SlokaScreen() {
     lang === "hi" ? sloka.hindi_translation : sloka.english_translation;
   const preferredMeaning =
     lang === "hi" ? sloka.hindi_meaning : sloka.english_meaning;
+  const otherMeaning =
+    lang === "hi" ? sloka.english_meaning : sloka.hindi_meaning;
   const commentary = hasCommentary(preferredMeaning)
     ? cleanCommentary(preferredMeaning!)
     : "";
+  const otherLangHasCommentary = hasCommentary(otherMeaning);
   const sanskritLines = splitVerseLines(sloka.sanskrit_devanagari);
   const iastLines = splitVerseLines(sloka.transliteration_iast);
   const chTitle = chapterTitle(chapterMeta, lang === "hi" ? "hi" : "en");
@@ -280,34 +320,88 @@ export default function SlokaScreen() {
     : null;
   const ref = `${sloka.chapter}.${sloka.verse_number}`;
 
-  const markComplete = async () => {
-    await markGuestComplete(sloka.id);
+  const toggleComplete = async () => {
+    const next = !verseComplete;
+    setVerseComplete(next);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    if (next) {
+      await markGuestComplete(sloka.id);
+      if (isSignedIn) {
+        try {
+          await progressApi.complete(sloka.id, true);
+          setProgressNotice(
+            lang === "hi"
+              ? "प्रगति खाते में सहेजी गई।"
+              : "Progress saved to your account."
+          );
+        } catch {
+          await queuePendingProgress(sloka.id);
+          setProgressNotice(
+            lang === "hi"
+              ? "डिवाइस पर कतार में है — ऑनलाइन होने पर खाते से सिंक होगा।"
+              : "Queued on this device — it will sync to your account when online."
+          );
+        }
+      } else {
+        setProgressNotice(
+          lang === "hi"
+            ? "प्रगति अभी इसी डिवाइस पर सहेजी गई।"
+            : "Progress saved on this device for now."
+        );
+      }
+      bumpFocusVersion("progress");
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      offerNotifications();
+      return;
+    }
+
+    await unmarkGuestComplete(sloka.id);
     if (isSignedIn) {
       try {
-        await progressApi.complete(sloka.id);
+        await progressApi.complete(sloka.id, false);
         setProgressNotice(
           lang === "hi"
-            ? "प्रगति खाते में सहेजी गई।"
-            : "Progress saved to your account."
+            ? "पूर्ण चिह्न हटाया गया।"
+            : "Marked not done — progress reset for this verse."
         );
       } catch {
-        await queuePendingProgress(sloka.id);
+        setVerseComplete(true);
+        await markGuestComplete(sloka.id);
         setProgressNotice(
           lang === "hi"
-            ? "डिवाइस पर कतार में है — ऑनलाइन होने पर खाते से सिंक होगा।"
-            : "Queued on this device — it will sync to your account when online."
+            ? "रीसेट नहीं हो सका — बाद में फिर कोशिश करें।"
+            : "Couldn’t reset just now — try again shortly."
         );
+        return;
       }
     } else {
       setProgressNotice(
         lang === "hi"
-          ? "प्रगति अभी इसी डिवाइस पर सहेजी गई।"
-          : "Progress saved on this device for now."
+          ? "पूर्ण चिह्न हटाया गया।"
+          : "Marked not done on this device."
       );
     }
     bumpFocusVersion("progress");
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    offerNotifications();
+  };
+
+  const scrollToJournal = (y: number) => {
+    journalY.current = y;
+    scrollRef.current?.scrollTo({
+      y: Math.max(0, y - spacing.md),
+      animated: true,
+    });
+  };
+
+  const openJournal = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (showJournal) {
+      setShowJournal(false);
+      pendingJournalScroll.current = false;
+      return;
+    }
+    pendingJournalScroll.current = true;
+    setShowJournal(true);
   };
 
   const toggleFavorite = async () => {
@@ -380,6 +474,7 @@ export default function SlokaScreen() {
       ) : null}
 
       <ScrollView
+        ref={scrollRef}
         testID="sloka-scroll"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
@@ -483,13 +578,22 @@ export default function SlokaScreen() {
                 label={lang === "hi" ? "जर्नल" : "Journal"}
                 testID="sloka-journal"
                 active={showJournal}
-                onPress={() => setShowJournal((v) => !v)}
+                onPress={openJournal}
               />
               <IconTool
-                icon="check"
-                label={lang === "hi" ? "पूर्ण" : "Complete"}
+                icon={verseComplete ? "x" : "check"}
+                label={
+                  verseComplete
+                    ? lang === "hi"
+                      ? "रीसेट"
+                      : "Reset"
+                    : lang === "hi"
+                      ? "पूर्ण"
+                      : "Complete"
+                }
                 testID="sloka-complete"
-                onPress={() => void markComplete()}
+                active={verseComplete}
+                onPress={() => void toggleComplete()}
               />
               <IconTool
                 icon="share"
@@ -578,6 +682,21 @@ export default function SlokaScreen() {
           </Text>
         </Pressable>
 
+        <View style={{ marginTop: spacing.sm }}>
+          <Button
+            testID="sloka-start-sadhana"
+            label={t("startSadhana")}
+            variant="ghost"
+            onPress={() => {
+              stopNarration();
+              router.push({
+                pathname: "/sadhana",
+                params: { slokaId: String(sloka.id) },
+              });
+            }}
+          />
+        </View>
+
         {translation ? (
           <View style={styles.section}>
             <Text variant="eyebrow" color={colors.brass}>
@@ -599,16 +718,27 @@ export default function SlokaScreen() {
           </View>
         ) : null}
 
-        {commentary ? (
-          <Panel blur style={styles.sectionPanel}>
-            <Text variant="eyebrow" color={colors.brass}>
-              {t("meaning")}
-            </Text>
+        <Panel blur style={styles.sectionPanel}>
+          <Text variant="eyebrow" color={colors.brass}>
+            {t("meaning")}
+          </Text>
+          {commentary ? (
             <Text variant="soft" style={styles.panelCopy}>
               {commentary}
             </Text>
-          </Panel>
-        ) : null}
+          ) : (
+            <View style={{ marginTop: spacing.md, gap: spacing.xs }}>
+              <Text variant="soft" color={colors.textMuted}>
+                {t("commentaryUnavailable")}
+              </Text>
+              {otherLangHasCommentary ? (
+                <Text variant="muted" color={colors.textMuted}>
+                  {lang === "en" ? t("commentaryTryHi") : t("commentaryTryEn")}
+                </Text>
+              ) : null}
+            </View>
+          )}
+        </Panel>
 
         <Panel blur style={styles.sectionPanel}>
           <View style={styles.storyHead}>
@@ -628,7 +758,9 @@ export default function SlokaScreen() {
                   <Pressable
                     key={code}
                     onPress={() => {
-                      stopNarration();
+                      // Don't blanket-stop: Sanskrit Listen may still be
+                      // playing. Story SpeakButton stops only its own session
+                      // when its text/lang props change.
                       setStoryLang(code);
                     }}
                     style={[
@@ -695,6 +827,13 @@ export default function SlokaScreen() {
         {showJournal ? (
           <View
             testID="sloka-journal-editor"
+            onLayout={(e: LayoutChangeEvent) => {
+              journalY.current = e.nativeEvent.layout.y;
+              if (pendingJournalScroll.current) {
+                pendingJournalScroll.current = false;
+                scrollToJournal(e.nativeEvent.layout.y);
+              }
+            }}
             style={[
               styles.journalSection,
               {
@@ -712,7 +851,12 @@ export default function SlokaScreen() {
             </Text>
             <TextInput
               value={journal}
-              onChangeText={setJournal}
+              onChangeText={(text) => {
+                setJournal(text);
+                setSavedJournalId(null);
+                setSharedWithSangha(false);
+                setShareHeld(false);
+              }}
               multiline
               accessibilityLabel={
                 lang === "hi" ? "आपका निजी चिन्तन" : "Your private reflection"
@@ -728,9 +872,9 @@ export default function SlokaScreen() {
                   ? lang === "hi"
                     ? "सहेज रहे हैं…"
                     : "Saving…"
-                  : lang === "hi"
-                    ? "सहेजें"
-                    : "Save reflection"
+                  : savedJournalId
+                    ? t("journalSaved")
+                    : t("journalSave")
               }
               testID="sloka-journal-save"
               disabled={journalBusy}
@@ -740,7 +884,13 @@ export default function SlokaScreen() {
                 setJournalBusy(true);
                 try {
                   if (isSignedIn) {
-                    await userApi.addJournal(sloka.id, text);
+                    const res = await userApi.addJournal(sloka.id, text);
+                    const idNum = Number(res.id);
+                    setSavedJournalId(
+                      Number.isFinite(idNum) ? idNum : null
+                    );
+                    setSharedWithSangha(false);
+                    setShareHeld(false);
                     bumpFocusVersion("journal");
                     setJournalNotice(
                       lang === "hi" ? "चिन्तन सहेजा गया।" : "Reflection saved."
@@ -758,22 +908,114 @@ export default function SlokaScreen() {
                     void Haptics.impactAsync(
                       Haptics.ImpactFeedbackStyle.Light
                     );
+                    setJournal("");
+                    setShowJournal(false);
                   }
-                  setJournal("");
-                  setShowJournal(false);
                 } catch {
-                  setJournalNotice(
-                    lang === "hi"
-                      ? "चिंतन सहेजा नहीं गया। कनेक्शन जाँचें और फिर कोशिश करें।"
-                      : "Reflection was not saved. Check your connection and retry."
-                  );
+                  setJournalNotice(t("journalSaveFailed"));
                 } finally {
                   setJournalBusy(false);
                 }
               }}
             />
+            {isSignedIn && savedJournalId != null ? (
+              <View style={styles.shareRow}>
+                {reflectionsOpen() ? (
+                  shareHeld ? (
+                    <Text variant="soft" color={colors.textMuted}>
+                      {t("reflectHeld")}
+                    </Text>
+                  ) : sharedWithSangha ? (
+                    <Text variant="soft" color={colors.brassSoft}>
+                      {t("reflectShared")}
+                    </Text>
+                  ) : (
+                    <>
+                      <View style={styles.shareToggle}>
+                        <Switch
+                          testID="sloka-journal-share"
+                          value={false}
+                          disabled={shareBusy}
+                          onValueChange={(on) => {
+                            if (!on) return;
+                            void (async () => {
+                              if (!reflectionsOpen()) {
+                                setJournalNotice(t("reflectSharePaused"));
+                                return;
+                              }
+                              setShareBusy(true);
+                              try {
+                                const res = await userApi.shareJournal(
+                                  savedJournalId,
+                                  "community",
+                                  lang === "hi" ? "hi" : "en"
+                                );
+                                if (res.shared) {
+                                  setSharedWithSangha(true);
+                                  setJournalNotice(t("reflectShared"));
+                                } else if (res.held) {
+                                  setShareHeld(true);
+                                  setJournalNotice(
+                                    typeof res.message === "string"
+                                      ? res.message
+                                      : t("reflectHeld")
+                                  );
+                                } else if (typeof res.error === "string") {
+                                  setJournalNotice(res.error);
+                                }
+                              } catch (e) {
+                                if (
+                                  e instanceof ApiError &&
+                                  (e.status === 503 ||
+                                    /paused/i.test(e.message))
+                                ) {
+                                  setJournalNotice(t("reflectSharePaused"));
+                                } else {
+                                  setJournalNotice(
+                                    e instanceof Error
+                                      ? e.message
+                                      : t("reflectSharePaused")
+                                  );
+                                }
+                              } finally {
+                                setShareBusy(false);
+                              }
+                            })();
+                          }}
+                          trackColor={{
+                            false: colors.line,
+                            true: colors.brass,
+                          }}
+                          thumbColor={colors.surface}
+                        />
+                        <Text variant="soft" color={colors.textMuted}>
+                          {shareBusy
+                            ? lang === "hi"
+                              ? "साझा हो रहा है…"
+                              : "Sharing…"
+                            : t("reflectShare")}
+                        </Text>
+                      </View>
+                      <Text
+                        variant="muted"
+                        color={colors.textMuted}
+                        style={styles.shareConsent}
+                      >
+                        {t("reflectShareConsent")}
+                      </Text>
+                    </>
+                  )
+                ) : (
+                  <Text variant="muted" color={colors.textMuted}>
+                    {t("reflectSharePaused")}
+                  </Text>
+                )}
+              </View>
+            ) : null}
           </View>
         ) : null}
+
+        <VerseReflections slokaId={sloka.id} />
       </ScrollView>
 
       <NotificationPrompt
@@ -784,7 +1026,10 @@ export default function SlokaScreen() {
   );
 }
 
-type ToolIcon = "check" | "heart" | "share" | "pencil";
+type ToolIcon = "check" | "x" | "heart" | "share" | "pencil";
+
+/** Classic favorite red — readable on dark brass UI. */
+const HEART_ACTIVE = "#E25563";
 
 function IconTool({
   icon,
@@ -800,8 +1045,24 @@ function IconTool({
   active?: boolean;
 }) {
   const { colors } = useTheme();
-  const stroke = active ? colors.brass : colors.brassSoft;
-  const fill = active && icon === "heart" ? colors.brass : "none";
+  const isHeart = icon === "heart";
+  const isReset = icon === "x";
+  const stroke = isHeart && active
+    ? HEART_ACTIVE
+    : isReset
+      ? colors.danger
+      : active
+        ? colors.brass
+        : colors.brassSoft;
+  const fill = isHeart && active ? HEART_ACTIVE : "none";
+  const borderColor =
+    isHeart && active
+      ? "rgba(226, 85, 99, 0.55)"
+      : isReset
+        ? "rgba(240, 196, 200, 0.35)"
+        : active
+          ? colors.brass
+          : colors.line;
 
   return (
     <Pressable
@@ -814,7 +1075,7 @@ function IconTool({
       style={({ pressed }) => [
         styles.toolBtn,
         {
-          borderColor: active ? colors.brass : colors.line,
+          borderColor,
           backgroundColor: colors.panel,
           opacity: pressed ? 0.8 : 1,
         },
@@ -824,6 +1085,15 @@ function IconTool({
         {icon === "check" ? (
           <Path
             d="M5 13l4 4L19 7"
+            stroke={stroke}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : null}
+        {icon === "x" ? (
+          <Path
+            d="M6 6l12 12M18 6L6 18"
             stroke={stroke}
             strokeWidth={2}
             strokeLinecap="round"
@@ -1066,5 +1336,18 @@ const styles = StyleSheet.create({
     fontFamily: "Sora_400Regular",
     fontSize: 15,
     lineHeight: 23,
+  },
+  shareRow: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  shareToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  shareConsent: {
+    fontSize: 12,
+    lineHeight: 18,
   },
 });

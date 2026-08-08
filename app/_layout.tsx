@@ -165,6 +165,10 @@ function RootNavigator() {
           options={{ headerShown: false, animation: "slide_from_right" }}
         />
         <Stack.Screen name="astrology/milan" options={{ title: "Kundli Milan" }} />
+        <Stack.Screen
+          name="u/[handle]"
+          options={{ title: "Profile", headerShown: false }}
+        />
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
         <Stack.Screen name="privacy" options={{ title: "Privacy" }} />
       </Stack>

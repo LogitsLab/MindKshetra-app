@@ -15,6 +15,7 @@ import { ChartOverviewPanel } from "@/components/astrology/ChartOverviewPanel";
 import { DashaTimelinePanel } from "@/components/astrology/DashaTimelinePanel";
 import { PredictionsPanel } from "@/components/astrology/PredictionsPanel";
 import { PredictionsStatus } from "@/components/astrology/PredictionsStatus";
+import { PressurePracticeCard } from "@/components/astrology/PressurePracticeCard";
 import { astrologyApi } from "@/api/endpoints";
 import { usePredictions } from "@/hooks/usePredictions";
 import { useLanguage } from "@/context/LanguageContext";
@@ -272,6 +273,10 @@ export default function AstrologyMemberDetailScreen() {
             )
           ) : null}
         </View>
+
+        {tab === "chart" || tab === "predictions" ? (
+          <PressurePracticeCard memberId={id} />
+        ) : null}
 
         <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
           <Button

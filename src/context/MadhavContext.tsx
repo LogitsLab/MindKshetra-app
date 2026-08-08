@@ -7,8 +7,13 @@ type MadhavContextValue = {
   chartSessionId: string | null;
   birthPayload: Record<string, unknown> | null;
   slokaId: number | null;
+  /** True after an explicit clear — skips auto-attach of a self chart. */
+  chartExplicitlyCleared: boolean;
   setVerseContext: (slokaId: number | null) => void;
   setChartSession: (id: string | null, birth?: Record<string, unknown> | null) => void;
+  /** Quiet chart grounding (no pending prompt). */
+  attachMemberChart: (memberId: string) => void;
+  clearChartGrounding: () => void;
   ask: (prompt: string) => void;
   askAboutVerse: (slokaId: number, prompt?: string) => void;
   askAboutChart: (memberId: string, prompt?: string) => void;
@@ -28,6 +33,7 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
     null
   );
   const [slokaId, setSlokaId] = useState<number | null>(null);
+  const [chartExplicitlyCleared, setChartExplicitlyCleared] = useState(false);
   const [streaming, setStreaming] = useState(false);
 
   const clearPending = useCallback(() => {
@@ -41,6 +47,7 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
       setMemberId(null);
       setChartSessionId(null);
       setBirthPayload(null);
+      setChartExplicitlyCleared(false);
       setContextLabel(`Verse ${id}`);
     }
   }, []);
@@ -51,10 +58,30 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
       setMemberId(null);
       setSlokaId(null);
       setBirthPayload(birth ?? null);
+      setChartExplicitlyCleared(false);
       if (id) setContextLabel("Session chart");
     },
     []
   );
+
+  const attachMemberChart = useCallback((id: string) => {
+    setMemberId(id);
+    setChartSessionId(null);
+    setBirthPayload(null);
+    setSlokaId(null);
+    setChartExplicitlyCleared(false);
+    setContextLabel("Birth chart");
+  }, []);
+
+  const clearChartGrounding = useCallback(() => {
+    setMemberId(null);
+    setChartSessionId(null);
+    setBirthPayload(null);
+    setChartExplicitlyCleared(true);
+    setContextLabel((prev) =>
+      prev === "Birth chart" || prev === "Session chart" ? null : prev
+    );
+  }, []);
 
   const ask = useCallback((prompt: string) => {
     setPendingPrompt(prompt);
@@ -66,6 +93,7 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
     setMemberId(null);
     setChartSessionId(null);
     setBirthPayload(null);
+    setChartExplicitlyCleared(false);
     setContextLabel(`Verse ${id}`);
     setPendingPrompt(prompt ?? `Please reflect on verse id ${id} from the Gita.`);
   }, []);
@@ -75,6 +103,7 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
     setChartSessionId(null);
     setBirthPayload(null);
     setSlokaId(null);
+    setChartExplicitlyCleared(false);
     setContextLabel("Birth chart");
     setPendingPrompt(
       prompt ?? "What does my chart suggest I should reflect on today?"
@@ -89,8 +118,11 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
       chartSessionId,
       birthPayload,
       slokaId,
+      chartExplicitlyCleared,
       setVerseContext,
       setChartSession,
+      attachMemberChart,
+      clearChartGrounding,
       ask,
       askAboutVerse,
       askAboutChart,
@@ -105,8 +137,11 @@ export function MadhavProvider({ children }: { children: React.ReactNode }) {
       chartSessionId,
       birthPayload,
       slokaId,
+      chartExplicitlyCleared,
       setVerseContext,
       setChartSession,
+      attachMemberChart,
+      clearChartGrounding,
       ask,
       askAboutVerse,
       askAboutChart,

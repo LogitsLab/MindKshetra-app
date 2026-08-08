@@ -25,6 +25,7 @@ import {
 import {
   getPushPermission,
   pushSupported,
+  pushUnavailableReason,
   registerPush,
   requestPushPermission,
   unregisterPush,
@@ -56,6 +57,8 @@ export default function AccountScreen() {
     signInWithGoogle,
     signOut,
     emailCooldownSec,
+    lastMergeRestored,
+    clearLastMergeRestored,
   } = useAuth();
   const { resetComplete } = useOnboarding();
 
@@ -86,6 +89,15 @@ export default function AccountScreen() {
   // Push notifications: device state (permission + registered token) plus
   // the server's notification-preferences row for signed-in members.
   const pushAvailable = pushSupported();
+  const pushBlockReason = pushUnavailableReason();
+  const pushUnavailableCopy =
+    pushBlockReason === "simulator"
+      ? t("notifUnavailableSimulator")
+      : pushBlockReason === "expo-go"
+        ? t("notifUnavailableExpoGo")
+        : pushBlockReason === "credentials"
+          ? t("notifUnavailableCredentials")
+          : t("notifUnavailable");
   const [pushPermission, setPushPermission] =
     useState<PushPermission>("undetermined");
   const [pushRegistered, setPushRegistered] = useState(false);
@@ -462,6 +474,24 @@ export default function AccountScreen() {
             </View>
           ) : null}
         </View>
+
+        {lastMergeRestored ? (
+          <Panel style={{ marginTop: spacing.lg }}>
+            <Text variant="title" color={colors.brassSoft}>
+              {t("mergeRestoredTitle")}
+            </Text>
+            <Text variant="soft" style={{ marginTop: spacing.sm }}>
+              {t("mergeRestoredBlurb")}
+            </Text>
+            <View style={{ marginTop: spacing.md }}>
+              <Button
+                label={lang === "hi" ? "ठीक है" : "Dismiss"}
+                variant="ghost"
+                onPress={clearLastMergeRestored}
+              />
+            </View>
+          </Panel>
+        ) : null}
 
         {isSignedIn && !isAnonymous ? (
           <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
@@ -1042,7 +1072,7 @@ export default function AccountScreen() {
                   variant="muted"
                   style={{ marginTop: spacing.xs, opacity: 0.8 }}
                 >
-                  {t("notifUnavailable")}
+                  {pushUnavailableCopy}
                 </Text>
               ) : pushPermission === "denied" && !pushMasterOn ? (
                 <Text

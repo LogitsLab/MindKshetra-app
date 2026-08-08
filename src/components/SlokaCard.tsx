@@ -23,9 +23,12 @@ import { truncateAtWord } from "@/utils/text";
 export function SlokaCard({
   sloka,
   lang = "en",
+  completed = false,
 }: {
   sloka: Sloka;
   lang?: "en" | "hi";
+  /** Show a completed checkmark when this verse is marked done. */
+  completed?: boolean;
 }) {
   const router = useRouter();
   const { colors } = useTheme();
@@ -40,13 +43,31 @@ export function SlokaCard({
         styles.card,
         {
           backgroundColor: pressed ? colors.surfaceHover : colors.surface,
-          borderColor: colors.hairline,
+          borderColor: completed ? colors.brass : colors.hairline,
         },
       ]}
     >
-      <Text variant="eyebrow" color={colors.brassSoft}>
-        {sloka.chapter}.{sloka.verse_number}
-      </Text>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: spacing.sm,
+        }}
+      >
+        <Text variant="eyebrow" color={colors.brassSoft}>
+          {sloka.chapter}.{sloka.verse_number}
+        </Text>
+        {completed ? (
+          <Text
+            variant="eyebrow"
+            color={colors.brass}
+            accessibilityLabel={lang === "hi" ? "पूर्ण" : "Complete"}
+          >
+            ✓
+          </Text>
+        ) : null}
+      </View>
       <Text
         variant="sanskrit"
         style={{ marginTop: spacing.sm, fontSize: 17, lineHeight: 28 }}

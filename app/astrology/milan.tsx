@@ -230,6 +230,13 @@ export default function MilanScreen() {
           <Text variant="soft" style={{ marginTop: spacing.xs }}>
             {t("milanIntro")}
           </Text>
+          <Text
+            variant="muted"
+            color={colors.textMuted}
+            style={{ marginTop: spacing.sm }}
+          >
+            {t("milanGuide")}
+          </Text>
         </Rise>
 
         {loadingMembers ? (

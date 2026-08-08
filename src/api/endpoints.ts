@@ -77,6 +77,12 @@ export const contentApi = {
   },
   moodSlokas: (id: string) =>
     apiFetch<{ slokas: Sloka[] }>(`/api/moods/${id}/slokas`),
+  /** Chart-aware mood ordering for a saved member (fail-soft on clients). */
+  moodOrder: (memberId: string) =>
+    apiFetch<{ order: string[] }>("/api/moods/order", {
+      method: "POST",
+      body: JSON.stringify({ memberId }),
+    }),
 };
 
 export const userApi = {
@@ -102,7 +108,7 @@ export const userApi = {
   ) => {
     // Back-compat: addJournal(slokaId, text) OR addJournal(text, opts)
     if (typeof slokaIdOrReflection === "number") {
-      return apiFetch<{ id: string; kind?: string }>("/api/journal", {
+      return apiFetch<{ id: number | string; kind?: string }>("/api/journal", {
         method: "POST",
         body: JSON.stringify({
           slokaId: slokaIdOrReflection,
@@ -115,7 +121,7 @@ export const userApi = {
       typeof reflectionOrOpts === "object" && reflectionOrOpts
         ? reflectionOrOpts
         : {};
-    return apiFetch<{ id: string; kind?: string }>("/api/journal", {
+    return apiFetch<{ id: number | string; kind?: string }>("/api/journal", {
       method: "POST",
       body: JSON.stringify({
         reflection: slokaIdOrReflection,
@@ -124,6 +130,64 @@ export const userApi = {
       }),
     });
   },
+  /**
+   * Share / unshare a journal reflection with sangha.
+   * API visibility is `shared` | `private`; `community` is accepted as an alias for `shared`.
+   * Kill switch: sharing while paused → 503 — callers should fail soft.
+   */
+  shareJournal: (
+    id: number | string,
+    visibility: "community" | "shared" | "private",
+    language?: "en" | "hi"
+  ) => {
+    const apiVisibility = visibility === "community" ? "shared" : visibility;
+    return apiFetch<{
+      shared?: boolean;
+      held?: boolean;
+      crisis?: boolean;
+      message?: string;
+      error?: string;
+    }>(`/api/journal/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        visibility: apiVisibility,
+        ...(language ? { language } : {}),
+      }),
+    });
+  },
+  /** Thin wrapper — 503 when COMMUNITY_REPORTS_ENABLED is paused. */
+  report: (contentType: string, contentId: string, reason?: string) =>
+    apiFetch<{ ok: boolean }>("/api/report", {
+      method: "POST",
+      body: JSON.stringify({
+        contentType,
+        contentId,
+        ...(reason ? { reason } : {}),
+      }),
+    }),
+  blocks: () =>
+    apiFetch<{ blocks: { blocked_user_id: string; created_at: string }[] }>(
+      "/api/blocks"
+    ),
+  block: (blockedUserId: string) =>
+    apiFetch<{ ok: boolean }>("/api/blocks", {
+      method: "POST",
+      body: JSON.stringify({ blockedUserId }),
+    }),
+  unblock: (blockedUserId: string) =>
+    apiFetch<{ ok: boolean }>("/api/blocks", {
+      method: "DELETE",
+      body: JSON.stringify({ blockedUserId }),
+    }),
+  verseReflections: (slokaId: number) =>
+    apiFetch<{
+      reflections: Array<{
+        id: string;
+        reflection: string;
+        sharedAt: string | null;
+        author: { handle: string; displayName: string | null } | null;
+      }>;
+    }>(`/api/slokas/${slokaId}/reflections`),
   streak: () => apiFetch<Streak>("/api/account/streak"),
   recordVisit: (timezone?: string) =>
     apiFetch<Streak>("/api/account/streak", {
@@ -390,15 +454,61 @@ export const notificationPrefsApi = {
     ),
 };
 
+type ProgressApiRaw = {
+  completedIds?: number[];
+  completed?: number[];
+  cursor?: {
+    slokaId?: number;
+    chapter?: number;
+    verse?: number;
+    updatedAt?: string;
+  } | null;
+  continueSlokaId?: number | null;
+};
+
+export type ProgressView = {
+  completed: number[];
+  cursor?: { chapter: number; verse: number; slokaId?: number };
+  continueSlokaId?: number | null;
+};
+
+function normalizeProgress(data: ProgressApiRaw): ProgressView {
+  const completed = (data.completedIds ?? data.completed ?? [])
+    .map(Number)
+    .filter((n) => Number.isInteger(n) && n > 0);
+
+  let cursor: ProgressView["cursor"];
+  if (data.cursor?.chapter != null && data.cursor?.verse != null) {
+    cursor = {
+      chapter: Number(data.cursor.chapter),
+      verse: Number(data.cursor.verse),
+      slokaId: data.cursor.slokaId,
+    };
+  } else if (data.cursor?.slokaId != null && data.cursor?.chapter != null) {
+    // Server may omit verse on older deploys — chapter alone still drives Continue.
+    cursor = {
+      chapter: Number(data.cursor.chapter),
+      verse: Number(data.cursor.verse ?? 1),
+      slokaId: Number(data.cursor.slokaId),
+    };
+  }
+
+  return {
+    completed,
+    cursor,
+    continueSlokaId: data.continueSlokaId ?? null,
+  };
+}
+
 export const progressApi = {
-  get: () =>
-    apiFetch<{ completed: number[]; cursor?: { chapter: number; verse: number } }>(
-      "/api/progress"
-    ),
-  complete: (slokaId: number) =>
+  get: async () => {
+    const data = await apiFetch<ProgressApiRaw>("/api/progress");
+    return normalizeProgress(data);
+  },
+  complete: (slokaId: number, completed = true) =>
     apiFetch<{ ok: boolean }>("/api/progress/complete", {
       method: "POST",
-      body: JSON.stringify({ slokaId }),
+      body: JSON.stringify({ slokaId, completed }),
     }),
   setCursor: (slokaId: number) =>
     apiFetch<{ ok: boolean }>("/api/progress/cursor", {
@@ -408,7 +518,7 @@ export const progressApi = {
   merge: (completed: number[]) =>
     apiFetch<{ ok: boolean }>("/api/progress/merge", {
       method: "POST",
-      body: JSON.stringify({ completed }),
+      body: JSON.stringify({ completedIds: completed }),
     }),
 };
 
@@ -453,6 +563,17 @@ export const profileApi = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+  /** Public profile by handle — `/api/profiles/[handle]`. */
+  byHandle: (handle: string) =>
+    apiFetch<{
+      profile: {
+        handle: string;
+        display_name: string | null;
+        bio: string | null;
+        avatar_key?: string | null;
+        created_at?: string;
+      };
+    }>(`/api/profiles/${encodeURIComponent(handle.toLowerCase())}`),
 };
 
 export const sadhanaApi = {
@@ -561,6 +682,10 @@ export const astrologyApi = {
     apiFetch<{ chart: Record<string, unknown> }>(`/api/astrology/members/${id}/chart`),
   practiceCard: (memberId: string) =>
     apiFetch<{
+      area: string;
+      fact: string;
+      timing: string | null;
+      actionIndex: number;
       verse: {
         id: number;
         ref: string;

@@ -2,15 +2,15 @@
   "expo": {
     "name": "MindKshetra",
     "slug": "mindkshetra",
-    "version": "2.1.3",
+    "version": "2.1.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "mindkshetra",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
+      "image": "./assets/backgrounds/krishna-glade-splash.png",
+      "resizeMode": "cover",
       "backgroundColor": "#07090f"
     },
     "ios": {
@@ -55,7 +55,9 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#07090f",
-          "image": "./assets/splash-icon.png"
+          "image": "./assets/backgrounds/krishna-glade-splash.png",
+          "imageWidth": 1200,
+          "resizeMode": "cover"
         }
       ],
       [

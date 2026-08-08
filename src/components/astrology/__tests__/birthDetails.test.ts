@@ -3,6 +3,7 @@
 import {
   birthPayloadFromDetails,
   dateFromDob,
+  dateFromTob,
   dobFromDate,
   emptyBirthDetails,
   isCompleteBirthDetails,
@@ -86,5 +87,13 @@ describe("date round-trips", () => {
   it("tob formats with zero padding", () => {
     expect(tobFromDate(new Date(2020, 0, 1, 6, 5))).toBe("06:05");
     expect(tobFromDate(new Date(2020, 0, 1, 23, 59))).toBe("23:59");
+  });
+
+  it("tob round-trips times past the IST epoch wall (e.g. 7:45 AM)", () => {
+    expect(tobFromDate(dateFromTob("07:45"))).toBe("07:45");
+    expect(tobFromDate(dateFromTob("17:30"))).toBe("17:30");
+    // Anchored to a fixed civil day, not "today", so date maximumDate
+    // cannot clamp the time spinner.
+    expect(dateFromTob("07:45").getFullYear()).toBe(2000);
   });
 });

@@ -91,13 +91,15 @@ export function dobFromDate(date: Date): string {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 }
 
+/** Fixed civil day so time never interacts with "today" + date maximumDate. */
+const TOB_ANCHOR = { y: 2000, m: 0, d: 1 } as const;
+
 export function dateFromTob(tob: string): Date {
-  const now = new Date();
   if (TOB_RE.test(tob)) {
     const [h, m] = tob.split(":").map(Number);
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
+    return new Date(TOB_ANCHOR.y, TOB_ANCHOR.m, TOB_ANCHOR.d, h, m, 0);
   }
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+  return new Date(TOB_ANCHOR.y, TOB_ANCHOR.m, TOB_ANCHOR.d, 12, 0, 0);
 }
 
 export function tobFromDate(date: Date): string {

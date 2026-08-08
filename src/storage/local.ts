@@ -31,7 +31,49 @@ const KEYS = {
   personalization: "mindkshetra-personalization-draft",
   meditationQueue: "mindkshetra-meditation-queue",
   meditationRun: "mindkshetra-meditation-run-foundation-7",
+  /** Incognito chart birth payload awaiting createMember after sign-in. */
+  pendingAstroSave: "mindkshetra-astro-pending-save",
 } as const;
+
+export type PendingAstroSave = {
+  name: string;
+  relationship: string;
+  dob: string;
+  tob: string | null;
+  tobUnknown: boolean;
+  gender: string | null;
+  placeLabel: string;
+  lat: number;
+  lng: number;
+  ianaTz: string;
+  utcOffsetMinutes?: number;
+};
+
+export async function getPendingAstroSave(): Promise<PendingAstroSave | null> {
+  const raw = await AsyncStorage.getItem(KEYS.pendingAstroSave);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as PendingAstroSave;
+    if (!parsed?.dob) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export async function setPendingAstroSave(
+  payload: PendingAstroSave
+): Promise<void> {
+  await AsyncStorage.setItem(KEYS.pendingAstroSave, JSON.stringify(payload));
+}
+
+export async function clearPendingAstroSave(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.pendingAstroSave);
+}
+
+export async function clearChatSessionId(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.chatSession);
+}
 
 export async function getStoredTheme(): Promise<"dark" | "light" | null> {
   const v = await AsyncStorage.getItem(KEYS.theme);
@@ -97,6 +139,8 @@ export async function setChatSessionId(id: string): Promise<void> {
 export type GuestProgress = {
   completed: number[];
   cursor?: { chapter: number; verse: number };
+  /** Best-effort continue pointer when known (signed-in sync may set this). */
+  continueSlokaId?: number | null;
 };
 
 export async function getGuestProgress(): Promise<GuestProgress> {
@@ -118,6 +162,14 @@ export async function markGuestComplete(slokaId: number): Promise<void> {
   if (!p.completed.includes(slokaId)) {
     p.completed.push(slokaId);
     await setGuestProgress(p);
+  }
+}
+
+export async function unmarkGuestComplete(slokaId: number): Promise<void> {
+  const p = await getGuestProgress();
+  const next = p.completed.filter((id) => id !== slokaId);
+  if (next.length !== p.completed.length) {
+    await setGuestProgress({ ...p, completed: next });
   }
 }
 
@@ -170,6 +222,7 @@ export async function clearUserLocalState(): Promise<void> {
     KEYS.sadhanaLog,
     KEYS.pushToken,
     KEYS.pendingProgress,
+    KEYS.pendingAstroSave,
     KEYS.personalization,
     KEYS.meditationQueue,
     KEYS.meditationRun,
@@ -225,6 +278,28 @@ export function localDayStamp(now = new Date()): string {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${now.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * Asia/Kolkata civil day as YYYY-MM-DD — matches the server's New Delhi
+ * reference sky for panchang / VOTD freshness (not the device zone).
+ */
+export function istDayStamp(now = new Date()): string {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(now);
+    const y = parts.find((p) => p.type === "year")?.value;
+    const m = parts.find((p) => p.type === "month")?.value;
+    const d = parts.find((p) => p.type === "day")?.value;
+    if (y && m && d) return `${y}-${m}-${d}`;
+  } catch {
+    /* fall through */
+  }
+  return localDayStamp(now);
 }
 
 /** Returns the stored day stamp for the last recorded visit (or null). */
