@@ -46,7 +46,16 @@ export const en = {
   notifMasterDenied:
     "Notifications are off in system settings. Allow them there to receive the daily verse.",
   notifUnavailable: "Push notifications are not available in this build.",
+  notifUnavailableSimulator:
+    "Push needs a physical device — simulators cannot receive remote notifications.",
+  notifUnavailableExpoGo:
+    "This Expo Go session cannot register for remote push. Use a development or store build.",
+  notifUnavailableCredentials:
+    "Push credentials are not configured for this build yet (APNs / FCM).",
   notifGuestRow: "Sign in to choose which notifications arrive, and when.",
+  mergeRestoredTitle: "Your practice was restored",
+  mergeRestoredBlurb:
+    "Guest progress, chats, and practice logs are now on this account.",
   notifPromptTitle: "Begin the day with a verse",
   notifPromptBody: "One verse each morning, at the hour you choose.",
   notifPromptAccept: "Receive the verse",
@@ -78,7 +87,6 @@ export const en = {
   guestBadge: "Guest · Upgrade",
   signInTitle: "Your field journal",
   signInGoogle: "Continue with Google",
-  signInGoogleSoon: "Continue with Google (coming soon)",
   signInEmail: "Send sign-in link",
   useEmailInstead: "Use email instead",
   hideEmailSignIn: "Hide email sign-in",
@@ -115,7 +123,20 @@ export const en = {
   journalPlaceholder: "What does this verse stir in you?",
   journalSave: "Save reflection",
   journalSaved: "Saved",
+  journalSaveFailed: "Couldn't save, your words are still here. Try again.",
   signInToJournal: "Sign in to save reflections.",
+  reflectShare: "Share with sangha",
+  reflectShareConsent:
+    "Visible to everyone on this verse. You can unshare anytime.",
+  reflectShared: "Shared with sangha.",
+  reflectHeld: "Held for a gentle review before it appears.",
+  reflectSharePaused: "Sharing with sangha is paused right now.",
+  reflectionsTitle: "Reflections from seekers",
+  reflectionsSeeker: "A seeker",
+  reflectionsFirst:
+    "No shared reflections here yet, yours could be the first lamp lit.",
+  reflectReport: "Report",
+  reflectReported: "Thank you. A maintainer will look.",
   myReflections: "My reflections",
   noReflections: "No reflections yet.",
   streakLabel: "Day streak",
@@ -178,7 +199,16 @@ export const hi: Record<keyof typeof en, string> = {
   notifMasterDenied:
     "सिस्टम सेटिंग्स में सूचनाएँ बंद हैं। दैनिक श्लोक पाने के लिए वहाँ अनुमति दें।",
   notifUnavailable: "इस बिल्ड में पुश सूचनाएँ उपलब्ध नहीं हैं।",
+  notifUnavailableSimulator:
+    "पुश के लिए वास्तविक डिवाइस चाहिए — सिमुलेटर दूरस्थ सूचनाएँ नहीं पा सकते।",
+  notifUnavailableExpoGo:
+    "इस Expo Go सत्र में दूरस्थ पुश पंजीकृत नहीं हो सकता। डेव या स्टोर बिल्ड उपयोग करें।",
+  notifUnavailableCredentials:
+    "इस बिल्ड के लिए पुश क्रेडेंशियल अभी सेट नहीं हैं (APNs / FCM)।",
   notifGuestRow: "कौन-सी सूचनाएँ कब पहुँचें, यह चुनने के लिए साइन इन करें।",
+  mergeRestoredTitle: "आपका अभ्यास पुनर्स्थापित हो गया",
+  mergeRestoredBlurb:
+    "अतिथि प्रगति, चैट और अभ्यास लॉग अब इस खाते पर हैं।",
   notifPromptTitle: "दिन का आरंभ एक श्लोक से",
   notifPromptBody: "हर सुबह एक श्लोक, आपके चुने हुए घंटे पर।",
   notifPromptAccept: "श्लोक प्राप्त करें",
@@ -210,7 +240,6 @@ export const hi: Record<keyof typeof en, string> = {
   guestBadge: "अतिथि · अपग्रेड",
   signInTitle: "आपकी क्षेत्र डायरी",
   signInGoogle: "Google से जारी रखें",
-  signInGoogleSoon: "Google से जारी रखें (जल्द आ रहा है)",
   signInEmail: "साइन-इन लिंक भेजें",
   useEmailInstead: "ईमेल से साइन इन करें",
   hideEmailSignIn: "ईमेल साइन-इन छिपाएँ",
@@ -247,7 +276,20 @@ export const hi: Record<keyof typeof en, string> = {
   journalPlaceholder: "यह श्लोक आपमें क्या जगाता है?",
   journalSave: "चिंतन सहेजें",
   journalSaved: "सहेजा गया",
+  journalSaveFailed: "सहेज नहीं सके, आपके शब्द अभी यहीं हैं। फिर कोशिश करें।",
   signInToJournal: "चिंतन सहेजने के लिए साइन इन करें।",
+  reflectShare: "संघ के साथ साझा करें",
+  reflectShareConsent:
+    "इस श्लोक पर सभी को दिखेगा। कभी भी निजी कर सकते हैं।",
+  reflectShared: "संघ के साथ साझा हुआ।",
+  reflectHeld: "दिखने से पहले एक सौम्य समीक्षा के लिए रोका गया है।",
+  reflectSharePaused: "संघ के साथ साझा करना अभी रुका हुआ है।",
+  reflectionsTitle: "साधकों के चिंतन",
+  reflectionsSeeker: "एक साधक",
+  reflectionsFirst:
+    "यहाँ अभी कोई साझा चिंतन नहीं, आपका पहला दीप हो सकता है।",
+  reflectReport: "रिपोर्ट",
+  reflectReported: "धन्यवाद। कोई रखवाला देखेगा।",
   myReflections: "मेरे चिंतन",
   noReflections: "अभी कोई चिंतन नहीं।",
   streakLabel: "दिन की लकीर",

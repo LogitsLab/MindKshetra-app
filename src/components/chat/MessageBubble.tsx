@@ -19,11 +19,14 @@ type Props = {
   citations?: Citation[];
   /** Pre-translated speaker label ("You" / "Madhav"). */
   label: string;
+  /** Label for the practice / sādhana action on a citation. */
+  practiceLabel?: string;
   lang: AppLang;
   loading: boolean;
   multiplier: number;
   colors: ThemeColors;
   onPressCitation: (id: Citation["id"]) => void;
+  onPracticeCitation?: (id: Citation["id"]) => void;
 };
 
 /**
@@ -36,11 +39,13 @@ export const MessageBubble = React.memo(function MessageBubble({
   chartEpigraph,
   citations,
   label,
+  practiceLabel,
   lang,
   loading,
   multiplier,
   colors,
   onPressCitation,
+  onPracticeCitation,
 }: Props) {
   const crisis = !isUser && mentionsCrisisResource(content);
 
@@ -103,38 +108,66 @@ export const MessageBubble = React.memo(function MessageBubble({
           {citations.slice(0, 4).map((c) => {
             const snippet = citationSnippet(c, lang);
             return (
-              <Pressable
+              <View
                 key={String(c.id)}
-                onPress={() => onPressCitation(c.id)}
                 style={[styles.citeRow, { borderBottomColor: colors.hairline }]}
               >
-                <Text
-                  variant="muted"
-                  style={{
-                    color: colors.brassSoft,
-                    fontFamily: "Sora_600SemiBold",
-                    fontSize: 12 * multiplier,
-                    lineHeight: 16 * multiplier,
-                  }}
+                <Pressable
+                  onPress={() => onPressCitation(c.id)}
+                  style={styles.citeMain}
+                  accessibilityRole="link"
                 >
-                  {c.ref || `Verse ${c.id}`}
-                </Text>
-                {snippet ? (
                   <Text
                     variant="muted"
                     style={{
-                      marginTop: 4,
-                      color: colors.textSoft,
-                      fontSize: 13 * multiplier,
-                      lineHeight: 18 * multiplier,
+                      color: colors.brassSoft,
+                      fontFamily: "Sora_600SemiBold",
+                      fontSize: 12 * multiplier,
+                      lineHeight: 16 * multiplier,
                     }}
-                    numberOfLines={2}
-                    ellipsizeMode="tail"
                   >
-                    {snippet}
+                    {c.ref || `Verse ${c.id}`}
                   </Text>
+                  {snippet ? (
+                    <Text
+                      variant="muted"
+                      style={{
+                        marginTop: 4,
+                        color: colors.textSoft,
+                        fontSize: 13 * multiplier,
+                        lineHeight: 18 * multiplier,
+                      }}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                    >
+                      {snippet}
+                    </Text>
+                  ) : null}
+                </Pressable>
+                {onPracticeCitation && practiceLabel ? (
+                  <Pressable
+                    onPress={() => onPracticeCitation(c.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={practiceLabel}
+                    hitSlop={8}
+                    style={[
+                      styles.practiceBtn,
+                      { borderColor: colors.line, backgroundColor: colors.surface },
+                    ]}
+                  >
+                    <Text
+                      variant="muted"
+                      style={{
+                        color: colors.brassSoft,
+                        fontFamily: "Sora_600SemiBold",
+                        fontSize: 11 * multiplier,
+                      }}
+                    >
+                      {practiceLabel}
+                    </Text>
+                  </Pressable>
                 ) : null}
-              </Pressable>
+              </View>
             );
           })}
         </View>
@@ -189,8 +222,21 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   citeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
     paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
     minHeight: 52,
+  },
+  citeMain: {
+    flex: 1,
+    minWidth: 0,
+  },
+  practiceBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.sm,
+    borderWidth: StyleSheet.hairlineWidth * 2,
   },
 });

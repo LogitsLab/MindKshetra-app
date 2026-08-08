@@ -21,7 +21,8 @@ import { MessageBubble } from "@/components/chat/MessageBubble";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { buildChatRequestBody, streamChat } from "@/api/client";
-import { chatApi } from "@/api/endpoints";
+import { astrologyApi, chatApi } from "@/api/endpoints";
+import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTextScale } from "@/context/TextScaleContext";
@@ -29,6 +30,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useMadhavVoiceInput } from "@/hooks/useMadhavVoiceInput";
 import { detectUserCrisis, mentionsCrisisResource } from "@/safety/crisis";
 import {
+  clearChatSessionId,
   getChatSessionId,
   setChatSessionId,
 } from "@/storage/local";
@@ -36,6 +38,12 @@ import { images } from "@/theme/assets";
 import { radii, spacing } from "@/theme/tokens";
 import type { ChatMessage, Citation } from "@/types";
 import { TokenBuffer } from "@/utils/TokenBuffer";
+
+type ChatSessionSummary = {
+  id: string;
+  updated_at: string;
+  title?: string;
+};
 
 function MicIcon({ color }: { color: string }) {
   return (
@@ -79,12 +87,15 @@ export default function MadhavScreen() {
   const { colors } = useTheme();
   const { multiplier } = useTextScale();
   const { lang, t } = useLanguage();
+  const { isSignedIn } = useAuth();
   const {
     pendingPrompt,
     memberId,
     chartSessionId,
     birthPayload,
     slokaId,
+    chartExplicitlyCleared,
+    attachMemberChart,
     clearPending,
     setStreaming,
   } = useMadhav();
@@ -98,6 +109,10 @@ export default function MadhavScreen() {
   ]);
   const [input, setInput] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [recentSessions, setRecentSessions] = useState<ChatSessionSummary[]>(
+    []
+  );
+  const [showSessions, setShowSessions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [crisisBanner, setCrisisBanner] = useState<string | null>(null);
@@ -126,6 +141,39 @@ export default function MadhavScreen() {
       onHide.remove();
     };
   }, []);
+
+  // Chart-grounded default: when opening Madhav without verse/session context,
+  // quietly attach the self member chart if one exists. Fail soft.
+  useEffect(() => {
+    if (!isSignedIn) return;
+    if (slokaId != null || memberId || chartSessionId || chartExplicitlyCleared) {
+      return;
+    }
+    let alive = true;
+    astrologyApi
+      .members()
+      .then((res) => {
+        if (!alive) return;
+        const members = res.members ?? [];
+        if (!members.length) return;
+        const self =
+          members.find(
+            (m) => (m.relationship ?? "").toLowerCase() === "self"
+          ) ?? members[0];
+        if (self?.id) attachMemberChart(self.id);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [
+    isSignedIn,
+    slokaId,
+    memberId,
+    chartSessionId,
+    chartExplicitlyCleared,
+    attachMemberChart,
+  ]);
 
   const voiceLabels = useMemo(
     () => ({
@@ -165,6 +213,75 @@ export default function MadhavScreen() {
     return () => sub.remove();
   }, [stopListening]);
 
+  const loadRecentSessions = useCallback(async () => {
+    if (!isSignedIn || typeof chatApi.sessions !== "function") {
+      setRecentSessions([]);
+      return;
+    }
+    try {
+      const res = await chatApi.sessions();
+      setRecentSessions(res.sessions ?? []);
+    } catch {
+      setRecentSessions([]);
+    }
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    void loadRecentSessions();
+  }, [loadRecentSessions]);
+
+  const applySessionMessages = useCallback(
+    (prior: { role: "user" | "assistant"; content: string }[]) => {
+      setMessages([
+        { id: "welcome", role: "assistant", content: t("welcomeMadhav") },
+        ...prior.map((m, i) => ({
+          id: `hist-${i}`,
+          role: m.role,
+          content: m.content,
+        })),
+      ]);
+    },
+    [t]
+  );
+
+  const switchSession = useCallback(
+    async (id: string) => {
+      if (sending.current || loading) return;
+      setError(null);
+      setShowSessions(false);
+      setSessionId(id);
+      void setChatSessionId(id);
+      try {
+        const res = await chatApi.session(id);
+        const prior = (res.messages ?? [])
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          }));
+        applySessionMessages(prior);
+      } catch {
+        setError(
+          lang === "hi"
+            ? "यह वार्ता नहीं खुल सकी।"
+            : "Could not open that chat."
+        );
+      }
+    },
+    [applySessionMessages, lang, loading]
+  );
+
+  const startNewChat = useCallback(() => {
+    if (sending.current || loading) return;
+    setSessionId(null);
+    void clearChatSessionId();
+    setMessages([
+      { id: "welcome", role: "assistant", content: t("welcomeMadhav") },
+    ]);
+    setShowSessions(false);
+    setError(null);
+  }, [loading, t]);
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -176,16 +293,12 @@ export default function MadhavScreen() {
         if (!alive || autoSentPrompt.current || sending.current) return;
         const prior = (res.messages ?? [])
           .filter((m) => m.role === "user" || m.role === "assistant")
-          .map((m, i) => ({
-            id: `hist-${i}`,
+          .map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
           }));
         if (prior.length) {
-          setMessages([
-            { id: "welcome", role: "assistant", content: t("welcomeMadhav") },
-            ...prior,
-          ]);
+          applySessionMessages(prior);
         }
       } catch {
         /* session may have expired */
@@ -194,7 +307,7 @@ export default function MadhavScreen() {
     return () => {
       alive = false;
     };
-  }, [t]);
+  }, [applySessionMessages]);
 
   const sendMessage = useCallback(
     async (raw: string) => {
@@ -279,6 +392,7 @@ export default function MadhavScreen() {
               const sid = typeof id === "string" ? id : String(id);
               setSessionId(sid);
               void setChatSessionId(sid);
+              void loadRecentSessions();
             },
             onCitations: (cites) => {
               citations = (Array.isArray(cites) ? cites : []) as Citation[];
@@ -384,6 +498,7 @@ export default function MadhavScreen() {
       t,
       stopListening,
       syncBaseInput,
+      loadRecentSessions,
     ]
   );
 
@@ -402,6 +517,20 @@ export default function MadhavScreen() {
     [router]
   );
 
+  const onPracticeCitation = useCallback(
+    (id: Citation["id"]) => {
+      router.push({
+        pathname: "/sadhana",
+        params: { slokaId: String(id) },
+      });
+    },
+    [router]
+  );
+
+  const inActiveChat = messages.some(
+    (m) => m.id !== "welcome" && m.role === "user"
+  );
+
   const renderMessage = ({ item }: { item: UiMessage }) => {
     const isUser = item.role === "user";
     return (
@@ -411,11 +540,13 @@ export default function MadhavScreen() {
         chartEpigraph={item.chartEpigraph}
         citations={item.citations}
         label={isUser ? t("you") : t("madhav")}
+        practiceLabel={t("citePractice")}
         lang={lang}
         loading={loading}
         multiplier={multiplier}
         colors={colors}
         onPressCitation={onPressCitation}
+        onPracticeCitation={onPracticeCitation}
       />
     );
   };
@@ -506,7 +637,117 @@ export default function MadhavScreen() {
                 : "A spiritual companion, not a therapist."}
             </Text>
           </View>
+          {isSignedIn && recentSessions.length > 0 ? (
+            <View style={styles.sessionBar}>
+              <Pressable
+                onPress={() => setShowSessions((v) => !v)}
+                accessibilityRole="button"
+                accessibilityLabel={t("openChatHistory")}
+                style={[
+                  styles.sessionChip,
+                  {
+                    borderColor: "rgba(232, 224, 208, 0.28)",
+                    backgroundColor: showSessions
+                      ? "rgba(201, 162, 39, 0.22)"
+                      : "rgba(7,9,15,0.35)",
+                  },
+                ]}
+              >
+                <Text
+                  variant="muted"
+                  color={colors.onMedia}
+                  style={styles.sessionChipText}
+                >
+                  {t("recentChats")}
+                </Text>
+              </Pressable>
+              {inActiveChat || sessionId ? (
+                <Pressable
+                  onPress={startNewChat}
+                  disabled={loading}
+                  accessibilityRole="button"
+                  style={[
+                    styles.sessionChip,
+                    {
+                      borderColor: "rgba(232, 224, 208, 0.28)",
+                      backgroundColor: "rgba(7,9,15,0.35)",
+                      opacity: loading ? 0.5 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    variant="muted"
+                    color={colors.onMedia}
+                    style={styles.sessionChipText}
+                  >
+                    {t("newChat")}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
         </ImageBackground>
+
+        {showSessions ||
+        (isSignedIn &&
+          recentSessions.length > 0 &&
+          !inActiveChat &&
+          !pendingPrompt) ? (
+          <View
+            style={[
+              styles.sessionList,
+              { borderColor: colors.line, backgroundColor: colors.panel },
+            ]}
+          >
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {t("chatHistory")}
+            </Text>
+            {recentSessions.length === 0 ? (
+              <Text variant="muted" style={{ marginTop: spacing.sm }}>
+                {t("noSavedChats")}
+              </Text>
+            ) : (
+              recentSessions.slice(0, 8).map((s) => {
+                const when = new Date(s.updated_at).toLocaleString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                });
+                const headline =
+                  s.title?.trim() ||
+                  (lang === "hi" ? "वार्ता" : "Conversation");
+                const active = s.id === sessionId;
+                return (
+                  <Pressable
+                    key={s.id}
+                    onPress={() => void switchSession(s.id)}
+                    style={[
+                      styles.sessionRow,
+                      {
+                        borderBottomColor: colors.hairline,
+                        backgroundColor: active
+                          ? colors.surfaceHover
+                          : "transparent",
+                      },
+                    ]}
+                  >
+                    <Text
+                      variant="soft"
+                      color={active ? colors.brassSoft : colors.text}
+                      numberOfLines={1}
+                    >
+                      {headline}
+                    </Text>
+                    <Text variant="muted" style={{ marginTop: 2, fontSize: 11 }}>
+                      {when}
+                    </Text>
+                  </Pressable>
+                );
+              })
+            )}
+          </View>
+        ) : null}
 
         {crisisBanner ? (
           <View
@@ -703,6 +944,34 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 10,
     lineHeight: 14,
+  },
+  sessionBar: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  sessionChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  sessionChipText: {
+    fontSize: 11,
+    letterSpacing: 0.4,
+  },
+  sessionList: {
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  sessionRow: {
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   crisis: {
     marginHorizontal: spacing.md,

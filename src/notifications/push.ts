@@ -31,14 +31,64 @@ function androidFcmConfigured(): boolean {
   return Boolean(android?.googleServicesFile);
 }
 
+/** Why remote push cannot register on this runtime (null when supported). */
+export type PushUnavailableReason =
+  | "simulator"
+  | "expo-go"
+  | "credentials"
+  | "platform";
+
+export function pushUnavailableReason(): PushUnavailableReason | null {
+  if (Platform.OS !== "ios" && Platform.OS !== "android") return "platform";
+  if (!Device.isDevice) return "simulator";
+  if (Platform.OS === "android" && !androidFcmConfigured()) {
+    return "credentials";
+  }
+  // Expo Go cannot reliably register for production push cohorts.
+  if (Constants.appOwnership === "expo") return "expo-go";
+  if (!projectId()) return "credentials";
+  return null;
+}
+
 /** True where remote push can work at all: a real iOS/Android device. */
 export function pushSupported(): boolean {
-  if (Platform.OS !== "ios" && Platform.OS !== "android") return false;
+  return pushUnavailableReason() == null;
+}
+
+/**
+ * Schedule a one-shot local daily-verse reminder so the hour picker UX can
+ * be verified without APNs/FCM. Best-effort; never throws to callers.
+ */
+export async function scheduleLocalDailyVerseSmoke(
+  hourLocal: number
+): Promise<boolean> {
   if (!Device.isDevice) return false;
-  // Guard BEFORE any expo-notifications call: no FCM config means a native
-  // crash on Android, not a catchable rejection.
-  if (Platform.OS === "android" && !androidFcmConfigured()) return false;
-  return true;
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== "granted") return false;
+    await ensureDailyVerseChannel();
+    await Notifications.cancelScheduledNotificationAsync(
+      "local-daily-verse-smoke"
+    ).catch(() => undefined);
+    const hour = Math.min(21, Math.max(4, Math.floor(hourLocal)));
+    await Notifications.scheduleNotificationAsync({
+      identifier: "local-daily-verse-smoke",
+      content: {
+        title: "MindKshetra",
+        body: "Your daily verse reminder is ready on this device.",
+        sound: true,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute: 0,
+        channelId: Platform.OS === "android" ? "daily-verse" : undefined,
+      },
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export type PushPermission = "granted" | "denied" | "undetermined";

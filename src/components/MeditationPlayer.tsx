@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
-import { startAmbient, stopAmbient } from "@/audio/ambient";
+import { playSoftBell, startAmbient, stopAmbient } from "@/audio/ambient";
 import { playOrSpeak, stopNarration } from "@/audio/narration";
 import { useKeepAwake } from "expo-keep-awake";
 import { Screen } from "@/components/Screen";
@@ -106,9 +106,11 @@ export function MeditationPlayer({
 
   const advancePhase = () => {
     stopNarration();
+    stopAmbient();
     setSilenceLeft(null);
     const next = phaseIdxRef.current + 1;
     if (next >= session.phases.length) {
+      void playSoftBell();
       setStage("moodAfter");
       return;
     }

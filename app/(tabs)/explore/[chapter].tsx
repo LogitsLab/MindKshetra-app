@@ -40,6 +40,7 @@ export default function ChapterScreen() {
   const [slokas, setSlokas] = useState<Sloka[]>([]);
   const [completed, setCompleted] = useState<number[]>([]);
   const [cursorVerse, setCursorVerse] = useState<number | null>(null);
+  const [continueSlokaId, setContinueSlokaId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<FlatList<Sloka> | null>(null);
@@ -82,6 +83,7 @@ export default function ChapterScreen() {
         const data = isSignedIn ? await progressApi.get() : await getGuestProgress();
         if (!isActive()) return;
         setCompleted(data.completed ?? []);
+        setContinueSlokaId(data.continueSlokaId ?? null);
         setCursorVerse(
           data.cursor?.chapter === chapterNum ? data.cursor.verse ?? null : null
         );
@@ -91,6 +93,13 @@ export default function ChapterScreen() {
     },
     { resetKey: `${chapterNum}:${isSignedIn}` }
   );
+
+  // Prefer server continue target when that verse is in this chapter.
+  useEffect(() => {
+    if (continueSlokaId == null || slokas.length === 0) return;
+    const cont = slokas.find((s) => s.id === continueSlokaId);
+    if (cont) setCursorVerse(cont.verse_number);
+  }, [continueSlokaId, slokas]);
 
   const jumpToVerse = (verse: number) => {
     const index = slokas.findIndex((sloka) => sloka.verse_number === verse);

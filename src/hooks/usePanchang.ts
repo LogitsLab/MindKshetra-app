@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { panchangApi } from "@/api/endpoints";
 import {
   getStoredPanchang,
-  localDayStamp,
+  istDayStamp,
   setStoredPanchang,
 } from "@/storage/local";
 import type { PanchangDay } from "@/types";
 
 /**
  * Day-scoped daily panchang (v1 always uses the server's shared New Delhi
- * reference sky). Same freshness contract as useVotd: one fetch per local day,
- * and a stale cached day beats an empty screen when offline.
+ * reference sky). Freshness uses the Asia/Kolkata civil day so devices in
+ * other zones do not serve yesterday's sky near IST midnight.
  */
 export function usePanchang(): {
   panchang: PanchangDay | null;
@@ -26,8 +26,9 @@ export function usePanchang(): {
   useEffect(() => {
     let alive = true;
     (async () => {
+      const todayIst = istDayStamp();
       const stored = await getStoredPanchang();
-      if (stored && stored.date === localDayStamp()) {
+      if (stored && stored.date === todayIst) {
         if (alive) {
           setPanchang(stored.payload);
           setLoading(false);
@@ -36,7 +37,7 @@ export function usePanchang(): {
       }
       try {
         const fresh = await panchangApi.today();
-        await setStoredPanchang({ date: localDayStamp(), payload: fresh });
+        await setStoredPanchang({ date: todayIst, payload: fresh });
         if (alive) setPanchang(fresh);
       } catch (e) {
         if (alive) {

@@ -21,6 +21,7 @@ import {
 import { resolveAuthRedirectUri } from "@/auth/oauthRedirect";
 import { shouldMerge } from "@/auth/should-merge";
 import {
+  astrologyApi,
   chatApi,
   journeysApi,
   progressApi,
@@ -30,12 +31,14 @@ import {
 import { registerPush, unregisterPush } from "@/notifications/push";
 import {
   clearAllGuestJourneys,
+  clearPendingAstroSave,
   clearPendingProgress,
   clearSadhanaLog,
   getAllGuestJourneys,
   getChatSessionId,
   getGuestProgress,
   getJournalDrafts,
+  getPendingAstroSave,
   getPendingProgress,
   getSadhanaLog,
   getTimezoneSynced,
@@ -120,6 +123,13 @@ type AuthContextValue = {
   isSignedIn: boolean;
   /** Seconds remaining before another magic-link request is allowed */
   emailCooldownSec: number;
+  /**
+   * True after guest→member upgrade when progress/chat/sadhana/meditation/
+   * journeys were merged onto the account. Account screen shows a dismissible
+   * banner; cleared via clearLastMergeRestored.
+   */
+  lastMergeRestored: boolean;
+  clearLastMergeRestored: () => void;
   signInAnonymously: () => Promise<void>;
   /** false means the person cancelled; callers must not treat that as done. */
   signInWithGoogle: () => Promise<boolean>;
@@ -129,10 +139,15 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function mergeOnUpgrade() {
+/** Returns true when any guest practice/chat data was successfully merged. */
+async function mergeOnUpgrade(): Promise<boolean> {
+  let restored = false;
   try {
     const sessionId = await getChatSessionId();
-    if (sessionId) await chatApi.merge(sessionId);
+    if (sessionId) {
+      await chatApi.merge(sessionId);
+      restored = true;
+    }
   } catch {
     /* ignore */
   }
@@ -143,12 +158,14 @@ async function mergeOnUpgrade() {
     if (completed.length) {
       await progressApi.merge(completed);
       await clearPendingProgress();
+      restored = true;
     }
   } catch {
     /* ignore */
   }
   try {
-    await flushMeditationGuestQueue();
+    const flushed = await flushMeditationGuestQueue();
+    if (flushed > 0) restored = true;
   } catch {
     /* keep the queue for the next upgrade */
   }
@@ -174,6 +191,7 @@ async function mergeOnUpgrade() {
         });
       }
       await clearSadhanaLog();
+      restored = true;
     }
   } catch {
     /* keep the log */
@@ -187,6 +205,7 @@ async function mergeOnUpgrade() {
     if (journeys.length) {
       await journeysApi.merge(journeys);
       await clearAllGuestJourneys();
+      restored = true;
     }
   } catch {
     /* keep the runs for the next upgrade */
@@ -225,6 +244,7 @@ async function mergeOnUpgrade() {
   } catch {
     /* keep draft */
   }
+  return restored;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -233,15 +253,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [emailCooldownUntil, setEmailCooldownUntil] = useState(0);
   const [emailCooldownSec, setEmailCooldownSec] = useState(0);
+  const [lastMergeRestored, setLastMergeRestored] = useState(false);
   // The auth listener lives in a []-dep effect, so it must read the previous
   // user from a ref — the closure's `user` is frozen at its initial null.
   const prevUserRef = useRef<User | null>(null);
   const mergedForUserIdRef = useRef<string | null>(null);
+  const pendingAstroFlushRef = useRef(false);
+
+  const clearLastMergeRestored = useCallback(() => {
+    setLastMergeRestored(false);
+  }, []);
 
   const mergeForUser = useCallback(async (userId: string) => {
     if (mergedForUserIdRef.current === userId) return;
     mergedForUserIdRef.current = userId;
-    await mergeOnUpgrade();
+    const restored = await mergeOnUpgrade();
+    if (restored) setLastMergeRestored(true);
   }, []);
 
   useEffect(() => {
@@ -354,6 +381,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await clearPendingProgress();
       } catch {
         /* keep queued */
+      }
+    })();
+  }, [user]);
+
+  // Incognito "Save as member" stashed birth details while signed out; complete
+  // createMember once a real account is present (mirrors web sessionStorage).
+  useEffect(() => {
+    if (!user || user.is_anonymous) {
+      pendingAstroFlushRef.current = false;
+      return;
+    }
+    if (pendingAstroFlushRef.current) return;
+    pendingAstroFlushRef.current = true;
+    void (async () => {
+      try {
+        const pending = await getPendingAstroSave();
+        if (!pending) {
+          pendingAstroFlushRef.current = false;
+          return;
+        }
+        const res = await astrologyApi.createMember(pending);
+        await clearPendingAstroSave();
+        router.replace(`/astrology/members/${res.member.id}`);
+      } catch {
+        pendingAstroFlushRef.current = false;
+        /* keep pending for the next sign-in / retry */
       }
     })();
   }, [user]);
@@ -504,6 +557,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAnonymous: Boolean(user?.is_anonymous),
       isSignedIn: Boolean(user && !user.is_anonymous),
       emailCooldownSec,
+      lastMergeRestored,
+      clearLastMergeRestored,
       signInAnonymously,
       signInWithGoogle,
       signInWithEmail,
@@ -514,6 +569,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session,
       loading,
       emailCooldownSec,
+      lastMergeRestored,
+      clearLastMergeRestored,
       signInAnonymously,
       signInWithGoogle,
       signInWithEmail,

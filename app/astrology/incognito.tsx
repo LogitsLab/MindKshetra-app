@@ -23,9 +23,14 @@ import { PredictionsPanel } from "@/components/astrology/PredictionsPanel";
 import { PredictionsStatus } from "@/components/astrology/PredictionsStatus";
 import { astrologyApi } from "@/api/endpoints";
 import { usePredictions } from "@/hooks/usePredictions";
+import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
+import {
+  setPendingAstroSave,
+  type PendingAstroSave,
+} from "@/storage/local";
 import { radii, spacing } from "@/theme/tokens";
 import {
   featuredAreaFromChart,
@@ -41,6 +46,7 @@ export default function IncognitoChartScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { lang, t } = useLanguage();
+  const { isSignedIn } = useAuth();
   const { ask, setChartSession } = useMadhav();
 
   const [details, setDetails] = useState<BirthDetails>(emptyBirthDetails);
@@ -48,6 +54,7 @@ export default function IncognitoChartScreen() {
   const [chartSessionId, setLocalSession] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("chart");
   const [busy, setBusy] = useState(false);
+  const [saveBusy, setSaveBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const birthBody = useMemo(() => birthPayloadFromDetails(details), [details]);
@@ -110,6 +117,62 @@ export default function IncognitoChartScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, lang, chart, predictions.predictions, predictions.busy, predictions.errorKind]);
+
+  function buildMemberPayload(): PendingAstroSave | null {
+    const birth = birthRef.current ?? birthBody;
+    if (!birth || typeof birth.dob !== "string") return null;
+    const placeLabel =
+      typeof birth.placeLabel === "string" ? birth.placeLabel : "";
+    const lat = typeof birth.lat === "number" ? birth.lat : NaN;
+    const lng = typeof birth.lng === "number" ? birth.lng : NaN;
+    const ianaTz = typeof birth.ianaTz === "string" ? birth.ianaTz : "";
+    if (!placeLabel || !Number.isFinite(lat) || !Number.isFinite(lng) || !ianaTz) {
+      return null;
+    }
+    const payload: PendingAstroSave = {
+      name: t("astroGuestChart"),
+      relationship: "self",
+      dob: birth.dob,
+      tob: typeof birth.tob === "string" ? birth.tob : null,
+      tobUnknown: Boolean(birth.tobUnknown),
+      gender: typeof birth.gender === "string" ? birth.gender : null,
+      placeLabel,
+      lat,
+      lng,
+      ianaTz,
+    };
+    if (typeof birth.utcOffsetMinutes === "number") {
+      payload.utcOffsetMinutes = birth.utcOffsetMinutes;
+    }
+    return payload;
+  }
+
+  async function saveAsMember() {
+    if (!chart) return;
+    const payload = buildMemberPayload();
+    if (!payload) {
+      setError(t("astroPlaceRequired"));
+      return;
+    }
+    if (!isSignedIn) {
+      try {
+        await setPendingAstroSave(payload);
+        router.push("/account");
+      } catch (e) {
+        setError((e as Error).message);
+      }
+      return;
+    }
+    setSaveBusy(true);
+    setError(null);
+    try {
+      const res = await astrologyApi.createMember(payload);
+      router.replace(`/astrology/members/${res.member.id}`);
+    } catch (e) {
+      setError((e as Error).message);
+      setSaveBusy(false);
+    }
+  }
 
   const overview = (chart?.overview as ChartOverview | undefined) ?? undefined;
   const planets = (chart?.planets as ChartPlanet[] | undefined) ?? [];
@@ -267,6 +330,12 @@ export default function IncognitoChartScreen() {
                   );
                   router.push("/madhav");
                 }}
+              />
+              <Button
+                label={t("astroSaveAsMember")}
+                variant="ghost"
+                loading={saveBusy}
+                onPress={() => void saveAsMember()}
               />
               <Button
                 label={

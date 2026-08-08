@@ -77,6 +77,12 @@ export const contentApi = {
   },
   moodSlokas: (id: string) =>
     apiFetch<{ slokas: Sloka[] }>(`/api/moods/${id}/slokas`),
+  /** Chart-aware mood ordering for a saved member (fail-soft on clients). */
+  moodOrder: (memberId: string) =>
+    apiFetch<{ order: string[] }>("/api/moods/order", {
+      method: "POST",
+      body: JSON.stringify({ memberId }),
+    }),
 };
 
 export const userApi = {
@@ -102,7 +108,7 @@ export const userApi = {
   ) => {
     // Back-compat: addJournal(slokaId, text) OR addJournal(text, opts)
     if (typeof slokaIdOrReflection === "number") {
-      return apiFetch<{ id: string; kind?: string }>("/api/journal", {
+      return apiFetch<{ id: number | string; kind?: string }>("/api/journal", {
         method: "POST",
         body: JSON.stringify({
           slokaId: slokaIdOrReflection,
@@ -115,7 +121,7 @@ export const userApi = {
       typeof reflectionOrOpts === "object" && reflectionOrOpts
         ? reflectionOrOpts
         : {};
-    return apiFetch<{ id: string; kind?: string }>("/api/journal", {
+    return apiFetch<{ id: number | string; kind?: string }>("/api/journal", {
       method: "POST",
       body: JSON.stringify({
         reflection: slokaIdOrReflection,
@@ -124,6 +130,64 @@ export const userApi = {
       }),
     });
   },
+  /**
+   * Share / unshare a journal reflection with sangha.
+   * API visibility is `shared` | `private`; `community` is accepted as an alias for `shared`.
+   * Kill switch: sharing while paused → 503 — callers should fail soft.
+   */
+  shareJournal: (
+    id: number | string,
+    visibility: "community" | "shared" | "private",
+    language?: "en" | "hi"
+  ) => {
+    const apiVisibility = visibility === "community" ? "shared" : visibility;
+    return apiFetch<{
+      shared?: boolean;
+      held?: boolean;
+      crisis?: boolean;
+      message?: string;
+      error?: string;
+    }>(`/api/journal/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        visibility: apiVisibility,
+        ...(language ? { language } : {}),
+      }),
+    });
+  },
+  /** Thin wrapper — 503 when COMMUNITY_REPORTS_ENABLED is paused. */
+  report: (contentType: string, contentId: string, reason?: string) =>
+    apiFetch<{ ok: boolean }>("/api/report", {
+      method: "POST",
+      body: JSON.stringify({
+        contentType,
+        contentId,
+        ...(reason ? { reason } : {}),
+      }),
+    }),
+  blocks: () =>
+    apiFetch<{ blocks: { blocked_user_id: string; created_at: string }[] }>(
+      "/api/blocks"
+    ),
+  block: (blockedUserId: string) =>
+    apiFetch<{ ok: boolean }>("/api/blocks", {
+      method: "POST",
+      body: JSON.stringify({ blockedUserId }),
+    }),
+  unblock: (blockedUserId: string) =>
+    apiFetch<{ ok: boolean }>("/api/blocks", {
+      method: "DELETE",
+      body: JSON.stringify({ blockedUserId }),
+    }),
+  verseReflections: (slokaId: number) =>
+    apiFetch<{
+      reflections: Array<{
+        id: string;
+        reflection: string;
+        sharedAt: string | null;
+        author: { handle: string; displayName: string | null } | null;
+      }>;
+    }>(`/api/slokas/${slokaId}/reflections`),
   streak: () => apiFetch<Streak>("/api/account/streak"),
   recordVisit: (timezone?: string) =>
     apiFetch<Streak>("/api/account/streak", {
@@ -499,6 +563,17 @@ export const profileApi = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+  /** Public profile by handle — `/api/profiles/[handle]`. */
+  byHandle: (handle: string) =>
+    apiFetch<{
+      profile: {
+        handle: string;
+        display_name: string | null;
+        bio: string | null;
+        avatar_key?: string | null;
+        created_at?: string;
+      };
+    }>(`/api/profiles/${encodeURIComponent(handle.toLowerCase())}`),
 };
 
 export const sadhanaApi = {
@@ -607,6 +682,10 @@ export const astrologyApi = {
     apiFetch<{ chart: Record<string, unknown> }>(`/api/astrology/members/${id}/chart`),
   practiceCard: (memberId: string) =>
     apiFetch<{
+      area: string;
+      fact: string;
+      timing: string | null;
+      actionIndex: number;
       verse: {
         id: number;
         ref: string;

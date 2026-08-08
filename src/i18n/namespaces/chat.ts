@@ -52,6 +52,8 @@ export const en = {
     "Astrology is separate from Madhav. Cast a birth chart for dashas, houses, and detailed Jyotish answers, without Gita verses mixed in.",
   chartInviteCta: "Open Astrology",
   chartInviteDismiss: "Not now",
+  citePractice: "Practice",
+  startSadhana: "Start sādhana",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -101,4 +103,6 @@ export const hi: Record<keyof typeof en, string> = {
   incognito: "गुप्त मोड",
   incognitoOn: "गुप्त मोड चालू",
   incognitoHint: "यह वार्ता इतिहास में नहीं सहेजी जाएगी।",
+  citePractice: "अभ्यास",
+  startSadhana: "साधना आरंभ करें",
 };
