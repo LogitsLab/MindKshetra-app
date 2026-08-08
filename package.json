@@ -1,6 +1,6 @@
 {
   "name": "mindkshetra-app",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "license": "AGPL-3.0-or-later",
   "main": "expo-router/entry",
   "engines": {
