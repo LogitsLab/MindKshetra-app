@@ -8,13 +8,16 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import * as SplashScreen from "expo-splash-screen";
 import { BrandMark } from "@/components/BrandMark";
 import { BRAND_CREDIT, BRAND_NAME } from "@/components/BrandWordmark";
 import { Text } from "@/components/Text";
 import { bootRevealPool } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 
-const MIN_HOLD_MS = 1200;
+/** Minimum time the random still is held (tap-to-skip waits for this too). */
+const MIN_HOLD_MS = 1000;
+/** Auto-dismiss if the user does not tap. */
 const MAX_HOLD_MS = 2000;
 const FADE_MS = 420;
 const REDUCE_HOLD_MS = 600;
@@ -29,8 +32,9 @@ type Props = {
 };
 
 /**
- * Full-bleed mythic still after the native splash — random pick from
- * bootRevealPool, tap to skip, capped hold. Does not change session atmosphere.
+ * Full-bleed mythic still — one random pick from bootRevealPool.
+ * Native splash stays a solid void until this image has loaded, so cold start
+ * never flashes two different artworks. Tap to skip after the min hold.
  */
 export function BootReveal({ active, onFinished }: Props) {
   const source = useMemo(
@@ -39,6 +43,7 @@ export function BootReveal({ active, onFinished }: Props) {
   );
   const opacity = useRef(new Animated.Value(1)).current;
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [imageReady, setImageReady] = useState(false);
   const finished = useRef(false);
   const minElapsed = useRef(false);
   const skipRequested = useRef(false);
@@ -58,6 +63,19 @@ export function BootReveal({ active, onFinished }: Props) {
     return () => sub.remove();
   }, []);
 
+  // Hide the native void splash only once the random still is on screen.
+  useEffect(() => {
+    if (!active || !imageReady) return;
+    SplashScreen.hideAsync().catch(() => undefined);
+  }, [active, imageReady]);
+
+  // Cached images may skip onLoad — don't leave the native splash stuck.
+  useEffect(() => {
+    if (!active || imageReady) return;
+    const t = setTimeout(() => setImageReady(true), 400);
+    return () => clearTimeout(t);
+  }, [active, imageReady]);
+
   const complete = React.useCallback(() => {
     if (finished.current) return;
     finished.current = true;
@@ -72,7 +90,7 @@ export function BootReveal({ active, onFinished }: Props) {
   }, [opacity]);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active || !imageReady) return;
     const minHold = reduceMotion ? REDUCE_HOLD_MS : MIN_HOLD_MS;
     const maxHold = reduceMotion ? REDUCE_HOLD_MS + 200 : MAX_HOLD_MS;
 
@@ -96,7 +114,7 @@ export function BootReveal({ active, onFinished }: Props) {
       clearTimeout(maxTimer);
       clearTimeout(hardTimer);
     };
-  }, [active, reduceMotion, complete]);
+  }, [active, imageReady, reduceMotion, complete]);
 
   const onSkip = () => {
     skipRequested.current = true;
@@ -120,6 +138,8 @@ export function BootReveal({ active, onFinished }: Props) {
           source={source}
           style={StyleSheet.absoluteFill}
           resizeMode="cover"
+          onLoad={() => setImageReady(true)}
+          onError={() => setImageReady(true)}
         >
           <LinearGradient
             colors={[

@@ -212,9 +212,8 @@ export default function RootLayout() {
 
   const ready = loaded || fontError != null || fontsTimedOut;
 
-  useEffect(() => {
-    if (ready) SplashScreen.hideAsync().catch(() => undefined);
-  }, [ready]);
+  // Do not hide the native splash here — BootReveal dismisses it once the
+  // random still has loaded, so cold start never flashes two artworks.
 
   // Match splash / theme void so font boot never flashes system black.
   if (!ready) {

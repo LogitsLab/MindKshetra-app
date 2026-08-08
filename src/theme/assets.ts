@@ -33,16 +33,13 @@ export const images = {
 };
 
 /**
- * Cold-start BootReveal lottery — all mythic stills (legacy Krishna pack +
- * boot/ portraits). Native Expo splash stays a single image; rotation happens
- * here after JS boots.
+ * Cold-start BootReveal lottery — one random still from boot/ (+ the glade
+ * splash). Keep this pool to curated portrait stills only; mixing the older
+ * hero/Kurukshetra pack caused a second “bad” image after the native splash.
+ * Native Expo splash is a solid void; the random still is the only art shown.
  */
 export const bootRevealPool: ImageSourcePropType[] = [
-  images.hero,
-  images.krishnaGlade,
-  images.krishnaKurukshetra,
-  images.krishnaCharan,
-  images.krishnaVishwaroop,
+  require("../../assets/backgrounds/krishna-glade-splash.png"),
   require("../../assets/backgrounds/boot/boot-01.png"),
   require("../../assets/backgrounds/boot/boot-02.png"),
   require("../../assets/backgrounds/boot/boot-03.png"),
