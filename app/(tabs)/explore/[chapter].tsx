@@ -227,7 +227,13 @@ export default function ChapterScreen() {
           data={slokas}
           keyExtractor={(sloka) => String(sloka.id)}
           initialNumToRender={8}
-          renderItem={({ item }) => <SlokaCard sloka={item} lang={lang} />}
+          renderItem={({ item }) => (
+            <SlokaCard
+              sloka={item}
+              lang={lang}
+              completed={completedSet.has(item.id)}
+            />
+          )}
           ListHeaderComponent={listHeader}
           ListEmptyComponent={
             <EmptyState

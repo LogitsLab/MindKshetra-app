@@ -37,6 +37,7 @@ import {
   addJournalDraft,
   cacheVerse,
   getCachedVerse,
+  getGuestProgress,
   markGuestComplete,
   queuePendingProgress,
   setGuestCursor,
@@ -76,6 +77,7 @@ export default function SlokaScreen() {
   const [journalNotice, setJournalNotice] = useState<string | null>(null);
   const [journalBusy, setJournalBusy] = useState(false);
   const [progressNotice, setProgressNotice] = useState<string | null>(null);
+  const [verseComplete, setVerseComplete] = useState(false);
   const [notifPromptVisible, setNotifPromptVisible] = useState(false);
 
   const offerNotifications = () => {
@@ -127,6 +129,26 @@ export default function SlokaScreen() {
         if (alive) setFavorited(Boolean(r.saved));
       })
       .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [slokaId, isSignedIn]);
+
+  useEffect(() => {
+    let alive = true;
+    setVerseComplete(false);
+    (async () => {
+      try {
+        const data = isSignedIn
+          ? await progressApi.get()
+          : await getGuestProgress();
+        if (alive) {
+          setVerseComplete((data.completed ?? []).includes(slokaId));
+        }
+      } catch {
+        /* ignore — tick still works optimistically */
+      }
+    })();
     return () => {
       alive = false;
     };
@@ -281,10 +303,11 @@ export default function SlokaScreen() {
   const ref = `${sloka.chapter}.${sloka.verse_number}`;
 
   const markComplete = async () => {
+    setVerseComplete(true);
     await markGuestComplete(sloka.id);
     if (isSignedIn) {
       try {
-        await progressApi.complete(sloka.id);
+        await progressApi.complete(sloka.id, true);
         setProgressNotice(
           lang === "hi"
             ? "प्रगति खाते में सहेजी गई।"
@@ -489,6 +512,7 @@ export default function SlokaScreen() {
                 icon="check"
                 label={lang === "hi" ? "पूर्ण" : "Complete"}
                 testID="sloka-complete"
+                active={verseComplete}
                 onPress={() => void markComplete()}
               />
               <IconTool
@@ -628,7 +652,9 @@ export default function SlokaScreen() {
                   <Pressable
                     key={code}
                     onPress={() => {
-                      stopNarration();
+                      // Don't blanket-stop: Sanskrit Listen may still be
+                      // playing. Story SpeakButton stops only its own session
+                      // when its text/lang props change.
                       setStoryLang(code);
                     }}
                     style={[

@@ -390,15 +390,61 @@ export const notificationPrefsApi = {
     ),
 };
 
+type ProgressApiRaw = {
+  completedIds?: number[];
+  completed?: number[];
+  cursor?: {
+    slokaId?: number;
+    chapter?: number;
+    verse?: number;
+    updatedAt?: string;
+  } | null;
+  continueSlokaId?: number | null;
+};
+
+export type ProgressView = {
+  completed: number[];
+  cursor?: { chapter: number; verse: number; slokaId?: number };
+  continueSlokaId?: number | null;
+};
+
+function normalizeProgress(data: ProgressApiRaw): ProgressView {
+  const completed = (data.completedIds ?? data.completed ?? [])
+    .map(Number)
+    .filter((n) => Number.isInteger(n) && n > 0);
+
+  let cursor: ProgressView["cursor"];
+  if (data.cursor?.chapter != null && data.cursor?.verse != null) {
+    cursor = {
+      chapter: Number(data.cursor.chapter),
+      verse: Number(data.cursor.verse),
+      slokaId: data.cursor.slokaId,
+    };
+  } else if (data.cursor?.slokaId != null && data.cursor?.chapter != null) {
+    // Server may omit verse on older deploys — chapter alone still drives Continue.
+    cursor = {
+      chapter: Number(data.cursor.chapter),
+      verse: Number(data.cursor.verse ?? 1),
+      slokaId: Number(data.cursor.slokaId),
+    };
+  }
+
+  return {
+    completed,
+    cursor,
+    continueSlokaId: data.continueSlokaId ?? null,
+  };
+}
+
 export const progressApi = {
-  get: () =>
-    apiFetch<{ completed: number[]; cursor?: { chapter: number; verse: number } }>(
-      "/api/progress"
-    ),
-  complete: (slokaId: number) =>
+  get: async () => {
+    const data = await apiFetch<ProgressApiRaw>("/api/progress");
+    return normalizeProgress(data);
+  },
+  complete: (slokaId: number, completed = true) =>
     apiFetch<{ ok: boolean }>("/api/progress/complete", {
       method: "POST",
-      body: JSON.stringify({ slokaId }),
+      body: JSON.stringify({ slokaId, completed }),
     }),
   setCursor: (slokaId: number) =>
     apiFetch<{ ok: boolean }>("/api/progress/cursor", {
@@ -408,7 +454,7 @@ export const progressApi = {
   merge: (completed: number[]) =>
     apiFetch<{ ok: boolean }>("/api/progress/merge", {
       method: "POST",
-      body: JSON.stringify({ completed }),
+      body: JSON.stringify({ completedIds: completed }),
     }),
 };
 
