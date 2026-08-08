@@ -3,6 +3,7 @@ import anxiety7 from "@/data/anxiety-7.json";
 import grief7 from "@/data/grief-7.json";
 import purpose7 from "@/data/purpose-7.json";
 import relationships7 from "@/data/relationships-7.json";
+import sleep7 from "@/data/sleep-7.json";
 import student7 from "@/data/student-7.json";
 import type { JourneyUnlock } from "@/data/journeys";
 
@@ -49,6 +50,7 @@ export const PRACTICE_PATHS: PracticePath[] = [
   openPath(grief7),
   openPath(purpose7),
   openPath(relationships7),
+  openPath(sleep7),
   openPath(student7),
 ];
 

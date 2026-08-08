@@ -29,8 +29,8 @@ type Props = {
 };
 
 /**
- * Full-bleed Krishna still after the native splash — random calm image,
- * tap to skip, capped hold. Does not change session atmosphere.
+ * Full-bleed mythic still after the native splash — random pick from
+ * bootRevealPool, tap to skip, capped hold. Does not change session atmosphere.
  */
 export function BootReveal({ active, onFinished }: Props) {
   const source = useMemo(

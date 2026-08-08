@@ -122,6 +122,15 @@ export type CompatibilityResult = {
   nadiDosha: boolean;
 };
 
+/** Named festival matched from lunar month + paksha + tithi (server). */
+export type PanchangFestival = {
+  id: string;
+  labelEn: string;
+  labelHi: string;
+  practiceHint?: "japa" | "verse";
+  verseRef?: string;
+};
+
 /** Server daily panchang, computed at local sunrise for its location. */
 export type PanchangDay = {
   tithi: string;
@@ -140,4 +149,6 @@ export type PanchangDay = {
   isEkadashi: boolean;
   isPurnima: boolean;
   isAmavasya: boolean;
+  /** Present when the API matched a curated lunar-rule festival. */
+  festivals?: PanchangFestival[];
 };

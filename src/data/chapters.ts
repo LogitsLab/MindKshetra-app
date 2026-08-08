@@ -58,3 +58,44 @@ export function chapterSummary(
   }
   return meta.summary?.trim() || meta.summary_hi?.trim() || "";
 }
+
+/**
+ * Contiguous sloka-id ranges per chapter (ids 1–701 in chapter order).
+ * Used for Explore tile done/total without fetching every verse.
+ */
+export type ChapterIdRange = {
+  chapter: number;
+  start: number;
+  end: number;
+  versesCount: number;
+};
+
+export function chapterIdRanges(
+  metas: ChapterMeta[] = getChapterMetas()
+): ChapterIdRange[] {
+  const ordered = [...metas].sort((a, b) => a.number - b.number);
+  let start = 1;
+  return ordered.map((c) => {
+    const versesCount = c.verses_count;
+    const range: ChapterIdRange = {
+      chapter: c.number,
+      start,
+      end: start + versesCount - 1,
+      versesCount,
+    };
+    start += versesCount;
+    return range;
+  });
+}
+
+/** Count completed verse ids that fall inside a chapter's id range. */
+export function completedInChapter(
+  completedIds: number[],
+  range: ChapterIdRange
+): number {
+  let n = 0;
+  for (const id of completedIds) {
+    if (id >= range.start && id <= range.end) n += 1;
+  }
+  return n;
+}

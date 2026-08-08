@@ -6,6 +6,7 @@ import type { ImageSourcePropType } from "react-native";
  *
  * `madhavMark` is a mobile-only crop with no web peer.
  * Krishna backgrounds are mobile atmosphere / hero art (v1 pack).
+ * Boot stills under assets/backgrounds/boot/ rotate on cold start.
  */
 export const images = {
   hero: require("../../assets/backgrounds/hero.jpg"),
@@ -31,12 +32,38 @@ export const images = {
   madhavMark: require("../../assets/paths/path-madhav-mark.jpg"),
 };
 
-/** Calm Krishna stills for the cold-start BootReveal lottery (excludes Vishwaroopam). */
+/**
+ * Cold-start BootReveal lottery — all mythic stills (legacy Krishna pack +
+ * boot/ portraits). Native Expo splash stays a single image; rotation happens
+ * here after JS boots.
+ */
 export const bootRevealPool: ImageSourcePropType[] = [
   images.hero,
   images.krishnaGlade,
   images.krishnaKurukshetra,
   images.krishnaCharan,
+  images.krishnaVishwaroop,
+  require("../../assets/backgrounds/boot/boot-01.png"),
+  require("../../assets/backgrounds/boot/boot-02.png"),
+  require("../../assets/backgrounds/boot/boot-03.png"),
+  require("../../assets/backgrounds/boot/boot-04.png"),
+  require("../../assets/backgrounds/boot/boot-05.png"),
+  require("../../assets/backgrounds/boot/boot-06.png"),
+  require("../../assets/backgrounds/boot/boot-07.png"),
+  require("../../assets/backgrounds/boot/boot-08.png"),
+  require("../../assets/backgrounds/boot/boot-09.png"),
+  require("../../assets/backgrounds/boot/boot-10.png"),
+  require("../../assets/backgrounds/boot/boot-11.png"),
+  require("../../assets/backgrounds/boot/boot-12.png"),
+  require("../../assets/backgrounds/boot/boot-13.png"),
+  require("../../assets/backgrounds/boot/boot-14.png"),
+  require("../../assets/backgrounds/boot/boot-15.png"),
+  require("../../assets/backgrounds/boot/boot-16.png"),
+  require("../../assets/backgrounds/boot/boot-17.png"),
+  require("../../assets/backgrounds/boot/boot-18.png"),
+  require("../../assets/backgrounds/boot/boot-19.png"),
+  require("../../assets/backgrounds/boot/boot-20.png"),
+  require("../../assets/backgrounds/boot/boot-21.png"),
 ];
 
 export const moodAccent: Record<string, string> = {

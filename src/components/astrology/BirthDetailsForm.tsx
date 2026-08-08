@@ -159,6 +159,7 @@ export function BirthDetailsForm({ value, onChange }: Props) {
           ]}
         >
           <DateTimePicker
+            key="astro-dob"
             value={dateFromDob(value.dob)}
             mode="date"
             display="spinner"
@@ -195,9 +196,15 @@ export function BirthDetailsForm({ value, onChange }: Props) {
               ]}
             >
               <DateTimePicker
+                key="astro-tob"
                 value={dateFromTob(value.tob)}
                 mode="time"
                 display="spinner"
+                // Explicit range: Fabric recycles the date picker's
+                // maximumDate into this view as Unix epoch (5:30 AM IST)
+                // when maximumDate is omitted.
+                minimumDate={new Date(1800, 0, 1)}
+                maximumDate={new Date(2100, 11, 31)}
                 themeVariant={mode}
                 onChange={(_event, date) => {
                   if (date) onChange({ ...value, tob: tobFromDate(date) });
