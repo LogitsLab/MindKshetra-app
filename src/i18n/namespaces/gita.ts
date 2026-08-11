@@ -42,6 +42,9 @@ export const en = {
   sanghaAttendanceFailed: "Attendance was not recorded. Check your connection and retry.",
   homeExploreTitle: "Explore",
   homeExploreBlurb: "All 18 chapters, Sanskrit, transliteration, Hindi and English.",
+  homeLeelaTitle: "Krishna Leela",
+  homeLeelaBlurb:
+    "Walk through Krishna’s stories—from Gokula and Vrindavan to Mathura, Dvaraka, and His final leelas.",
   homeMoodTitle: "Mood",
   homeMoodBlurb: "Name how you feel. Find verses that meet you there.",
   homeMeditationTitle: "Meditation",
@@ -223,6 +226,9 @@ export const hi: Record<keyof typeof en, string> = {
   sanghaAttendanceFailed: "उपस्थिति दर्ज नहीं हुई। कनेक्शन जाँचें और फिर कोशिश करें।",
   homeExploreTitle: "अन्वेषण",
   homeExploreBlurb: "सभी १८ अध्याय, संस्कृत, लिप्यंतरण, हिंदी और अंग्रेज़ी।",
+  homeLeelaTitle: "कृष्ण लीला",
+  homeLeelaBlurb:
+    "गोकुल और वृन्दावन से मथुरा, द्वारका और अंतिम लीलाओं तक कृष्ण की कथाएँ।",
   homeMoodTitle: "मनोदशा",
   homeMoodBlurb: "अपनी भावना बताएँ। उसी से जुड़ते श्लोक पाएँ।",
   homeMeditationTitle: "ध्यान",

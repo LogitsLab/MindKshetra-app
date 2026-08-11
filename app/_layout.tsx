@@ -113,6 +113,14 @@ function RootNavigator() {
         />
         <Stack.Screen name="paths/index" options={{ title: "Paths" }} />
         <Stack.Screen name="paths/[id]" options={{ title: "Path" }} />
+        <Stack.Screen
+          name="leela/index"
+          options={{ headerShown: false, title: "Krishna Leela" }}
+        />
+        <Stack.Screen
+          name="leela/[id]"
+          options={{ headerShown: false, title: "Leela" }}
+        />
         {/* Unregistered until now, so all three fell back to expo-router's
             default header instead of the app's. */}
         <Stack.Screen

@@ -200,6 +200,7 @@ function MeditationPathMark({ size = 36 }: { size?: number }) {
 
 export type PathMarkKind =
   | "explore"
+  | "leela"
   | "mood"
   | "madhav"
   | "astrology"

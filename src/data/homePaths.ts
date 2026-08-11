@@ -2,11 +2,14 @@ import type { Href } from "expo-router";
 import type { ImageSourcePropType } from "react-native";
 import type { CoverImageFocus } from "@/components/CoverImage";
 import { images } from "@/theme/assets";
+import { resolveLeelaHomeTileArtwork } from "@/theme/leelaArt";
+import { resolveLeelaHomeTileArtworkFocus } from "@/theme/leelaSceneFocus";
 
 export type HomePathEntry = {
   index: string;
   titleKey:
     | "homeExploreTitle"
+    | "homeLeelaTitle"
     | "homeMoodTitle"
     | "homeMeditationTitle"
     | "homeMadhavTitle"
@@ -14,6 +17,7 @@ export type HomePathEntry = {
     | "homeBlockPathsTitle";
   blurbKey:
     | "homeExploreBlurb"
+    | "homeLeelaBlurb"
     | "homeMoodBlurb"
     | "homeMeditationBlurb"
     | "homeMadhavBlurb"
@@ -22,12 +26,13 @@ export type HomePathEntry = {
   image: ImageSourcePropType;
   /** Cover-crop preference for tall hero art. */
   imageFocus?: CoverImageFocus;
-  mark: "explore" | "mood" | "meditation" | "madhav" | "astrology" | "paths";
+  mark: "explore" | "leela" | "mood" | "meditation" | "madhav" | "astrology" | "paths";
   href: Href;
 };
 
 /**
- * Paths Into, Home + Path tab (six tiles, including Ask Madhav).
+ * Paths Into, Home + Path tab (shared discovery tiles).
+ * Krishna Leela sits last — portrait-friendly flute art, not the hub panoramic.
  */
 export const HOME_PATHS: HomePathEntry[] = [
   {
@@ -78,5 +83,14 @@ export const HOME_PATHS: HomePathEntry[] = [
     image: images.pathPaths,
     mark: "paths",
     href: "/paths",
+  },
+  {
+    index: "07",
+    titleKey: "homeLeelaTitle",
+    blurbKey: "homeLeelaBlurb",
+    image: resolveLeelaHomeTileArtwork(),
+    imageFocus: resolveLeelaHomeTileArtworkFocus(),
+    mark: "leela",
+    href: "/leela",
   },
 ];

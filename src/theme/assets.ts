@@ -7,6 +7,10 @@ import type { ImageSourcePropType } from "react-native";
  * `madhavMark` is a mobile-only crop with no web peer.
  * Krishna backgrounds are mobile atmosphere / hero art (v1 pack).
  * Boot stills under assets/backgrounds/boot/ rotate on cold start.
+ *
+ * Dedicated Krishna Leela stills live in `assets/leela/*.jpg` and are wired
+ * only through `src/theme/leelaDedicatedAssets.ts` (do not require missing
+ * files from this module — Metro will crash the bundle).
  */
 export const images = {
   hero: require("../../assets/backgrounds/hero.jpg"),
