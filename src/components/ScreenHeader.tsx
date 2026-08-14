@@ -23,6 +23,7 @@ export function BackButton({ fallback = "/(tabs)/home" }: { fallback?: string })
 
   return (
     <Pressable
+      testID="nav-back"
       accessibilityRole="button"
       accessibilityLabel="Go back"
       hitSlop={12}

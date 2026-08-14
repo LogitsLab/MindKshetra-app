@@ -87,7 +87,7 @@ export default function MeditationHubScreen() {
   }
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen atmosphere="soft" padded testID="screen-meditation">
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

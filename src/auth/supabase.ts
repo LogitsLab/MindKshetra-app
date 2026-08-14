@@ -20,7 +20,7 @@ const fetchForSupabase: typeof fetch = (input, init) => {
       : input instanceof URL
         ? input.toString()
         : input.url;
-  return expoFetch(href, init) as unknown as Promise<Response>;
+  return expoFetch(href, init as never) as unknown as Promise<Response>;
 };
 
 export const supabase = createClient(

@@ -39,6 +39,15 @@ the original list assumed the app was correct and only needed configuration.
 - [ ] App icons / splash (void `#07090f`, brass mark)
 - [ ] EAS production build + TestFlight / internal testing track
 
+## Who submits to App Review
+
+Apple’s App Review “Submitted By” column is the identity that **sent the version to review**, not who uploaded the IPA.
+
+- Uploading with the App Store Connect API key (`eas submit`, `--auto-submit`) shows as **API user {Key ID}**.
+- **Submit for Review** must be done in the App Store Connect website while logged in as **Saksham Chaurasia**, so the row shows that name — never via ASC API / Fastlane `submit_for_review`.
+
+TestFlight binary upload via EAS + API key is fine. App Review click is not.
+
 ## Manual QA before submission
 
 - [ ] Visual QA vs `docs/design/VISUAL_SYSTEM.md` (dark + light)

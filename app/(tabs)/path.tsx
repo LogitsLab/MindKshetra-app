@@ -25,7 +25,7 @@ export default function PathTabScreen() {
   );
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen atmosphere="soft" padded testID="screen-path">
       <ScreenHeader title={t("homePaths")} />
       <ScrollView
         contentContainerStyle={{ paddingBottom: bottomPad, paddingTop: spacing.xs }}

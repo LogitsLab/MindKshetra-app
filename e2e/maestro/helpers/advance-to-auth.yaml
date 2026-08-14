@@ -1,0 +1,45 @@
+appId: app.mindkshetra.mobile
+---
+- tapOn:
+    id: onboarding-continue
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: onboarding-goals-next
+    timeout: 10000
+- tapOn:
+    id: onboarding-goals-next
+- waitForAnimationToEnd
+# Inspirations has a tall hero; Continue sits below the fold.
+- swipe:
+    direction: UP
+    duration: 300
+- swipe:
+    direction: UP
+    duration: 300
+- scrollUntilVisible:
+    element:
+      id: onboarding-inspirations-next
+    direction: DOWN
+    timeout: 12000
+- tapOn:
+    id: onboarding-inspirations-next
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: onboarding-time-next
+    timeout: 10000
+- tapOn:
+    id: onboarding-time-next
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 300
+- scrollUntilVisible:
+    element:
+      id: onboarding-setup-next
+    direction: DOWN
+    timeout: 12000
+- tapOn:
+    id: onboarding-setup-next
+- waitForAnimationToEnd

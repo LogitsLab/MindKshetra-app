@@ -33,12 +33,12 @@ export default function AstrologyHub() {
   }, [isSignedIn]);
 
   const shortcuts = [
-    { label: "Panchang", symbol: "☼", onPress: () => router.push("/panchang") },
-    { label: "Muhurats", symbol: "◷", onPress: () => router.push("/astrology/muhurat") },
-    { label: "Horoscope", symbol: "⌖", onPress: () => router.push("/astrology/horoscope") },
-    { label: "Transits", symbol: "↗", onPress: () => router.push("/astrology/transits") },
-    { label: "Charts", symbol: "◇", onPress: () => router.push("/astrology/members") },
-    { label: "Milan", symbol: "∞", onPress: () => router.push("/astrology/milan") },
+    { id: "astro-panchang", label: "Panchang", symbol: "☼", onPress: () => router.push("/panchang") },
+    { id: "astro-muhurat", label: "Muhurats", symbol: "◷", onPress: () => router.push("/astrology/muhurat") },
+    { id: "astro-horoscope", label: "Horoscope", symbol: "⌖", onPress: () => router.push("/astrology/horoscope") },
+    { id: "astro-transits", label: "Transits", symbol: "↗", onPress: () => router.push("/astrology/transits") },
+    { id: "astro-charts", label: "Charts", symbol: "◇", onPress: () => router.push("/astrology/members") },
+    { id: "astro-milan", label: "Milan", symbol: "∞", onPress: () => router.push("/astrology/milan") },
   ];
   const entries = [
     {
@@ -115,6 +115,7 @@ export default function AstrologyHub() {
           {shortcuts.map((shortcut) => (
             <Pressable
               key={shortcut.label}
+              testID={shortcut.id}
               onPress={shortcut.onPress}
               style={styles.shortcut}
             >

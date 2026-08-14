@@ -36,6 +36,7 @@ export default function PrivacyScreen() {
         </Text>
         <View style={{ marginTop: spacing.lg }}>
           <Button
+            testID="privacy-open-url"
             label={lang === "hi" ? "पूर्ण नीति खोलें" : "Open full policy"}
             variant="ghost"
             onPress={() => Linking.openURL(PRIVACY_URL)}

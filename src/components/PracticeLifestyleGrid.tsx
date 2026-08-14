@@ -425,6 +425,7 @@ export function PracticeLifestyleGrid({
             title={todayRec.title}
             body={todayRec.body}
             onPress={todayRec.onPress}
+            testID={`home-today-${todayRec.key}`}
             style={styles.todayTile}
           />
           {abhijitCue ? (
@@ -473,6 +474,7 @@ export function PracticeLifestyleGrid({
                   body={tile.body}
                   done={tile.done}
                   onPress={tile.onPress}
+                  testID={`home-practice-${tile.key}`}
                   style={pair.length === 1 ? styles.halfAlone : undefined}
                 />
               ))}
@@ -488,6 +490,7 @@ export function PracticeLifestyleGrid({
                 body={tiles[0].body}
                 done={tiles[0].done}
                 onPress={tiles[0].onPress}
+                testID={`home-practice-${tiles[0].key}`}
               />
               <PracticeTile
                 wide
@@ -495,6 +498,7 @@ export function PracticeLifestyleGrid({
                 title={tiles[1].title}
                 body={tiles[1].body}
                 onPress={tiles[1].onPress}
+                testID={`home-practice-${tiles[1].key}`}
               />
             </View>
             <View style={styles.row}>
@@ -503,6 +507,7 @@ export function PracticeLifestyleGrid({
                 title={tiles[2].title}
                 body={tiles[2].body}
                 onPress={tiles[2].onPress}
+                testID={`home-practice-${tiles[2].key}`}
                 compact
               />
               <PracticeTile
@@ -510,6 +515,7 @@ export function PracticeLifestyleGrid({
                 title={tiles[3].title}
                 body={tiles[3].body}
                 onPress={tiles[3].onPress}
+                testID={`home-practice-${tiles[3].key}`}
                 compact
               />
               <PracticeTile
@@ -517,6 +523,7 @@ export function PracticeLifestyleGrid({
                 title={tiles[4].title}
                 body={tiles[4].body}
                 onPress={tiles[4].onPress}
+                testID={`home-practice-${tiles[4].key}`}
                 compact
               />
             </View>
@@ -535,6 +542,7 @@ export function PracticeTile({
   done,
   wide,
   compact,
+  testID,
   style,
 }: {
   image: ImageSourcePropType;
@@ -545,6 +553,7 @@ export function PracticeTile({
   wide?: boolean;
   /** Smaller third-width tile (Home featured row). */
   compact?: boolean;
+  testID?: string;
   style?: StyleProp<ViewStyle>;
 }) {
   const { colors } = useTheme();
@@ -556,6 +565,7 @@ export function PracticeTile({
       : styles.tileHalf;
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       style={({ pressed }) => [
         sizeStyle,

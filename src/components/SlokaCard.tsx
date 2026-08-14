@@ -236,6 +236,7 @@ export function PathTile({
   const bodyLine = body ? truncateAtWord(body, wide ? 72 : 48) : "";
   return (
     <Pressable
+      testID={`home-path-${mark}`}
       onPress={onPress}
       style={({ pressed }) => [
         wide ? styles.pathWide : styles.path,

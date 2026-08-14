@@ -184,7 +184,7 @@ export default function JapaScreen() {
       : null;
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen atmosphere="soft" padded testID="screen-japa">
       <Rise>
         <PageHero
           image={images.krishnaCharan}

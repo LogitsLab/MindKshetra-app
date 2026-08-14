@@ -5,10 +5,8 @@ tags:
 ---
 - launchApp:
     clearState: true
-- extendedWaitUntil:
-    visible:
-      id: onboarding-continue
-    timeout: 10000
+- runFlow:
+    file: ../helpers/wait-for-app.yaml
 - runFlow:
     file: ../helpers/complete-onboarding.yaml
 - assertVisible:

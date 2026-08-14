@@ -1,0 +1,8 @@
+appId: app.mindkshetra.mobile
+---
+# Dev-client JS can sit on the splash after launchApp; wait for either
+# onboarding or Home before tapping.
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-continue|screen-home"
+    timeout: 60000

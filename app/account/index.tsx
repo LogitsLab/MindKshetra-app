@@ -435,7 +435,7 @@ export default function AccountScreen() {
   const showAuth = !isSignedIn || isAnonymous;
 
   return (
-    <Screen>
+    <Screen testID="screen-profile">
       <ScrollView
         contentContainerStyle={{
           paddingBottom: spacing.tabBar + 100,
@@ -937,6 +937,7 @@ export default function AccountScreen() {
               }
             />
             <Button
+              testID="account-sign-out"
               label={t("signOut")}
               variant="danger"
               loading={busy}
@@ -1244,6 +1245,7 @@ export default function AccountScreen() {
         </Text>
         <View style={styles.row}>
           <Pressable
+            testID="account-theme"
             onPress={toggle}
             style={[
               styles.chip,
@@ -1261,6 +1263,7 @@ export default function AccountScreen() {
             </Text>
           </Pressable>
           <Pressable
+            testID="account-lang"
             onPress={() => setLang(lang === "en" ? "hi" : "en")}
             style={[
               styles.chip,
@@ -1314,6 +1317,7 @@ export default function AccountScreen() {
         </View>
 
         <Pressable
+          testID="account-privacy"
           onPress={() => router.push("/privacy")}
           style={{ marginTop: spacing.xl }}
         >

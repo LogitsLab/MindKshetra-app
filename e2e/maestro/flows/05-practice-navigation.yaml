@@ -5,16 +5,14 @@ tags:
 ---
 - launchApp
 - runFlow:
+    file: ../helpers/wait-for-app.yaml
+- runFlow:
     when:
       visible:
         id: onboarding-continue
     file: ../helpers/complete-onboarding.yaml
 - tapOn:
-    id: tab-home
-- scrollUntilVisible:
-    element:
-      id: home-practice-sadhana
-    direction: DOWN
+    id: tab-practise
 - tapOn:
     id: home-practice-sadhana
 - assertVisible:

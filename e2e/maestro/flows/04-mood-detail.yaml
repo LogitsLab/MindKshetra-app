@@ -5,12 +5,18 @@ tags:
 ---
 - launchApp
 - runFlow:
+    file: ../helpers/wait-for-app.yaml
+- runFlow:
     when:
       visible:
         id: onboarding-continue
     file: ../helpers/complete-onboarding.yaml
 - tapOn:
-    id: tab-mood
+    id: tab-path
+- tapOn:
+    id: home-path-mood
+- assertVisible:
+    id: screen-mood
 - tapOn:
     id: mood-anxious
 - assertVisible:

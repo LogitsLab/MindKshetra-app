@@ -122,7 +122,7 @@ export default function PanchangScreen() {
     .join(" · ");
 
   return (
-    <Screen atmosphere="soft">
+    <Screen atmosphere="soft" testID="screen-panchang">
       <ScrollView
         contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
         showsVerticalScrollIndicator={false}

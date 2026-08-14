@@ -21,6 +21,7 @@
     "quality": "npm run typecheck && npm test -- --ci --runInBand && npm run test:routes && npm run expo:check",
     "brand:assets": "node scripts/render-brand-assets.mjs",
     "release:notes": "node scripts/release-notes.mjs",
+    "release:testflight": "eas build --platform ios --profile production-ios --auto-submit --non-interactive",
     "release:stores": "eas build --platform all --profile production --auto-submit --non-interactive"
   },
   "jest": {

@@ -155,6 +155,9 @@ jobs:
           echo "Building platform=$PLATFORM submit_profile=$PROFILE version=$VERSION"
           echo "What's new (for GitHub summary / store listing):"
           echo "$NOTES"
+          # --auto-submit uploads the IPA to TestFlight / Play. It must NOT
+          # send the iOS version to App Review. Review is clicked in App Store
+          # Connect by Saksham Chaurasia so Submitted By is not "API user".
           # Note: --what-to-test / changelog requires Expo Enterprise; omit on Hobby/Production.
           eas build \
             --platform "$PLATFORM" \
@@ -183,6 +186,8 @@ jobs:
             echo "- **Platforms:** \`${{ steps.plat.outputs.platform }}\`"
             echo "- **Submit profile:** \`${{ steps.plat.outputs.submit_profile }}\`"
             echo "- **Dashboard:** https://expo.dev/accounts/logitsllab/projects/mindkshetra"
+            echo ""
+            echo "iOS App Review: after the build is processed, Saksham Chaurasia submits from App Store Connect in the browser. Do not submit for review via the ASC API key."
             echo ""
             echo "### What's new"
             echo ""

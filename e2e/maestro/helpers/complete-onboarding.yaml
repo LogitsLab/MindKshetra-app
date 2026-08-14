@@ -1,15 +1,11 @@
 appId: app.mindkshetra.mobile
 ---
-- tapOn:
-    id: onboarding-continue
-- tapOn:
-    id: onboarding-goals-next
-- tapOn:
-    id: onboarding-inspirations-next
-- tapOn:
-    id: onboarding-time-next
-- tapOn:
-    id: onboarding-setup-next
+- runFlow:
+    file: ../helpers/advance-to-auth.yaml
+- extendedWaitUntil:
+    visible:
+      id: onboarding-guest
+    timeout: 10000
 - tapOn:
     id: onboarding-guest
 - waitForAnimationToEnd

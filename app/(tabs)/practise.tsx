@@ -16,7 +16,7 @@ export default function PractiseTabScreen() {
   const bottomPad = spacing.tabBar + insets.bottom + spacing.fab + spacing.lg;
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen atmosphere="soft" padded testID="screen-practise">
       <ScreenHeader title={t("navPractise")} />
       <ScrollView
         contentContainerStyle={{ paddingBottom: bottomPad }}
