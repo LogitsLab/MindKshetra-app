@@ -39,8 +39,7 @@
     "production": {
       "ios": {
         "ascAppId": "6795863564",
-        "language": "en-US",
-        "groups": ["Team (Expo)"]
+        "language": "en-US"
       },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",
