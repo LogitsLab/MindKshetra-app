@@ -30,7 +30,7 @@
   },
   "ios": {
     "bundleId": "app.mindkshetra.mobile",
-    "submitNotes": "No third-party login required for guest use. Sign-in optional (Google / email). Astrology charts are informational only, not medical or financial advice."
+    "submitNotes": "REVIEWER ACCESS: To see all account-gated features (Journal, Favorites, saved Madhav chats, sync), sign in with the demo account — Email: review@mindkshetra.app / Password: <SET_IN_APP_STORE_CONNECT>. On the first screen tap 'Use email instead', enter the email and password, then 'Sign in'. You may also use Sign in with Apple (your own Apple ID) or 'Continue as guest' for core features (verses, mood, Ask Madhav via text or voice, astrology) without an account.\n\nVOICE: In Ask Madhav, tap the microphone and grant Microphone + Speech Recognition when prompted.\n\nLOGIN OPTIONS: Sign in with Apple, Google, or email (password or magic link). Magic-link email is optional and not required for review.\n\nAstrology charts are informational only, not medical or financial advice."
   },
   "android": {
     "package": "app.mindkshetra.mobile",

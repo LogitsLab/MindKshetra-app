@@ -12,6 +12,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button, Hairline } from "@/components/Button";
+import { AppleSignInButton } from "@/components/AppleSignInButton";
 import { Panel } from "@/components/Panel";
 import { BrandMark } from "@/components/BrandMark";
 import { BRAND_CREDIT, BRAND_NAME, BrandNavLabel } from "@/components/BrandWordmark";
@@ -55,6 +56,8 @@ export default function AccountScreen() {
     signInAnonymously,
     signInWithEmail,
     signInWithGoogle,
+    signInWithApple,
+    signInWithPassword,
     signOut,
     emailCooldownSec,
     lastMergeRestored,
@@ -63,6 +66,7 @@ export default function AccountScreen() {
   const { resetComplete } = useOnboarding();
 
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [linkSent, setLinkSent] = useState(false);
@@ -719,8 +723,15 @@ export default function AccountScreen() {
         <Hairline style={{ marginVertical: spacing.lg }} />
 
         {showAuth ? (
-          <View style={{ gap: spacing.sm }}>
+          <View testID="screen-auth" style={{ gap: spacing.sm }}>
+            <AppleSignInButton
+              testID="auth-apple"
+              disabled={busy}
+              onPress={() => void run(signInWithApple)}
+            />
+
             <Button
+              testID="auth-google"
               label={t("signInGoogle")}
               variant="primary"
               loading={busy}
@@ -729,6 +740,7 @@ export default function AccountScreen() {
 
             {!user ? (
               <Button
+                testID="auth-guest"
                 label={t("guest")}
                 variant="ghost"
                 loading={busy}
@@ -774,6 +786,7 @@ export default function AccountScreen() {
               <>
                 <Text variant="eyebrow">{t("emailLabel")}</Text>
                 <TextInput
+                  testID="auth-email-input"
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
@@ -792,6 +805,40 @@ export default function AccountScreen() {
                     },
                   ]}
                 />
+                <Text variant="eyebrow" style={{ marginTop: spacing.xs }}>
+                  {t("passwordLabel")}
+                </Text>
+                <TextInput
+                  testID="auth-password-input"
+                  value={password}
+                  onChangeText={setPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  textContentType="password"
+                  placeholder={t("passwordPlaceholder")}
+                  placeholderTextColor={colors.textMuted}
+                  style={[
+                    styles.input,
+                    {
+                      color: colors.text,
+                      borderColor: colors.line,
+                      backgroundColor: colors.inputBg,
+                    },
+                  ]}
+                />
+                <Button
+                  testID="auth-password-submit"
+                  label={t("signInPassword")}
+                  variant="primary"
+                  loading={busy}
+                  disabled={!email.trim() || !password}
+                  onPress={() =>
+                    void run(() =>
+                      signInWithPassword(email.trim(), password)
+                    )
+                  }
+                />
                 <Button
                   label={
                     busy
@@ -805,6 +852,7 @@ export default function AccountScreen() {
                           )
                         : t("signInEmail")
                   }
+                  testID="auth-email-submit"
                   variant="ghost"
                   loading={busy}
                   disabled={!email.trim() || emailCooldownSec > 0}
@@ -836,6 +884,7 @@ export default function AccountScreen() {
               </>
             ) : (
               <Button
+                testID="auth-email-open"
                 label={t("useEmailInstead")}
                 variant="ghost"
                 onPress={() => setEmailOpen(true)}

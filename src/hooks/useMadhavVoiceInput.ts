@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import { requireOptionalNativeModule } from "expo-modules-core";
 
 type Options = {
@@ -13,9 +13,19 @@ type Options = {
   };
 };
 
+type PermissionResult = { granted: boolean };
+
 type SpeechModule = {
   isRecognitionAvailable: () => boolean;
-  requestPermissionsAsync: () => Promise<{ granted: boolean }>;
+  requestPermissionsAsync: () => Promise<PermissionResult>;
+  // Newer expo-speech-recognition exposes per-scope permission requests; we
+  // prefer these so mic and speech can't end up half-granted before start().
+  requestMicrophonePermissionsAsync?: () => Promise<PermissionResult>;
+  requestSpeechRecognizerPermissionsAsync?: () => Promise<PermissionResult>;
+  getSupportedLocales?: (options: Record<string, unknown>) => Promise<{
+    locales: string[];
+    installedLocales: string[];
+  }>;
   start: (options: Record<string, unknown>) => void;
   stop: () => void;
   abort: () => void;
@@ -50,6 +60,107 @@ export function getSpeechModule(): SpeechModule | null {
   }
 }
 
+/** Request microphone permission, falling back to the combined request. */
+async function requestMicPermission(mod: SpeechModule): Promise<boolean> {
+  if (typeof mod.requestMicrophonePermissionsAsync === "function") {
+    const res = await mod.requestMicrophonePermissionsAsync();
+    return Boolean(res?.granted);
+  }
+  const res = await mod.requestPermissionsAsync();
+  return Boolean(res?.granted);
+}
+
+/** Request speech-recognition permission (already covered by the combined call). */
+async function requestSpeechPermission(mod: SpeechModule): Promise<boolean> {
+  if (typeof mod.requestSpeechRecognizerPermissionsAsync === "function") {
+    const res = await mod.requestSpeechRecognizerPermissionsAsync();
+    return Boolean(res?.granted);
+  }
+  // Combined requestPermissionsAsync (used by requestMicPermission above) grants
+  // both scopes at once on older versions, so there's nothing left to ask.
+  return true;
+}
+
+/**
+ * After a permission prompt the system briefly owns the audio session while the
+ * sheet dismisses. Grabbing it mid-transition makes AVAudioEngine throw an ObjC
+ * exception on iPad — which, under the New Architecture, crashes Hermes instead
+ * of surfacing as a catchable error. Wait for the app to settle back to active.
+ */
+async function settleAudioSession(): Promise<void> {
+  if (Platform.OS !== "ios" || !AppState) return;
+  await new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    if (AppState.currentState === "active") {
+      setTimeout(finish, 400);
+      return;
+    }
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        try {
+          sub.remove();
+        } catch {
+          /* ignore */
+        }
+        setTimeout(finish, 400);
+      }
+    });
+    // Safety net so we never hang if "active" somehow never fires.
+    setTimeout(() => {
+      try {
+        sub.remove();
+      } catch {
+        /* ignore */
+      }
+      finish();
+    }, 2000);
+  });
+}
+
+/**
+ * Pick a locale the recognizer actually supports. Starting with an uninstalled
+ * locale (e.g. hi-IN/en-IN on a US review iPad) is another native-throw window.
+ * Falls back language-family → en-US → first supported. Returns null only when
+ * the device reports it supports nothing.
+ */
+export async function resolveLocale(
+  mod: Pick<SpeechModule, "getSupportedLocales">,
+  preferred: string
+): Promise<string | null> {
+  if (typeof mod.getSupportedLocales !== "function") return preferred;
+  try {
+    const { locales } = await mod.getSupportedLocales({});
+    if (!locales || locales.length === 0) {
+      // Some iOS versions report an empty list even when recognition works;
+      // don't block the user — trust the preferred locale.
+      return preferred;
+    }
+    const lower = locales.map((l) => l.toLowerCase());
+    const has = (l: string) => lower.includes(l.toLowerCase());
+    if (has(preferred)) return preferred;
+
+    const family = preferred.split("-")[0].toLowerCase();
+    const familyMatch = locales.find((l) =>
+      l.toLowerCase().startsWith(`${family}-`)
+    );
+    if (familyMatch) return familyMatch;
+
+    if (has("en-US")) return "en-US";
+    const enMatch = locales.find((l) => l.toLowerCase().startsWith("en-"));
+    if (enMatch) return enMatch;
+
+    return locales[0] ?? null;
+  } catch {
+    // A failed probe must not block dictation; fall back to the preferred tag.
+    return preferred;
+  }
+}
+
 /**
  * On-device speech → text for Madhav (mirrors web ChatWindow STT).
  * Speech native APIs are deferred until the mic is pressed — probing on mount
@@ -70,6 +181,7 @@ export function useMadhavVoiceInput({
   const readyRef = useRef(false);
   const baseInputRef = useRef("");
   const wantListenRef = useRef(false);
+  const listeningRef = useRef(false);
   const onTranscriptRef = useRef(onTranscript);
   const onErrorRef = useRef(onError);
   const labelsRef = useRef(labels);
@@ -81,6 +193,12 @@ export function useMadhavVoiceInput({
     labelsRef.current = labels;
     langRef.current = lang;
   }, [onTranscript, onError, labels, lang]);
+
+  // Keep a ref mirror of `listening` so callbacks can read it without becoming
+  // stale or forcing re-creation on every toggle.
+  useEffect(() => {
+    listeningRef.current = listening;
+  }, [listening]);
 
   const teardownSpeech = useCallback(() => {
     wantListenRef.current = false;
@@ -138,20 +256,12 @@ export function useMadhavVoiceInput({
       mod.addListener("start", () => {
         if (wantListenRef.current) setListening(true);
       }),
+      // `end` no longer re-arms start(). The old auto-restart raced a second
+      // start() onto the TurboModule queue against native `continuous: true`,
+      // and that void-method race is what threw the NSException that crashed
+      // Hermes on iPad. Continuous mode is handled entirely natively now.
       mod.addListener("end", () => {
-        if (wantListenRef.current) {
-          try {
-            mod.start({
-              lang: langRef.current === "hi" ? "hi-IN" : "en-IN",
-              interimResults: true,
-              continuous: true,
-              addsPunctuation: true,
-            });
-            return;
-          } catch {
-            wantListenRef.current = false;
-          }
-        }
+        wantListenRef.current = false;
         setListening(false);
       }),
       mod.addListener(
@@ -191,10 +301,14 @@ export function useMadhavVoiceInput({
 
   const stopListening = useCallback(() => {
     wantListenRef.current = false;
-    try {
-      moduleRef.current?.stop();
-    } catch {
-      /* ignore */
+    // Only stop an actually-active recognizer. A cold stop() (no live session)
+    // emits an `end` event, which used to trigger the crash-prone restart path.
+    if (listeningRef.current) {
+      try {
+        moduleRef.current?.stop();
+      } catch {
+        /* ignore */
+      }
     }
     setListening(false);
   }, []);
@@ -209,16 +323,38 @@ export function useMadhavVoiceInput({
         return;
       }
 
-      stopListening();
+      // Never stop() on a cold start — see stopListening / the `end` listener.
+      if (listeningRef.current) {
+        stopListening();
+      }
 
+      // Request microphone and speech permissions separately so we can't start
+      // with one scope ungranted.
       try {
-        const permission = await mod.requestPermissionsAsync();
-        if (!permission.granted) {
+        const micGranted = await requestMicPermission(mod);
+        if (!micGranted) {
+          onErrorRef.current(labelsRef.current.error);
+          return;
+        }
+        const speechGranted = await requestSpeechPermission(mod);
+        if (!speechGranted) {
           onErrorRef.current(labelsRef.current.error);
           return;
         }
       } catch {
         onErrorRef.current(labelsRef.current.error);
+        return;
+      }
+
+      // Let the permission sheet dismiss and the OS release the audio session.
+      await settleAudioSession();
+
+      // Only start once we know the recognizer supports a concrete locale.
+      const preferred = langRef.current === "hi" ? "hi-IN" : "en-IN";
+      const locale = await resolveLocale(mod, preferred);
+      if (!locale) {
+        setSupported(false);
+        onErrorRef.current(labelsRef.current.unsupported);
         return;
       }
 
@@ -228,10 +364,20 @@ export function useMadhavVoiceInput({
 
       try {
         mod.start({
-          lang: lang === "hi" ? "hi-IN" : "en-IN",
+          lang: locale,
           interimResults: true,
           continuous: true,
           addsPunctuation: true,
+          // Network recognition is more reliable across locales/devices than
+          // requiring an installed on-device model.
+          requiresOnDeviceRecognition: false,
+          // Pin the audio session category explicitly (matches the library
+          // default) so we don't fight expo-audio's playback session.
+          iosCategory: {
+            category: "playAndRecord",
+            categoryOptions: ["defaultToSpeaker", "allowBluetooth"],
+            mode: "measurement",
+          },
         });
       } catch {
         wantListenRef.current = false;
@@ -239,15 +385,15 @@ export function useMadhavVoiceInput({
         onErrorRef.current(labelsRef.current.error);
       }
     },
-    [disabled, ensureSpeechReady, lang, stopListening]
+    [disabled, ensureSpeechReady, stopListening]
   );
 
   const toggleListening = useCallback(
     (currentInput: string) => {
-      if (listening) stopListening();
+      if (listeningRef.current) stopListening();
       else void startListening(currentInput);
     },
-    [listening, startListening, stopListening]
+    [startListening, stopListening]
   );
 
   const syncBaseInput = useCallback((value: string) => {

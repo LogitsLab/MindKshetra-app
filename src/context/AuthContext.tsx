@@ -8,8 +8,11 @@ import React, {
   useState,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { Platform } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
+import * as AppleAuthentication from "expo-apple-authentication";
+import * as Crypto from "expo-crypto";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase, supabaseConfigured } from "@/auth/supabase";
@@ -83,7 +86,7 @@ function classifyEmailAuthError(
 
 function friendlyAuthError(
   message: string,
-  kind: "anonymous" | "google" | "email",
+  kind: "anonymous" | "google" | "apple" | "email" | "password",
   code?: string
 ): string {
   const lower = message.toLowerCase();
@@ -106,6 +109,44 @@ function friendlyAuthError(
     (lower.includes("not enabled") || lower.includes("unsupported"))
   ) {
     return "Google sign-in is not set up yet. Use the email magic link instead.";
+  }
+  if (
+    kind === "apple" &&
+    (lower.includes("not enabled") || lower.includes("unsupported"))
+  ) {
+    return "Sign in with Apple is not set up yet. Use Google or email instead.";
+  }
+  if (
+    kind === "apple" &&
+    (lower.includes("fetch failed") ||
+      lower.includes("network request failed") ||
+      lower.includes("failed to fetch"))
+  ) {
+    return "Could not reach Apple sign-in. Check your connection and try again.";
+  }
+  if (
+    kind === "apple" &&
+    (lower.includes("audience") ||
+      lower.includes("unacceptable") ||
+      lower.includes("invalid jwt") ||
+      lower.includes("invalid id token"))
+  ) {
+    return "Apple sign-in could not be verified. Try again, or use Google or email.";
+  }
+  if (kind === "password") {
+    if (lower.includes("invalid login credentials")) {
+      return "Wrong email or password.";
+    }
+    if (lower.includes("email not confirmed")) {
+      return "Confirm your email first, then sign in.";
+    }
+    if (
+      lower.includes("fetch failed") ||
+      lower.includes("network request failed") ||
+      lower.includes("failed to fetch")
+    ) {
+      return "Could not reach MindKshetra auth. Check your connection and try again.";
+    }
   }
   if (kind === "email") {
     const classified = classifyEmailAuthError(message, code);
@@ -133,7 +174,10 @@ type AuthContextValue = {
   signInAnonymously: () => Promise<void>;
   /** false means the person cancelled; callers must not treat that as done. */
   signInWithGoogle: () => Promise<boolean>;
+  /** Native Sign in with Apple (iOS). false means the person cancelled. */
+  signInWithApple: () => Promise<boolean>;
   signInWithEmail: (email: string) => Promise<void>;
+  signInWithPassword: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -504,6 +548,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, [mergeForUser]);
 
+  /**
+   * Native Sign in with Apple (iOS only). Resolves false when the person
+   * cancels the system sheet, true when a session started. Uses a hashed nonce
+   * so the Apple identity token can't be replayed against Supabase.
+   */
+  const signInWithApple = useCallback(async () => {
+    if (!supabaseConfigured || Platform.OS !== "ios") return false;
+
+    const rawNonce = Crypto.randomUUID();
+    const hashedNonce = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      rawNonce
+    );
+
+    let credential: AppleAuthentication.AppleAuthenticationCredential;
+    try {
+      credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+    } catch (e) {
+      // The person tapped Cancel on the system sheet — not an error.
+      if ((e as { code?: string }).code === "ERR_REQUEST_CANCELED") {
+        return false;
+      }
+      throw new Error("Sign in with Apple did not complete. Try again.");
+    }
+
+    if (!credential.identityToken) {
+      throw new Error("Sign in with Apple did not return a token.");
+    }
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: "apple",
+      token: credential.identityToken,
+      nonce: rawNonce,
+    });
+    if (error) throw new Error(friendlyAuthError(error.message, "apple"));
+    if (!data.session) {
+      throw new Error("Sign in with Apple did not return a session.");
+    }
+
+    // The SIGNED_IN listener also merges; mergeForUser dedupes by user id.
+    await mergeForUser(data.session.user.id);
+    return true;
+  }, [mergeForUser]);
+
   const signInWithEmail = useCallback(async (email: string) => {
     if (!supabaseConfigured) return;
     const trimmed = email.trim();
@@ -542,6 +636,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setEmailCooldownUntil(Date.now() + OTP_COOLDOWN_MS);
   }, [emailCooldownUntil]);
 
+  /**
+   * Email + password sign-in. Primarily for App Review (magic links aren't
+   * testable by reviewers), but available to anyone with a password account.
+   */
+  const signInWithPassword = useCallback(
+    async (email: string, password: string) => {
+      if (!supabaseConfigured) return;
+      const trimmed = email.trim();
+      if (!trimmed.includes("@")) {
+        throw new Error("Enter a valid email address.");
+      }
+      if (!password) throw new Error("Enter your password.");
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: trimmed,
+        password,
+      });
+      if (error) throw new Error(friendlyAuthError(error.message, "password"));
+      if (!data.session) {
+        throw new Error("Sign-in did not return a session. Try again.");
+      }
+      await mergeForUser(data.session.user.id);
+    },
+    [mergeForUser]
+  );
+
   const signOut = useCallback(async () => {
     if (!supabaseConfigured) return;
     await unregisterPush();
@@ -561,7 +681,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearLastMergeRestored,
       signInAnonymously,
       signInWithGoogle,
+      signInWithApple,
       signInWithEmail,
+      signInWithPassword,
       signOut,
     }),
     [
@@ -573,7 +695,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearLastMergeRestored,
       signInAnonymously,
       signInWithGoogle,
+      signInWithApple,
       signInWithEmail,
+      signInWithPassword,
       signOut,
     ]
   );

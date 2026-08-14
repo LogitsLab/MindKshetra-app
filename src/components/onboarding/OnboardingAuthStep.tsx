@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Text } from "@/components/Text";
 import { Button, Hairline } from "@/components/Button";
+import { AppleSignInButton } from "@/components/AppleSignInButton";
 import { Panel } from "@/components/Panel";
 import { Rise } from "@/components/Rise";
 import { useLanguage } from "@/context/LanguageContext";
@@ -15,21 +16,25 @@ import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 
 /** Which sign-in is in flight, so only that control reports as busy. */
-export type AuthAction = "google" | "email" | "guest";
+export type AuthAction = "google" | "apple" | "email" | "password" | "guest";
 
 type Props = {
   configured: boolean;
   pending: AuthAction | null;
   message: string | null;
   email: string;
+  password: string;
   emailOpen: boolean;
   linkSent: boolean;
   emailCooldownSec: number;
   guestFailed: boolean;
   onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
   onEmailOpen: () => void;
   onGoogle: () => void;
+  onApple: () => void;
   onEmailSubmit: () => void;
+  onPasswordSubmit: () => void;
   onGuest: () => void;
   onEnterAnyway: () => void;
 };
@@ -39,14 +44,18 @@ export function OnboardingAuthStep({
   pending,
   message,
   email,
+  password,
   emailOpen,
   linkSent,
   emailCooldownSec,
   guestFailed,
   onEmailChange,
+  onPasswordChange,
   onEmailOpen,
   onGoogle,
+  onApple,
   onEmailSubmit,
+  onPasswordSubmit,
   onGuest,
   onEnterAnyway,
 }: Props) {
@@ -95,7 +104,15 @@ export function OnboardingAuthStep({
         </Panel>
       ) : (
         <View style={styles.methods}>
+          <AppleSignInButton
+            testID="auth-apple"
+            variant="white"
+            disabled={blocked("apple")}
+            onPress={onApple}
+          />
+
           <Button
+            testID="auth-google"
             label={t("signInGoogle")}
             variant={emailActive ? "ghost" : "primary"}
             loading={pending === "google"}
@@ -113,6 +130,7 @@ export function OnboardingAuthStep({
                 {t("emailLabel")}
               </Text>
               <TextInput
+                testID="auth-email-input"
                 value={email}
                 onChangeText={onEmailChange}
                 autoCapitalize="none"
@@ -139,6 +157,42 @@ export function OnboardingAuthStep({
                   },
                 ]}
               />
+              <Text
+                variant="eyebrow"
+                color={colors.brassSoft}
+                style={styles.emailLabel}
+              >
+                {t("passwordLabel")}
+              </Text>
+              <TextInput
+                testID="auth-password-input"
+                value={password}
+                onChangeText={onPasswordChange}
+                autoCapitalize="none"
+                autoCorrect={false}
+                secureTextEntry
+                textContentType="password"
+                accessibilityLabel={t("passwordLabel")}
+                placeholder={t("passwordPlaceholder")}
+                placeholderTextColor={colors.onMediaMuted}
+                style={[
+                  styles.input,
+                  {
+                    color: colors.onMedia,
+                    borderColor: colors.line,
+                    backgroundColor: colors.inputBg,
+                    borderWidth: StyleSheet.hairlineWidth * 2,
+                  },
+                ]}
+              />
+              <Button
+                testID="auth-password-submit"
+                label={t("signInPassword")}
+                variant={email.trim() && password ? "primary" : "ghost"}
+                loading={pending === "password"}
+                disabled={!email.trim() || !password || blocked("password")}
+                onPress={onPasswordSubmit}
+              />
               <Button
                 label={
                   pending === "email"
@@ -152,7 +206,8 @@ export function OnboardingAuthStep({
                         )
                       : t("signInEmail")
                 }
-                variant={email.trim() ? "primary" : "ghost"}
+                testID="auth-email-submit"
+                variant="ghost"
                 loading={pending === "email"}
                 disabled={
                   !email.trim() || emailCooldownSec > 0 || blocked("email")
@@ -162,6 +217,7 @@ export function OnboardingAuthStep({
             </View>
           ) : (
             <Button
+              testID="auth-email-open"
               label={t("useEmailInstead")}
               variant="ghost"
               disabled={blocked("email")}

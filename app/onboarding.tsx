@@ -73,6 +73,8 @@ export default function OnboardingScreen() {
     signInAnonymously,
     signInWithEmail,
     signInWithGoogle,
+    signInWithApple,
+    signInWithPassword,
     emailCooldownSec,
   } = useAuth();
 
@@ -83,6 +85,7 @@ export default function OnboardingScreen() {
     preferredLanguage: lang,
   });
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [emailOpen, setEmailOpen] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
   const [pending, setPending] = useState<AuthAction | null>(null);
@@ -181,6 +184,16 @@ export default function OnboardingScreen() {
       if (action === "google") {
         const completed = await signInWithGoogle();
         if (completed) await finish(false);
+        return;
+      }
+      if (action === "apple") {
+        const completed = await signInWithApple();
+        if (completed) await finish(false);
+        return;
+      }
+      if (action === "password") {
+        await signInWithPassword(email.trim(), password);
+        await finish(false);
         return;
       }
       await signInWithEmail(email.trim());
@@ -634,14 +647,18 @@ export default function OnboardingScreen() {
           pending={pending}
           message={message}
           email={email}
+          password={password}
           emailOpen={emailOpen}
           linkSent={linkSent}
           emailCooldownSec={emailCooldownSec}
           guestFailed={guestFailed}
           onEmailChange={setEmail}
+          onPasswordChange={setPassword}
           onEmailOpen={() => setEmailOpen(true)}
           onGoogle={() => onAuth("google")}
+          onApple={() => onAuth("apple")}
           onEmailSubmit={() => onAuth("email")}
+          onPasswordSubmit={() => onAuth("password")}
           onGuest={() => onAuth("guest")}
           onEnterAnyway={() => finish(false)}
         />

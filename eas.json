@@ -29,6 +29,10 @@
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_L0X_m43ta_MKBXWot5Q6Pg__5bB1etv",
         "EXPO_PUBLIC_AUDIO_BASE_URL": "https://bpxszivjvexmqznnshlx.supabase.co/storage/v1/object/public/audio"
       }
+    },
+    "production-ios": {
+      "extends": "production",
+      "credentialsSource": "remote"
     }
   },
   "submit": {
