@@ -114,7 +114,6 @@ export default function TabsLayout() {
       <Tabs.Screen name="explore/[chapter]" options={{ href: null }} />
       <Tabs.Screen name="mood/index" options={{ href: null }} />
       <Tabs.Screen name="mood/[id]" options={{ href: null }} />
-      <Tabs.Screen name="astrology/index" options={{ href: null }} />
     </Tabs>
   );
 }

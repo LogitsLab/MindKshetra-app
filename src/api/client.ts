@@ -147,7 +147,6 @@ export type SseHandlers = {
   onReplace?: (content: string) => void;
   onDone?: (payload?: unknown) => void;
   onError?: (message: string) => void;
-  onChartEpigraph?: (text: string) => void;
 };
 
 export type ChatRequestMessage = {
@@ -165,27 +164,9 @@ type ChatRequestBase = {
 export type ChatRequestContext =
   | {
       slokaId: number;
-      memberId?: never;
-      chartSessionId?: never;
-      birth?: never;
-    }
-  | {
-      memberId: string;
-      slokaId?: never;
-      chartSessionId?: never;
-      birth?: never;
-    }
-  | {
-      chartSessionId: string;
-      birth?: Record<string, unknown>;
-      slokaId?: never;
-      memberId?: never;
     }
   | {
       slokaId?: undefined;
-      memberId?: undefined;
-      chartSessionId?: undefined;
-      birth?: undefined;
     };
 
 export type ChatRequestBody = ChatRequestBase & ChatRequestContext;
@@ -195,29 +176,12 @@ export type ChatRequestInput = {
   sessionId?: string | null;
   messages: ChatRequestMessage[];
   slokaId?: number | null;
-  memberId?: string | null;
-  chartSessionId?: string | null;
-  birth?: Record<string, unknown> | null;
 };
 
 /**
- * Build the chat payload at one boundary and reject impossible mixed context.
- * This prevents stale verse/chart state from crossing into an unrelated request.
+ * Build the chat payload at one boundary. Verse context is optional and exclusive.
  */
 export function buildChatRequestBody(input: ChatRequestInput): ChatRequestBody {
-  const activeContexts = [
-    input.slokaId != null,
-    Boolean(input.memberId),
-    Boolean(input.chartSessionId),
-  ].filter(Boolean).length;
-
-  if (activeContexts > 1) {
-    throw new Error("Madhav chat request contains conflicting context");
-  }
-  if (input.birth && !input.chartSessionId) {
-    throw new Error("Madhav birth context requires a chart session");
-  }
-
   const base: ChatRequestBase = {
     language: input.language,
     sessionId: input.sessionId ?? undefined,
@@ -226,14 +190,6 @@ export function buildChatRequestBody(input: ChatRequestInput): ChatRequestBody {
   };
 
   if (input.slokaId != null) return { ...base, slokaId: input.slokaId };
-  if (input.memberId) return { ...base, memberId: input.memberId };
-  if (input.chartSessionId) {
-    return {
-      ...base,
-      chartSessionId: input.chartSessionId,
-      birth: input.birth ?? undefined,
-    };
-  }
   return base;
 }
 
@@ -269,12 +225,6 @@ export function dispatchSseBlock(block: string, handlers: SseHandlers): void {
         break;
       case "replace":
         handlers.onReplace?.(parsed.content ?? parsed.text ?? "");
-        break;
-      case "reading":
-      case "chart":
-      case "chartContext":
-      case "epigraph":
-        handlers.onChartEpigraph?.(parsed.text ?? parsed.content ?? "");
         break;
       case "done":
         handlers.onDone?.(parsed);

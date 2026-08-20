@@ -21,8 +21,8 @@ export default function PrivacyScreen() {
         </Text>
         <Text variant="soft" style={{ marginTop: spacing.md }}>
           {lang === "hi"
-            ? "MindKshetra आपके पठन, पसंदीदा, जर्नल, चैट और ज्योतिष विवरण को सेवा चलाने के लिए संसाधित करता है। हम व्यक्तिगत डेटा नहीं बेचते। वेब और मोबाइल एक ही खाते/बैकएंड का उपयोग करते हैं।"
-            : "MindKshetra processes your reading progress, favorites, journal, chat, and astrology details to run the product. We do not sell personal data. Web and mobile share the same account and backend."}
+            ? "MindKshetra आपके पठन, पसंदीदा, जर्नल और चैट को सेवा चलाने के लिए संसाधित करता है। हम व्यक्तिगत डेटा नहीं बेचते। वेब और मोबाइल एक ही खाते/बैकएंड का उपयोग करते हैं।"
+            : "MindKshetra processes your reading progress, favorites, journal, and chat to run the product. We do not sell personal data. Web and mobile share the same account and backend."}
         </Text>
         <Text variant="soft" style={{ marginTop: spacing.md }}>
           {lang === "hi"

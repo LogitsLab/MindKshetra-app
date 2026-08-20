@@ -56,7 +56,6 @@ function handlers(): SseHandlers & { [k: string]: jest.Mock } {
     onReplace: jest.fn(),
     onDone: jest.fn(),
     onError: jest.fn(),
-    onChartEpigraph: jest.fn(),
   } as never;
 }
 
@@ -96,39 +95,11 @@ describe("Madhav chat request context", () => {
     });
   });
 
-  it.each([
-    [{ slokaId: 247 }, { slokaId: 247 }],
-    [{ memberId: "member-1" }, { memberId: "member-1" }],
-    [
-      { chartSessionId: "chart-1", birth: { date: "2000-01-01" } },
-      { chartSessionId: "chart-1", birth: { date: "2000-01-01" } },
-    ],
-  ])("keeps each request context isolated", (context, expected) => {
-    const body = buildChatRequestBody({ ...base, ...context });
+  it("keeps verse context isolated", () => {
+    const body = buildChatRequestBody({ ...base, slokaId: 247 });
 
-    expect(body).toEqual(expect.objectContaining(expected));
-    expect(
-      ["slokaId", "memberId", "chartSessionId"].filter((key) => key in body)
-    ).toHaveLength(1);
-  });
-
-  it("rejects stale mixed context instead of transmitting it", () => {
-    expect(() =>
-      buildChatRequestBody({
-        ...base,
-        slokaId: 247,
-        memberId: "stale-member",
-      })
-    ).toThrow("conflicting context");
-  });
-
-  it("does not transmit birth details without their chart session", () => {
-    expect(() =>
-      buildChatRequestBody({
-        ...base,
-        birth: { date: "2000-01-01" },
-      })
-    ).toThrow("requires a chart session");
+    expect(body).toEqual(expect.objectContaining({ slokaId: 247 }));
+    expect("slokaId" in body).toBe(true);
   });
 });
 
@@ -265,6 +236,14 @@ describe("dispatchSseBlock", () => {
     const h = handlers();
     dispatchSseBlock("event: ping", h);
     expect(h.onToken).not.toHaveBeenCalled();
+  });
+
+  it("ignores unknown stream event types", () => {
+    const h = handlers();
+    dispatchSseBlock('data: {"type":"epigraph","text":"unused"}\n\n', h);
+    expect(h.onToken).not.toHaveBeenCalled();
+    expect(h.onReplace).not.toHaveBeenCalled();
+    expect(h.onCitations).not.toHaveBeenCalled();
   });
 });
 

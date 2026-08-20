@@ -15,7 +15,6 @@ function citationSnippet(c: Citation, lang: AppLang): string {
 type Props = {
   isUser: boolean;
   content: string;
-  chartEpigraph?: string;
   citations?: Citation[];
   /** Pre-translated speaker label ("You" / "Madhav"). */
   label: string;
@@ -36,7 +35,6 @@ type Props = {
 export const MessageBubble = React.memo(function MessageBubble({
   isUser,
   content,
-  chartEpigraph,
   citations,
   label,
   practiceLabel,
@@ -70,23 +68,6 @@ export const MessageBubble = React.memo(function MessageBubble({
           {label}
         </Text>
       </View>
-      {chartEpigraph ? (
-        <View style={styles.epigraph}>
-          <Text
-            variant="title"
-            style={{
-              color: colors.brassSoft,
-              fontFamily: "Fraunces_500Medium",
-              fontStyle: "italic",
-              fontSize: 17 * multiplier,
-              lineHeight: 25 * multiplier,
-            }}
-          >
-            “{chartEpigraph}”
-          </Text>
-          <View style={[styles.epigraphRule, { backgroundColor: colors.line }]} />
-        </View>
-      ) : null}
       <View
         style={[
           styles.teaching,
@@ -199,16 +180,6 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: 3,
     opacity: 0.7,
-  },
-  epigraph: {
-    paddingLeft: spacing.lg,
-    paddingRight: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  epigraphRule: {
-    width: 48,
-    height: StyleSheet.hairlineWidth * 2,
-    marginTop: spacing.sm,
   },
   teaching: {
     marginLeft: spacing.lg,

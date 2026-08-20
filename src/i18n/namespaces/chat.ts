@@ -47,21 +47,11 @@ export const en = {
   incognito: "Incognito",
   incognitoOn: "Incognito on",
   incognitoHint: "This chat is not saved to history.",
-  chartInviteTitle: "Want a full chart reading?",
-  chartInviteBody:
-    "Astrology is separate from Madhav. Cast a birth chart for dashas, houses, and detailed Jyotish answers, without Gita verses mixed in.",
-  chartInviteCta: "Open Astrology",
-  chartInviteDismiss: "Not now",
   citePractice: "Practice",
   startSadhana: "Start sādhana",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
-  chartInviteTitle: "पूरी कुंडली पढ़ना चाहते हैं?",
-  chartInviteBody:
-    "ज्योतिष माधव से अलग है। जन्म कुंडली बनाएँ, दशा, भाव और विस्तृत ज्योतिष उत्तर, गीता के श्लोक मिलाए बिना।",
-  chartInviteCta: "ज्योतिष खोलें",
-  chartInviteDismiss: "अभी नहीं",
   askMadhavAbout: "इस पर माधव से पूछें",
   askMadhavLink: "माधव से पूछें",
   madhavEyebrow: "आधारित मार्गदर्शन",

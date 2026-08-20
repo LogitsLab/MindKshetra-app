@@ -1,10 +1,7 @@
-import { apiFetch, getApiUrl } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import type { Milestone } from "@/data/milestones";
 import type {
-  AstrologyMember,
-  CompatibilityResult,
   JournalEntry,
-  PanchangDay,
   PracticeStreak,
   SadhanaLogEntry,
   SadhanaPractice,
@@ -12,10 +9,6 @@ import type {
   Sloka,
   Streak,
 } from "@/types";
-import {
-  extractPredictionsText,
-  type PredictionsText,
-} from "@/types/astrology";
 
 function normalizeSlokaList(data: unknown): { slokas: Sloka[]; total: number } {
   if (Array.isArray(data)) {
@@ -77,12 +70,6 @@ export const contentApi = {
   },
   moodSlokas: (id: string) =>
     apiFetch<{ slokas: Sloka[] }>(`/api/moods/${id}/slokas`),
-  /** Chart-aware mood ordering for a saved member (fail-soft on clients). */
-  moodOrder: (memberId: string) =>
-    apiFetch<{ order: string[] }>("/api/moods/order", {
-      method: "POST",
-      body: JSON.stringify({ memberId }),
-    }),
 };
 
 export const userApi = {
@@ -305,8 +292,6 @@ export const votdApi = {
     }),
   /**
    * Server-authoritative verse of the day — never derive it from the clock.
-   * `nakshatra` is present when the day's pick was moon-driven (provenance
-   * context, not causation).
    * `offset` (e.g. -1 / -2) matches the web home carousel days.
    * `full` includes the sloka body so the client can skip a second fetch.
    */
@@ -322,7 +307,6 @@ export const votdApi = {
       ref: string;
       date: string;
       offset?: number;
-      nakshatra?: string;
       sloka?: import("@/types").Sloka;
     }>(`/api/votd/today${q ? `?${q}` : ""}`);
   },
@@ -436,7 +420,6 @@ export type NotificationPreferences = {
   dailyVerse: boolean;
   streakReminder: boolean;
   continueReading: boolean;
-  astrologyAlerts: boolean;
   reflections: boolean;
   weeklyDigestEmail: boolean;
   /** Local hour of day the daily verse goes out, 4–21. */
@@ -522,27 +505,6 @@ export const progressApi = {
     }),
 };
 
-export const panchangApi = {
-  /** No args in v1 — the server defaults to the shared New Delhi reference sky. */
-  today: () => apiFetch<PanchangDay>("/api/panchang"),
-  /** Month calendar — `month` as YYYY-MM. Defaults to New Delhi sky. */
-  calendar: (month: string) =>
-    apiFetch<{
-      month: string;
-      ianaTz: string;
-      days: Array<{
-        date: string;
-        tithi: string;
-        nakshatra: string;
-        vaar: string;
-        isEkadashi?: boolean;
-        isPurnima?: boolean;
-        isAmavasya?: boolean;
-      }>;
-      observances: Array<{ date: string; name: string; kind?: string }>;
-    }>(`/api/panchang/calendar?month=${encodeURIComponent(month)}`),
-};
-
 export const profileApi = {
   get: () =>
     apiFetch<{
@@ -620,196 +582,4 @@ export const chatApi = {
       method: "POST",
       body: JSON.stringify({ sessionId }),
     }),
-};
-
-/**
- * Failure detail apiFetch cannot carry: the Retry-After header on 429 and the
- * `recoverable` flag a 404 body sets when the chart session expired but can be
- * rebuilt from a stored birth payload. usePredictions maps these to UX.
- */
-export class PredictionsError extends Error {
-  status: number;
-  retryAfterSec: number | null;
-  recoverable: boolean;
-  constructor(
-    status: number,
-    message: string,
-    retryAfterSec: number | null = null,
-    recoverable = false
-  ) {
-    super(message);
-    this.name = "PredictionsError";
-    this.status = status;
-    this.retryAfterSec = retryAfterSec;
-    this.recoverable = recoverable;
-  }
-}
-
-/**
- * Auth header for the one endpoint below that must read response headers and
- * error bodies itself. Lazy import so test environments that never call this
- * do not pay for the supabase module's configuration check.
- */
-async function predictionsAuthHeaders(): Promise<Record<string, string>> {
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-  };
-  try {
-    const { supabase, supabaseConfigured } = await import("@/auth/supabase");
-    if (!supabaseConfigured) return headers;
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (token) headers.Authorization = `Bearer ${token}`;
-  } catch {
-    // Fall through to an unauthenticated request, same as apiFetch.
-  }
-  return headers;
-}
-
-export const astrologyApi = {
-  members: () => apiFetch<{ members: AstrologyMember[] }>("/api/astrology/members"),
-  createMember: (body: Record<string, unknown>) =>
-    apiFetch<{ member: AstrologyMember }>("/api/astrology/members", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  member: (id: string) =>
-    apiFetch<{ member: AstrologyMember }>(`/api/astrology/members/${id}`),
-  deleteMember: (id: string) =>
-    apiFetch<{ ok: boolean }>(`/api/astrology/members/${id}`, { method: "DELETE" }),
-  chart: (id: string) =>
-    apiFetch<{ chart: Record<string, unknown> }>(`/api/astrology/members/${id}/chart`),
-  practiceCard: (memberId: string) =>
-    apiFetch<{
-      area: string;
-      fact: string;
-      timing: string | null;
-      actionIndex: number;
-      verse: {
-        id: number;
-        ref: string;
-        english: string;
-        hindi: string;
-      };
-    }>("/api/astrology/practice-card", {
-      method: "POST",
-      body: JSON.stringify({ memberId }),
-    }),
-  compute: (body: Record<string, unknown>) =>
-    apiFetch<{ chart: Record<string, unknown>; chartSessionId?: string }>(
-      "/api/astrology/compute",
-      { method: "POST", body: JSON.stringify(body) }
-    ),
-  geocode: (q: string) =>
-    apiFetch<{
-      results: { label: string; lat: number; lng: number; ianaTz: string }[];
-    }>("/api/astrology/geocode", {
-      method: "POST",
-      body: JSON.stringify({ query: q }),
-    }),
-  /**
-   * Ashtakoota between two SAVED members (never raw birth payloads).
-   * 422 means a missing birth time — render the message, never a zero score.
-   */
-  compatibility: (memberA: string, memberB: string) =>
-    apiFetch<{ result: CompatibilityResult }>("/api/astrology/compatibility", {
-      method: "POST",
-      body: JSON.stringify({ memberA, memberB }),
-    }),
-  predictions: async (body: Record<string, unknown>) => {
-    const data = await apiFetch<{
-      chart?: { predictionsText?: unknown };
-      predictionsText?: unknown;
-      source?: "llm" | "rules";
-      cached?: boolean;
-    }>("/api/astrology/predictions", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-    const predictionsText = extractPredictionsText(data);
-    return {
-      chart: data.chart as Record<string, unknown> | undefined,
-      predictionsText: predictionsText as PredictionsText | null,
-      source: predictionsText?.source ?? data.source,
-      cached: data.cached,
-    };
-  },
-  /**
-   * predictions() with the latency-UX extras: AbortSignal support, the
-   * Retry-After header on 429, and the body's `recoverable` flag on 404.
-   * Same request/response contract as predictions() otherwise.
-   */
-  predictionsDetailed: async (
-    body: Record<string, unknown>,
-    signal?: AbortSignal
-  ) => {
-    const res = await fetch(`${getApiUrl()}/api/astrology/predictions`, {
-      method: "POST",
-      headers: await predictionsAuthHeaders(),
-      body: JSON.stringify(body),
-      signal,
-    });
-    if (!res.ok) {
-      let message = res.statusText;
-      let recoverable = false;
-      try {
-        const errBody = (await res.json()) as {
-          error?: string;
-          message?: string;
-          recoverable?: boolean;
-        };
-        message = errBody.error ?? errBody.message ?? message;
-        recoverable = Boolean(errBody.recoverable);
-      } catch {
-        /* non-JSON error body */
-      }
-      const header = res.headers?.get?.("retry-after");
-      const parsed = header ? Number.parseInt(header, 10) : Number.NaN;
-      throw new PredictionsError(
-        res.status,
-        message,
-        Number.isFinite(parsed) && parsed >= 0 ? parsed : null,
-        recoverable
-      );
-    }
-    const data = (await res.json()) as {
-      chart?: { predictionsText?: unknown };
-      predictionsText?: unknown;
-      source?: "llm" | "rules";
-      cached?: boolean;
-    };
-    const predictionsText = extractPredictionsText(data);
-    return {
-      chart: data.chart as Record<string, unknown> | undefined,
-      predictionsText: predictionsText as PredictionsText | null,
-      source: predictionsText?.source ?? data.source,
-      cached: data.cached,
-    };
-  },
-  muhurat: (opts?: { date?: string; lat?: number; lng?: number }) => {
-    const q = new URLSearchParams();
-    if (opts?.date) q.set("date", opts.date);
-    if (opts?.lat != null) q.set("lat", String(opts.lat));
-    if (opts?.lng != null) q.set("lng", String(opts.lng));
-    const qs = q.toString();
-    return apiFetch<{
-      date: string;
-      disclaimer: string;
-      muhurats: Array<{
-        nameEn: string;
-        nameHi: string;
-        startIso: string;
-        endIso: string;
-        tag: string;
-      }>;
-      choghadiya: Array<{
-        kind: string;
-        startIso: string;
-        endIso: string;
-        quality: string;
-      }>;
-    }>(`/api/astrology/muhurat${qs ? `?${qs}` : ""}`);
-  },
-  health: () => apiFetch<{ ok: boolean; ephemeris?: { mode: string } }>("/api/astrology/health"),
 };

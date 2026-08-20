@@ -1,6 +1,5 @@
 import * as shared from "@/i18n/namespaces/shared";
 import * as gita from "@/i18n/namespaces/gita";
-import * as astrology from "@/i18n/namespaces/astrology";
 import * as account from "@/i18n/namespaces/account";
 import * as chat from "@/i18n/namespaces/chat";
 import * as onboarding from "@/i18n/namespaces/onboarding";
@@ -14,7 +13,6 @@ export const dictionary = {
   en: {
     ...shared.en,
     ...gita.en,
-    ...astrology.en,
     ...account.en,
     ...chat.en,
     ...onboarding.en,
@@ -26,7 +24,6 @@ export const dictionary = {
   hi: {
     ...shared.hi,
     ...gita.hi,
-    ...astrology.hi,
     ...account.hi,
     ...chat.hi,
     ...onboarding.hi,

@@ -85,8 +85,7 @@ Rules that are load-bearing:
 - **Explore:** 2-col chapter grid with brass number rings
 - **Mood:** accent-tinted tiles
 - **Sloka:** immersive reading + brass divider + icon toolbar
-- **Madhav:** portrait header + glass replies + chart epigraph
-- **Astrology:** image hero + clear CTAs
+- **Madhav:** portrait header + glass replies + verse citations
 
 ## Type scale
 

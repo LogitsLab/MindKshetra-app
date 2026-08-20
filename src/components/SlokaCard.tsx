@@ -202,7 +202,6 @@ export type PathMarkKind =
   | "explore"
   | "mood"
   | "madhav"
-  | "astrology"
   | "meditation"
   | "paths";
 

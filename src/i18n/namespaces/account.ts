@@ -79,7 +79,7 @@ export const en = {
   signOut: "Sign out",
   deleteAccount: "Delete account",
   deleteAccountBlurb:
-    "Permanently removes your account and all data, favorites, reflections, progress, charts and chats. This cannot be undone.",
+    "Permanently removes your account and all data, favorites, reflections, progress, and chats. This cannot be undone.",
   deleteAccountConfirm: "Yes, delete everything",
   deleteAccountCancel: "Keep my account",
   deleteAccountFailed: "Deletion failed. Try again or contact the maintainers.",
@@ -236,7 +236,7 @@ export const hi: Record<keyof typeof en, string> = {
   signOut: "साइन आउट",
   deleteAccount: "खाता हटाएँ",
   deleteAccountBlurb:
-    "आपका खाता और सारा डेटा स्थायी रूप से हट जाएगा, पसंद, चिन्तन, प्रगति, कुंडलियाँ और चैट। इसे पूर्ववत नहीं किया जा सकता।",
+    "आपका खाता और सारा डेटा स्थायी रूप से हट जाएगा, पसंद, चिन्तन, प्रगति और चैट। इसे पूर्ववत नहीं किया जा सकता।",
   deleteAccountConfirm: "हाँ, सब हटाएँ",
   deleteAccountCancel: "खाता रखें",
   deleteAccountFailed: "हटाना विफल रहा। फिर कोशिश करें या मेंटेनर से संपर्क करें।",

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -12,8 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { CoverImage } from "@/components/CoverImage";
 import { Text } from "@/components/Text";
 import { Rise } from "@/components/Rise";
-import { ApiError } from "@/api/client";
-import { astrologyApi, progressApi, sadhanaApi, userApi } from "@/api/endpoints";
+import { progressApi, sadhanaApi, userApi } from "@/api/endpoints";
 import {
   getGuestProgress,
   getSadhanaLog,
@@ -24,49 +23,16 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { sittingProgram } from "@/data/meditation";
 import { useMeditationProgress } from "@/hooks/useMeditationProgress";
-import { usePanchang } from "@/hooks/usePanchang";
-import type { PanchangFestival, SadhanaPractice } from "@/types";
+import type { SadhanaPractice } from "@/types";
 import { images } from "@/theme/assets";
 import { motion, radii, spacing } from "@/theme/tokens";
 import { truncateAtWord } from "@/utils/text";
 
-function festivalLabel(f: PanchangFestival, lang: string): string {
-  return lang === "hi" ? f.labelHi : f.labelEn;
-}
-
-function parseVerseRef(
-  ref: string | undefined
-): { chapter: number; verse: number } | null {
-  if (!ref) return null;
-  const m = /^(\d{1,2})\.(\d{1,3})$/.exec(ref.trim());
-  if (!m) return null;
-  const chapter = Number(m[1]);
-  const verse = Number(m[2]);
-  if (!Number.isFinite(chapter) || !Number.isFinite(verse)) return null;
-  return { chapter, verse };
-}
-
-function fmtMuhuratWindow(startIso: string, endIso: string): string {
-  const opts: Intl.DateTimeFormatOptions = {
-    hour: "numeric",
-    minute: "2-digit",
-  };
-  const start = new Date(startIso).toLocaleTimeString([], opts);
-  const end = new Date(endIso).toLocaleTimeString([], opts);
-  return `${start}–${end}`;
-}
-
 type Layout = "featured" | "grid2";
 
 type Props = {
-  /** Hide the section title (when the parent already shows one). */
   hideHeader?: boolean;
-  /**
-   * `featured`, Home web layout (2 wide + 3 thirds).
-   * `grid2`, equal 2-column tiles (Practise tab).
-   */
   layout?: Layout;
-  /** Show the single smart “Today” recommendation (Home featured only). */
   showTodayCta?: boolean;
   style?: StyleProp<ViewStyle>;
 };
@@ -96,7 +62,7 @@ const PRACTICE_LABEL: Record<SadhanaPractice, string> = {
 };
 
 /**
- * Practice & lifestyle tiles, shared by Home and Practise tab.
+ * Practice tiles, shared by Home and Practise tab.
  */
 export function PracticeLifestyleGrid({
   hideHeader = false,
@@ -106,52 +72,16 @@ export function PracticeLifestyleGrid({
 }: Props) {
   const router = useRouter();
   const { colors } = useTheme();
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const { session, isSignedIn } = useAuth();
   const med = useMeditationProgress();
-  const { panchang } = usePanchang();
   const [doneToday, setDoneToday] = useState<SadhanaPractice[]>([]);
   const [streak, setStreak] = useState(0);
-  const [abhijitCue, setAbhijitCue] = useState<string | null>(null);
   const [readingCursor, setReadingCursor] = useState<{
     chapter: number;
     verse: number;
     slokaId?: number;
   } | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    void astrologyApi
-      .muhurat()
-      .then((data) => {
-        if (!alive) return;
-        const abhijit =
-          data.muhurats?.find((m) => /abhijit/i.test(m.nameEn)) ??
-          data.muhurats?.[0];
-        if (!abhijit?.startIso || !abhijit?.endIso) {
-          setAbhijitCue(null);
-          return;
-        }
-        setAbhijitCue(
-          t("homeMuhuratCue").replace(
-            "{window}",
-            fmtMuhuratWindow(abhijit.startIso, abhijit.endIso)
-          )
-        );
-      })
-      .catch((e) => {
-        if (!alive) return;
-        // Feature flag off (404) or offline — fail soft, no cue.
-        if (e instanceof ApiError && (e.status === 404 || e.status === 503)) {
-          setAbhijitCue(null);
-          return;
-        }
-        setAbhijitCue(null);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [t]);
 
   const todayCtaEnabled = showTodayCta ?? layout === "featured";
   const sadhanaDone = doneToday.includes("flow");
@@ -231,11 +161,6 @@ export function PracticeLifestyleGrid({
   const sitDay = Math.min(45, Math.max(1, med.currentDay));
   const meditationContinue =
     !med.loading && med.completedDays.length < sittingProgram.days_count;
-  const dayLine = panchang
-    ? t("homeDayLine")
-        .replace("{tithi}", panchang.tithi)
-        .replace("{nakshatra}", panchang.nakshatra)
-    : t("homeBlockPanchangBody");
 
   const practicedLine = useMemo(() => {
     if (!doneToday.length) return t("homeTodayPracticedNone");
@@ -244,46 +169,6 @@ export function PracticeLifestyleGrid({
   }, [doneToday, t]);
 
   const todayRec: TodayRec = useMemo(() => {
-    const festivals = panchang?.festivals ?? [];
-    const japaFest = festivals.find((f) => f.practiceHint === "japa");
-    const verseFest = festivals.find((f) => f.practiceHint === "verse");
-
-    if (japaFest || panchang?.isEkadashi) {
-      const label = japaFest ? festivalLabel(japaFest, lang) : null;
-      return {
-        key: "japa",
-        image: images.pathPaths,
-        title: label
-          ? t("homeTodayFestivalJapaTitle").replace("{festival}", label)
-          : t("homeTodayJapaTitle"),
-        body: label
-          ? t("homeTodayFestivalJapaBody")
-          : t("homeTodayJapaBody"),
-        onPress: () => router.push("/japa"),
-      };
-    }
-
-    if (verseFest) {
-      const label = festivalLabel(verseFest, lang);
-      const parsed = parseVerseRef(verseFest.verseRef);
-      return {
-        key: "festival-verse",
-        image: images.pathExplore,
-        title: t("homeTodayFestivalVerseTitle").replace("{festival}", label),
-        body: t("homeTodayFestivalVerseBody").replace(
-          "{ref}",
-          verseFest.verseRef ?? label
-        ),
-        onPress: () => {
-          if (parsed) {
-            router.push(`/(tabs)/explore/${parsed.chapter}`);
-            return;
-          }
-          router.push("/(tabs)/explore");
-        },
-      };
-    }
-
     if (!sadhanaDone) {
       return {
         key: "sadhana",
@@ -327,13 +212,10 @@ export function PracticeLifestyleGrid({
       onPress: () => router.push("/sadhana"),
     };
   }, [
-    panchang?.isEkadashi,
-    panchang?.festivals,
     sadhanaDone,
     meditationContinue,
     sitDay,
     readingCursor,
-    lang,
     t,
     router,
   ]);
@@ -371,15 +253,8 @@ export function PracticeLifestyleGrid({
         onPress: () => router.push("/japa"),
       },
       {
-        key: "panchang",
-        image: images.pathPanchangRing,
-        title: t("homeBlockPanchangTitle"),
-        body: dayLine,
-        onPress: () => router.push("/panchang"),
-      },
-      {
         key: "reminders",
-        image: images.pathAstrology,
+        image: images.pathExplore,
         title: t("homeBlockNotifTitle"),
         body: t("homeBlockNotifBody"),
         onPress: () => router.push("/(tabs)/profile"),
@@ -391,7 +266,6 @@ export function PracticeLifestyleGrid({
       med.loading,
       med.completedDays.length,
       sitDay,
-      dayLine,
       t,
       router,
     ]
@@ -428,17 +302,6 @@ export function PracticeLifestyleGrid({
             testID={`home-today-${todayRec.key}`}
             style={styles.todayTile}
           />
-          {abhijitCue ? (
-            <Pressable
-              onPress={() => router.push("/astrology/muhurat")}
-              accessibilityRole="link"
-              style={styles.muhuratCue}
-            >
-              <Text variant="muted" color={colors.textSoft} style={styles.muhuratCueText}>
-                {abhijitCue} →
-              </Text>
-            </Pressable>
-          ) : null}
         </Rise>
       ) : null}
 
@@ -463,72 +326,23 @@ export function PracticeLifestyleGrid({
         }
         style={styles.stack}
       >
-        {layout === "grid2" ? (
-          pairs.map((pair) => (
-            <View key={pair.map((p) => p.key).join("-")} style={styles.row}>
-              {pair.map((tile) => (
-                <PracticeTile
-                  key={tile.key}
-                  image={tile.image}
-                  title={tile.title}
-                  body={tile.body}
-                  done={tile.done}
-                  onPress={tile.onPress}
-                  testID={`home-practice-${tile.key}`}
-                  style={pair.length === 1 ? styles.halfAlone : undefined}
-                />
-              ))}
-            </View>
-          ))
-        ) : (
-          <>
-            <View style={styles.row}>
+        {pairs.map((pair) => (
+          <View key={pair.map((p) => p.key).join("-")} style={styles.row}>
+            {pair.map((tile) => (
               <PracticeTile
-                wide
-                image={tiles[0].image}
-                title={tiles[0].title}
-                body={tiles[0].body}
-                done={tiles[0].done}
-                onPress={tiles[0].onPress}
-                testID={`home-practice-${tiles[0].key}`}
+                key={tile.key}
+                wide={layout === "featured"}
+                image={tile.image}
+                title={tile.title}
+                body={tile.body}
+                done={tile.done}
+                onPress={tile.onPress}
+                testID={`home-practice-${tile.key}`}
+                style={pair.length === 1 ? styles.halfAlone : undefined}
               />
-              <PracticeTile
-                wide
-                image={tiles[1].image}
-                title={tiles[1].title}
-                body={tiles[1].body}
-                onPress={tiles[1].onPress}
-                testID={`home-practice-${tiles[1].key}`}
-              />
-            </View>
-            <View style={styles.row}>
-              <PracticeTile
-                image={tiles[2].image}
-                title={tiles[2].title}
-                body={tiles[2].body}
-                onPress={tiles[2].onPress}
-                testID={`home-practice-${tiles[2].key}`}
-                compact
-              />
-              <PracticeTile
-                image={tiles[3].image}
-                title={tiles[3].title}
-                body={tiles[3].body}
-                onPress={tiles[3].onPress}
-                testID={`home-practice-${tiles[3].key}`}
-                compact
-              />
-              <PracticeTile
-                image={tiles[4].image}
-                title={tiles[4].title}
-                body={tiles[4].body}
-                onPress={tiles[4].onPress}
-                testID={`home-practice-${tiles[4].key}`}
-                compact
-              />
-            </View>
-          </>
-        )}
+            ))}
+          </View>
+        ))}
       </Rise>
     </View>
   );
@@ -551,7 +365,6 @@ export function PracticeTile({
   onPress: () => void;
   done?: boolean;
   wide?: boolean;
-  /** Smaller third-width tile (Home featured row). */
   compact?: boolean;
   testID?: string;
   style?: StyleProp<ViewStyle>;
@@ -622,14 +435,6 @@ const styles = StyleSheet.create({
   },
   todayTile: {
     minHeight: 152,
-  },
-  muhuratCue: {
-    marginTop: spacing.sm,
-    alignSelf: "flex-start",
-  },
-  muhuratCueText: {
-    fontSize: 12,
-    lineHeight: 16,
   },
   sectionTitle: {
     marginTop: spacing.xs,

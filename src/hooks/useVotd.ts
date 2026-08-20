@@ -20,13 +20,10 @@ export function useVotd(): {
   loading: boolean;
   error: string | null;
   stale: boolean;
-  /** Set when the day's verse was moon-driven — context, never causation. */
-  nakshatra: string | null;
 } {
   const [votd, setVotd] = useState<Sloka | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [nakshatra, setNakshatra] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
 
   useEffect(() => {
@@ -40,7 +37,6 @@ export function useVotd(): {
             id: fresh.id,
             ref: fresh.ref,
             date: localDayStamp(),
-            ...(fresh.nakshatra ? { nakshatra: fresh.nakshatra } : {}),
           };
           await setStoredVotd(meta);
         } catch (e) {
@@ -56,7 +52,6 @@ export function useVotd(): {
         return;
       }
       if (alive) setStale(meta.date !== localDayStamp());
-      if (alive) setNakshatra(meta.nakshatra ?? null);
       const cached = await getCachedVerse<Sloka>(meta.id);
       if (cached && alive) setVotd(cached);
       try {
@@ -77,5 +72,5 @@ export function useVotd(): {
     };
   }, []);
 
-  return { votd, loading, error, stale, nakshatra };
+  return { votd, loading, error, stale };
 }

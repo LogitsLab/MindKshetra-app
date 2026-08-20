@@ -1,6 +1,6 @@
 # MindKshetra (mobile)
 
-Expo app for iOS and Android — the same Gita companion and Jyotish experience as the web product.
+Expo app for iOS and Android — a Bhagavad Gita practice: Ask Madhav, verses, japa, and meditation.
 
 **Web / API:** [LogitsLab/MindKshetra](https://github.com/LogitsLab/MindKshetra) · [mind.logitslab.com](https://mind.logitslab.com)
 
@@ -8,8 +8,8 @@ Expo app for iOS and Android — the same Gita companion and Jyotish experience 
 
 - Explore verses, mood matching, favorites, journal
 - **Ask Madhav** (FAB → full-screen chat over the web API)
-- Astrology: members, incognito charts, dashas, predictions
-- Auth: anonymous, Google, email OTP
+- Practice: 108-bead japa, sādhana, guided meditation, reminders
+- Auth: anonymous, Google, email OTP, Sign in with Apple
 
 ## Quick start
 

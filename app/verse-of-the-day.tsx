@@ -22,7 +22,7 @@ export default function VerseOfTheDayScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { lang, t } = useLanguage();
-  const { votd: sloka, loading, error, nakshatra } = useVotd();
+  const { votd: sloka, loading, error } = useVotd();
 
   if (loading) {
     return (
@@ -78,12 +78,6 @@ export default function VerseOfTheDayScreen() {
             </Text>
           </Panel>
         </Pressable>
-
-        {nakshatra ? (
-          <Text variant="muted" style={{ marginTop: spacing.sm }}>
-            {t("votdNakshatraLine").replace("{nakshatra}", nakshatra)}
-          </Text>
-        ) : null}
 
         <View style={{ marginTop: spacing.lg }}>
           <Button

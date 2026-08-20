@@ -1,36 +1,44 @@
 {
   "name": "MindKshetra",
-  "subtitle": "Gita companion for the mind",
-  "primaryCategory": "Lifestyle",
-  "secondaryCategory": "Health & Fitness",
+  "subtitle": "Ask Madhav, Gita practice",
+  "primaryCategory": "Health & Fitness",
+  "secondaryCategory": "Lifestyle",
+  "nonprofit": true,
+  "openSource": true,
+  "license": "AGPL-3.0-or-later",
+  "sourceUrl": "https://github.com/LogitsLab/MindKshetra-app",
+  "webSourceUrl": "https://github.com/LogitsLab/MindKshetra",
+  "licenseAgreement": "Keep Apple’s standard EULA. Do not paste AGPL as the custom license — Apple requires its minimum terms, and a raw AGPL EULA can fail review. State nonprofit + open source in the description (below). There is no App Store Connect checkbox for Nonprofit or Open Source.",
   "keywords": [
+    "Ask Madhav",
     "Bhagavad Gita",
     "meditation",
-    "Jyotish",
-    "astrology",
-    "mindfulness",
-    "Krishna",
-    "Madhav",
-    "spirituality"
+    "japa",
+    "mental health",
+    "verses",
+    "nonprofit",
+    "open source"
   ],
   "supportUrl": "https://mind.logitslab.com",
   "marketingUrl": "https://mind.logitslab.com",
   "privacyPolicyUrl": "https://mind.logitslab.com/privacy",
   "en": {
     "title": "MindKshetra",
-    "shortDescription": "Clarity from the Gita, verses, Madhav chat, and Jyotish charts.",
-    "fullDescription": "MindKshetra is a calm companion for the battlefield of the mind.\n\nExplore the Bhagavad Gita with Sanskrit, Hindi, and English. Match how you feel to verses. Ask Madhav, a warm, citation-grounded guide. Cast Jyotish birth charts with dashas and structured predictions.\n\n• Explore, 701 verses by chapter, search, favorites, and journal reflections\n• Mood, find verses that meet you where you are\n• Ask Madhav, chat grounded in retrieved Gita teachings\n• Astrology, birth charts, dasha timelines, life-area predictions, and Madhav chart chat\n• Light and dark themes, English and Hindi\n\nWeb: https://mind.logitslab.com",
-    "whatsNewFallback": "Bug fixes and improvements for a calmer reading experience."
+    "promotionalText": "Ask Madhav understands what you are facing and answers with Gita verses and a story for you. Nonprofit, open source, free.",
+    "shortDescription": "Ask Madhav: your situation, a Gita story, and verses that apply to you. Free, nonprofit, open source.",
+    "fullDescription": "MindKshetra is a Bhagavad Gita practice for the mind — a daily habit of reading, asking, and sitting — not a generic AI chat app and not a reading of the future.\n\nASK MADHAV (this is the product)\nTell Madhav the problem and how you feel. It reads the situation and the emotion, then writes a detailed answer for that moment: a modern story you can relate to, plus the Gita verses that apply to you. Every reply is made for what you said, not a canned daily message. Verses are cited. Tap a citation to open the sloka in Sanskrit, Hindi, and English, with transliteration, so you can check the teaching yourself.\n\nThis is not “chat with a bot for a quote.” Madhav is a Gita teacher in the app: story first, then the verses, then a path into practice.\n\nTHE PRACTICE AROUND IT\n• Today’s verse — Sanskrit, transliteration, Hindi, and English, with a modern telling you can actually use\n• Explore — all 18 chapters, at your pace\n• Mood — say how you feel; receive verses matched to that state\n• 108-bead japa — tap a mala, choose a mantra, complete a round\n• Guided meditation — sit with a Gita-rooted session\n• Reminders — so the practice becomes a habit, not a one-off open\n\nEnglish and Hindi throughout (authored in both, not an afterthought translation). Continue as a guest for verses, mood, Ask Madhav, japa, and meditation. Sign in with Apple, Google, or email to keep a journal, favorites, saved Madhav chats, and preferences across devices.\n\nNONPROFIT AND OPEN SOURCE\nMindKshetra is a nonprofit, open-source project by LogitsLab. The iOS app is licensed AGPL-3.0-or-later. There are no ads, no subscriptions, and no in-app purchases. The code is public:\nhttps://github.com/LogitsLab/MindKshetra-app\nWeb and API: https://github.com/LogitsLab/MindKshetra\nSite: https://mind.logitslab.com\n\nCARE\nFor reflection and practice only — not medical care, therapy, or crisis treatment. If you are in distress, the app points you to helplines rather than pretending to treat you.",
+    "whatsNewFallback": "Ask Madhav reads what you are facing and answers with a story plus Gita verses that apply to you. Daily verse, 108-bead japa, guided meditation, and reminders. Free, nonprofit, open source."
   },
   "hi": {
     "title": "MindKshetra",
-    "shortDescription": "गीता से स्पष्टता, श्लोक, माधव चैट, और ज्योतिष कुंडली।",
-    "fullDescription": "MindKshetra मन के युद्धक्षेत्र के लिए एक शांत साथी है।\n\nभगवद्गीता को संस्कृत, हिंदी और अंग्रेज़ी में पढ़ें। मूड के अनुसार श्लोक पाएँ। माधव से पूछें, उद्धरणों पर आधारित मार्गदर्शन। ज्योतिष जन्म कुंडली, दशा और संरचित भविष्यवाणियाँ।\n\nवेब: https://mind.logitslab.com",
-    "whatsNewFallback": "बेहतर अनुभव के लिए सुधार और बग फिक्स।"
+    "promotionalText": "माधव आपकी स्थिति समझते हैं और गीता के श्लोकों व एक कथा से उत्तर देते हैं। गैर-लाभकारी, मुक्त स्रोत, निःशुल्क।",
+    "shortDescription": "माधव से पूछें: आपकी स्थिति, गीता की कथा, और आपके श्लोक। निःशुल्क, गैर-लाभकारी, मुक्त स्रोत।",
+    "fullDescription": "MindKshetra मन के लिए भगवद्गीता का अभ्यास है — पढ़ना, पूछना और बैठना एक दैनिक आदत के रूप में — कोई सामान्य AI चैट ऐप नहीं, और भविष्य पढ़ने वाला ऐप भी नहीं।\n\nमाधव से पूछें (यही उत्पाद है)\nमाधव को समस्या और अपना भाव बताएँ। वे स्थिति और भावना पढ़कर उसी क्षण के लिए विस्तृत उत्तर लिखते हैं: एक आधुनिक कथा जिससे आप जुड़ सकें, और आपके लिए लागू गीता श्लोक। हर उत्तर आपके कहे पर बना है, रोज़ का तैयार संदेश नहीं। श्लोक उद्धृत होते हैं। उद्धरण पर टैप करें — श्लोक संस्कृत, हिंदी और अंग्रेज़ी में लिप्यंतरण सहित खुलता है, ताकि आप स्वयं शिक्षण देख सकें।\n\nयह “बॉट से एक पंक्ति पूछ लेना” नहीं है। माधव ऐप में गीता के शिक्षक हैं: पहले कथा, फिर श्लोक, फिर अभ्यास।\n\nइर्द-गिर्द का अभ्यास\n• आज का श्लोक — संस्कृत, लिप्यंतरण, हिंदी और अंग्रेज़ी, आधुनिक कथा के साथ\n• अन्वेषण — सभी १८ अध्याय, अपनी गति से\n• मनोदशा — कैसा महसूस हो रहा है बताएँ; उस भाव से जुड़े श्लोक\n• १०८ मनकों का जप — माला टैप करें, मंत्र चुनें, एक चक्र पूरा करें\n• निर्देशित ध्यान — गीता पर आधारित बैठक\n• स्मरण — ताकि अभ्यास आदत बने, एक बार खोलकर भूल न जाए\n\nपूरा ऐप अंग्रेज़ी और हिंदी में है (दोनों भाषाओं में लिखा गया, बाद की मशीन-अनुवाद नहीं)। अतिथि के रूप में श्लोक, मनोदशा, माधव, जप और ध्यान चलते हैं। जर्नल, पसंद, सहेजी Madhav चैट और प्राथमिकताएँ रखने के लिए Apple, Google, या ईमेल से साइन इन करें।\n\nगैर-लाभकारी और मुक्त स्रोत\nMindKshetra LogitsLab का गैर-लाभकारी, मुक्त-स्रोत प्रोजेक्ट है। iOS ऐप AGPL-3.0-or-later के अंतर्गत है। विज्ञापन नहीं, सदस्यता नहीं, इन-ऐप खरीद नहीं। कोड सार्वजनिक है:\nhttps://github.com/LogitsLab/MindKshetra-app\nवेब और API: https://github.com/LogitsLab/MindKshetra\nसाइट: https://mind.logitslab.com\n\nध्यान\nकेवल चिंतन और अभ्यास के लिए — चिकित्सा, थेरेपी, या संकट उपचार नहीं। संकट में ऐप हेल्पलाइन दिखाता है, उपचार होने का दावा नहीं करता।",
+    "whatsNewFallback": "माधव आपकी स्थिति समझकर कथा और लागू गीता श्लोक देते हैं। दैनिक श्लोक, १०८ मनकों का जप, ध्यान और स्मरण। निःशुल्क, गैर-लाभकारी, मुक्त स्रोत।"
   },
   "ios": {
     "bundleId": "app.mindkshetra.mobile",
-    "submitNotes": "REVIEWER ACCESS: To see all account-gated features (Journal, Favorites, saved Madhav chats, sync), sign in with the demo account — Email: review@mindkshetra.app / Password: <SET_IN_APP_STORE_CONNECT>. On the first screen tap 'Use email instead', enter the email and password, then 'Sign in'. You may also use Sign in with Apple (your own Apple ID) or 'Continue as guest' for core features (verses, mood, Ask Madhav via text, astrology) without an account.\n\nLOGIN OPTIONS: Sign in with Apple, Google, or email (password or magic link). Magic-link email is optional and not required for review.\n\nAstrology charts are informational only, not medical or financial advice."
+    "submitNotes": "PRODUCT: MindKshetra is a Bhagavad Gita practice app (Ask Madhav + verse, japa, meditation). Open source AGPL-3.0-or-later: https://github.com/LogitsLab/MindKshetra-app. Built as a nonprofit commons — no ads, no subscriptions, no in-app purchases. Keep Apple’s standard EULA (do not replace it with AGPL text).\n\nREVIEWER ACCESS: Account-gated features (Journal, Favorites, saved Madhav chats, sync) — Email: review@mindkshetra.app / Password: set in App Store Connect Sign-In Information (do not use a placeholder). On the first screen tap Use email instead, enter the email and password, then Sign in. You may also use Sign in with Apple or Continue as guest for verses, mood, Ask Madhav, japa, and meditation.\n\nWALKTHROUGH: 1) Tap the brass Ask Madhav button. 2) Send “I feel anxious about work” (or type your own). 3) Tap a verse citation under the reply — it opens the sloka in Sanskrit, Hindi, and English. 4) Home is today’s verse. 5) Practise includes 108-bead japa and guided meditation.\n\nLOGIN OPTIONS: Sign in with Apple, Google, or email (password or magic link). Magic-link email is optional and not required for review.\n\nMindKshetra is for reflection, not medical or crisis care."
   },
   "android": {
     "package": "app.mindkshetra.mobile",

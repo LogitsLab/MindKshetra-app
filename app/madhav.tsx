@@ -20,7 +20,7 @@ import { MessageBubble } from "@/components/chat/MessageBubble";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { buildChatRequestBody, streamChat } from "@/api/client";
-import { astrologyApi, chatApi } from "@/api/endpoints";
+import { chatApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
@@ -60,12 +60,7 @@ export default function MadhavScreen() {
   const { isSignedIn } = useAuth();
   const {
     pendingPrompt,
-    memberId,
-    chartSessionId,
-    birthPayload,
     slokaId,
-    chartExplicitlyCleared,
-    attachMemberChart,
     clearPending,
     setStreaming,
   } = useMadhav();
@@ -111,39 +106,6 @@ export default function MadhavScreen() {
       onHide.remove();
     };
   }, []);
-
-  // Chart-grounded default: when opening Madhav without verse/session context,
-  // quietly attach the self member chart if one exists. Fail soft.
-  useEffect(() => {
-    if (!isSignedIn) return;
-    if (slokaId != null || memberId || chartSessionId || chartExplicitlyCleared) {
-      return;
-    }
-    let alive = true;
-    astrologyApi
-      .members()
-      .then((res) => {
-        if (!alive) return;
-        const members = res.members ?? [];
-        if (!members.length) return;
-        const self =
-          members.find(
-            (m) => (m.relationship ?? "").toLowerCase() === "self"
-          ) ?? members[0];
-        if (self?.id) attachMemberChart(self.id);
-      })
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, [
-    isSignedIn,
-    slokaId,
-    memberId,
-    chartSessionId,
-    chartExplicitlyCleared,
-    attachMemberChart,
-  ]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next) => {
@@ -286,7 +248,6 @@ export default function MadhavScreen() {
 
       let full = "";
       let citations: Citation[] = [];
-      let epigraph = "";
       const ac = new AbortController();
       abortRef.current = ac;
 
@@ -312,7 +273,6 @@ export default function MadhavScreen() {
           ...m,
           content: snapshot,
           citations,
-          chartEpigraph: epigraph || undefined,
         }));
       });
 
@@ -327,9 +287,6 @@ export default function MadhavScreen() {
             language: lang,
             sessionId,
             slokaId,
-            memberId,
-            chartSessionId,
-            birth: birthPayload,
             messages: history,
           }),
           {
@@ -355,12 +312,7 @@ export default function MadhavScreen() {
                 ...m,
                 content: full,
                 citations,
-                chartEpigraph: epigraph || undefined,
               }));
-            },
-            onChartEpigraph: (text) => {
-              epigraph = text;
-              replaceLast((m) => ({ ...m, chartEpigraph: text }));
             },
             onError: (message) => {
               if (backgroundAbort.current || appState.current !== "active") {
@@ -435,9 +387,6 @@ export default function MadhavScreen() {
       messages,
       lang,
       sessionId,
-      memberId,
-      chartSessionId,
-      birthPayload,
       slokaId,
       setStreaming,
       t,
@@ -480,7 +429,6 @@ export default function MadhavScreen() {
       <MessageBubble
         isUser={isUser}
         content={item.content}
-        chartEpigraph={item.chartEpigraph}
         citations={item.citations}
         label={isUser ? t("you") : t("madhav")}
         practiceLabel={t("citePractice")}

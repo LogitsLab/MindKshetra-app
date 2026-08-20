@@ -317,18 +317,6 @@ export function VotdCarousel({ verses, error, stale }: Props) {
                       {translation}
                     </Text>
                   ) : null}
-                  {item.nakshatra && item.offset === 0 ? (
-                    <Text
-                      variant="muted"
-                      color={colors.onMediaMuted}
-                      style={styles.nakshatra}
-                    >
-                      {t("votdNakshatraLine").replace(
-                        "{nakshatra}",
-                        item.nakshatra
-                      )}
-                    </Text>
-                  ) : null}
                 </Pressable>
 
                 <View style={styles.actions}>
@@ -440,10 +428,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontSize: 14,
     lineHeight: 21,
-  },
-  nakshatra: {
-    marginTop: spacing.sm,
-    fontSize: 11,
   },
   actions: {
     marginTop: spacing.md,

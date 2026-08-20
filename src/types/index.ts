@@ -23,7 +23,6 @@ export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   citations?: Citation[];
-  chartEpigraph?: string;
 };
 
 export type Citation = {
@@ -44,20 +43,6 @@ export type ChapterMeta = {
   summary_hi?: string;
   moral?: string;
   moral_hi?: string;
-};
-
-export type AstrologyMember = {
-  id: string;
-  name: string;
-  relationship?: string | null;
-  dob: string;
-  tob?: string | null;
-  tobUnknown?: boolean;
-  placeLabel?: string | null;
-  lat?: number | null;
-  lng?: number | null;
-  ianaTz?: string | null;
-  currentMahaLord?: string | null;
 };
 
 export type JournalEntry = {
@@ -97,58 +82,4 @@ export type SadhanaStreak = {
   current: number;
   longest: number;
   graceUsedToday?: boolean;
-};
-
-export type Koota = {
-  name: string;
-  score: number;
-  max: number;
-  note: string;
-};
-
-export type CompatibilityBand =
-  | "excellent"
-  | "good"
-  | "acceptable"
-  | "needs-discussion";
-
-export type CompatibilityResult = {
-  kootas: Koota[];
-  total: number;
-  max: number;
-  band: CompatibilityBand;
-  /** Always present — the count is a starting point, not a verdict. */
-  caveat: string;
-  nadiDosha: boolean;
-};
-
-/** Named festival matched from lunar month + paksha + tithi (server). */
-export type PanchangFestival = {
-  id: string;
-  labelEn: string;
-  labelHi: string;
-  practiceHint?: "japa" | "verse";
-  verseRef?: string;
-};
-
-/** Server daily panchang, computed at local sunrise for its location. */
-export type PanchangDay = {
-  tithi: string;
-  tithiIndex: number;
-  nakshatra: string;
-  pada: number;
-  yoga: string;
-  karana: string;
-  vaar: string;
-  date: string;
-  ianaTz: string;
-  sunrise: string | null;
-  sunset: string | null;
-  tithiEndsAt: string | null;
-  nakshatraEndsAt: string | null;
-  isEkadashi: boolean;
-  isPurnima: boolean;
-  isAmavasya: boolean;
-  /** Present when the API matched a curated lunar-rule festival. */
-  festivals?: PanchangFestival[];
 };

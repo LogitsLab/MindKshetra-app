@@ -93,11 +93,6 @@ function RootNavigator() {
         <Stack.Screen name="sloka/[id]" options={{ title: "Verse" }} />
         <Stack.Screen name="verse-of-the-day" options={{ title: "Verse of the Day" }} />
         <Stack.Screen name="japa" options={{ title: "Japa" }} />
-        <Stack.Screen name="panchang" options={{ title: "Panchang" }} />
-        <Stack.Screen
-          name="panchang-calendar"
-          options={{ title: "Month calendar" }}
-        />
         <Stack.Screen name="sadhana" options={{ title: "Sādhana" }} />
         <Stack.Screen
           name="community"
@@ -154,17 +149,6 @@ function RootNavigator() {
           name="journal/index"
           options={{ title: "Journal" }}
         />
-        <Stack.Screen name="astrology/incognito" options={{ title: "Incognito chart" }} />
-        <Stack.Screen name="astrology/muhurat" options={{ title: "Muhurats" }} />
-        <Stack.Screen name="astrology/horoscope" options={{ title: "Horoscope" }} />
-        <Stack.Screen name="astrology/transits" options={{ title: "Transits" }} />
-        <Stack.Screen name="astrology/members/index" options={{ title: "Members" }} />
-        <Stack.Screen name="astrology/members/new" options={{ title: "Add member" }} />
-        <Stack.Screen
-          name="astrology/members/[id]"
-          options={{ headerShown: false, animation: "slide_from_right" }}
-        />
-        <Stack.Screen name="astrology/milan" options={{ title: "Kundli Milan" }} />
         <Stack.Screen
           name="u/[handle]"
           options={{ title: "Profile", headerShown: false }}

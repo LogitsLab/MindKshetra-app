@@ -24,7 +24,6 @@ import {
 import { resolveAuthRedirectUri } from "@/auth/oauthRedirect";
 import { shouldMerge } from "@/auth/should-merge";
 import {
-  astrologyApi,
   chatApi,
   journeysApi,
   progressApi,
@@ -34,14 +33,12 @@ import {
 import { registerPush, unregisterPush } from "@/notifications/push";
 import {
   clearAllGuestJourneys,
-  clearPendingAstroSave,
   clearPendingProgress,
   clearSadhanaLog,
   getAllGuestJourneys,
   getChatSessionId,
   getGuestProgress,
   getJournalDrafts,
-  getPendingAstroSave,
   getPendingProgress,
   getSadhanaLog,
   getTimezoneSynced,
@@ -302,7 +299,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // user from a ref — the closure's `user` is frozen at its initial null.
   const prevUserRef = useRef<User | null>(null);
   const mergedForUserIdRef = useRef<string | null>(null);
-  const pendingAstroFlushRef = useRef(false);
 
   const clearLastMergeRestored = useCallback(() => {
     setLastMergeRestored(false);
@@ -425,32 +421,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await clearPendingProgress();
       } catch {
         /* keep queued */
-      }
-    })();
-  }, [user]);
-
-  // Incognito "Save as member" stashed birth details while signed out; complete
-  // createMember once a real account is present (mirrors web sessionStorage).
-  useEffect(() => {
-    if (!user || user.is_anonymous) {
-      pendingAstroFlushRef.current = false;
-      return;
-    }
-    if (pendingAstroFlushRef.current) return;
-    pendingAstroFlushRef.current = true;
-    void (async () => {
-      try {
-        const pending = await getPendingAstroSave();
-        if (!pending) {
-          pendingAstroFlushRef.current = false;
-          return;
-        }
-        const res = await astrologyApi.createMember(pending);
-        await clearPendingAstroSave();
-        router.replace(`/astrology/members/${res.member.id}`);
-      } catch {
-        pendingAstroFlushRef.current = false;
-        /* keep pending for the next sign-in / retry */
       }
     })();
   }, [user]);

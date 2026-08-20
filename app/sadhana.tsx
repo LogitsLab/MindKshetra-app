@@ -19,7 +19,6 @@ import { MilestoneLine, takeNewMilestone } from "@/components/PracticeMarks";
 import { Rise } from "@/components/Rise";
 import { MoodIcon } from "@/components/MoodIcon";
 import {
-  astrologyApi,
   contentApi,
   journeysApi,
   sadhanaApi,
@@ -118,11 +117,6 @@ export default function SadhanaScreen() {
   const [tomorrowDay, setTomorrowDay] = useState<number | null>(null);
   // At most one newly-crossed quiet milestone for the done screen.
   const [milestone, setMilestone] = useState<Milestone | null>(null);
-  const [chartOffer, setChartOffer] = useState<{
-    verseId: number;
-    ref: string;
-    excerpt: string;
-  } | null>(null);
 
   const loadVerseById = (id: number) => {
     setMoodId("path");
@@ -212,39 +206,6 @@ export default function SadhanaScreen() {
         });
     }
   }, [params]);
-
-  // Optional Pressure→Practice for signed-in chart users.
-  useEffect(() => {
-    if (!isSignedIn || moodId) {
-      setChartOffer(null);
-      return;
-    }
-    let cancelled = false;
-    astrologyApi
-      .members()
-      .then(async ({ members }) => {
-        if (!members?.length || cancelled) return;
-        const self =
-          members.find((m) => m.relationship === "self") ?? members[0];
-        const card = await astrologyApi.practiceCard(self.id);
-        if (!card?.verse || cancelled) return;
-        const excerptSource =
-          lang === "hi" ? card.verse.hindi : card.verse.english;
-        const excerpt =
-          excerptSource.length > 120
-            ? `${excerptSource.slice(0, 120).trimEnd()}…`
-            : excerptSource;
-        setChartOffer({
-          verseId: card.verse.id,
-          ref: card.verse.ref,
-          excerpt,
-        });
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [isSignedIn, moodId, lang]);
 
   const pickMood = (id: string) => {
     setMoodId(id);
@@ -417,25 +378,6 @@ export default function SadhanaScreen() {
             <Text variant="muted" color={colors.brassSoft} style={{ marginTop: spacing.sm }}>
               {t("sadhanaPathDayHint")}
             </Text>
-          ) : null}
-          {chartOffer && !moodId ? (
-            <Panel style={{ marginTop: spacing.md }}>
-              <Text variant="eyebrow" color={colors.brassSoft}>
-                {chartOffer.ref}
-              </Text>
-              <Text variant="muted" style={{ marginTop: spacing.xs }}>
-                {t("sadhanaChartVerseBlurb")}
-              </Text>
-              <Text variant="soft" style={{ marginTop: spacing.sm }}>
-                {chartOffer.excerpt}
-              </Text>
-              <Pressable
-                onPress={() => loadVerseById(chartOffer.verseId)}
-                style={{ marginTop: spacing.md }}
-              >
-                <Text color={colors.brassSoft}>{t("sadhanaChartVerse")} →</Text>
-              </Pressable>
-            </Panel>
           ) : null}
           <View style={styles.moodWrap}>
             {sadhanaMoods.map((mood) => {

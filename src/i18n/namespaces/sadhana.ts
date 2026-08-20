@@ -1,6 +1,6 @@
 /**
  * Daily practice: japa counter and the composed sadhana flow. Kept apart from
- * gita/astrology so practice copy can evolve without churning those files.
+ * so practice copy can evolve without churning those files.
  */
 export const en = {
   homeJapaTitle: "Japa",
@@ -19,12 +19,6 @@ export const en = {
   homeTodayEyebrow: "Today",
   homeTodayPracticed: "Practiced today: {list}",
   homeTodayPracticedNone: "Nothing logged yet today",
-  homeTodayJapaTitle: "Ekadashi · japa",
-  homeTodayJapaBody: "A quiet mala fits this tithi",
-  homeTodayFestivalJapaTitle: "{festival} · japa",
-  homeTodayFestivalJapaBody: "A quiet mala fits this observance",
-  homeTodayFestivalVerseTitle: "{festival} · verse",
-  homeTodayFestivalVerseBody: "Sit with {ref} today",
   homeTodaySadhanaTitle: "Begin today’s sādhana",
   homeTodaySadhanaBody: "A verse, a short sit, one quiet line",
   homeTodayMeditationTitle: "Continue sitting · day {n}",
@@ -33,7 +27,6 @@ export const en = {
   homeTodayReadingBody: "Pick up at chapter {chapter}, verse {verse}",
   homeTodayDefaultTitle: "Begin today’s sādhana",
   homeTodayDefaultBody: "A gentle way into the day",
-  homeMuhuratCue: "Abhijit today · {window}",
   sadhanaMoodTitle: "How is your mind today?",
   sadhanaVerseEyebrow: "A verse to sit with",
   sadhanaVerseFailed: "The verse didn’t load, try another mood.",
@@ -64,9 +57,6 @@ export const en = {
   pathDayLocked: "Finish the day before to open this one.",
   sadhanaPathDayHint: "Path day, this verse, then sit and complete.",
   sadhanaTomorrowPath: "Tomorrow: day {n} of your path",
-  sadhanaChartVerse: "Use today’s Pressure→Practice verse",
-  sadhanaChartVerseBlurb:
-    "Your chart’s leading tension meets one Gita verse, optional.",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -86,12 +76,6 @@ export const hi: Record<keyof typeof en, string> = {
   homeTodayEyebrow: "आज",
   homeTodayPracticed: "आज अभ्यास: {list}",
   homeTodayPracticedNone: "आज अभी कुछ दर्ज नहीं",
-  homeTodayJapaTitle: "एकादशी · जप",
-  homeTodayJapaBody: "इस तिथि पर एक शांत माला",
-  homeTodayFestivalJapaTitle: "{festival} · जप",
-  homeTodayFestivalJapaBody: "इस पर्व पर एक शांत माला",
-  homeTodayFestivalVerseTitle: "{festival} · श्लोक",
-  homeTodayFestivalVerseBody: "आज {ref} के साथ बैठें",
   homeTodaySadhanaTitle: "आज की साधना आरंभ करें",
   homeTodaySadhanaBody: "एक श्लोक, एक छोटी बैठक, एक शांत पंक्ति",
   homeTodayMeditationTitle: "बैठक जारी · दिन {n}",
@@ -100,7 +84,6 @@ export const hi: Record<keyof typeof en, string> = {
   homeTodayReadingBody: "अध्याय {chapter}, श्लोक {verse} से आगे",
   homeTodayDefaultTitle: "आज की साधना आरंभ करें",
   homeTodayDefaultBody: "दिन में कोमल प्रवेश",
-  homeMuhuratCue: "आज अभिजित · {window}",
   sadhanaMoodTitle: "आज मन कैसा है?",
   sadhanaVerseEyebrow: "साथ बैठने के लिए श्लोक",
   sadhanaVerseFailed: "श्लोक नहीं मिल पाया, कोई और भाव चुनें।",
@@ -131,7 +114,4 @@ export const hi: Record<keyof typeof en, string> = {
   pathDayLocked: "यह दिन खोलने के लिए पिछला दिन पूर्ण करें।",
   sadhanaPathDayHint: "मार्ग का दिन, यह श्लोक, फिर बैठें और पूर्ण करें।",
   sadhanaTomorrowPath: "कल: आपके मार्ग का दिन {n}",
-  sadhanaChartVerse: "आज का Pressure→Practice श्लोक लें",
-  sadhanaChartVerseBlurb:
-    "कुंडली का मुख्य दबाव एक गीता श्लोक से मिलता है, वैकल्पिक।",
 };

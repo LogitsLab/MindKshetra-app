@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { normalizeDays } from "@/data/journeys";
-import type { PanchangDay, SadhanaLogEntry } from "@/types";
+import type { SadhanaLogEntry } from "@/types";
 
 /**
  * Per-journey guest progress: `mindkshetra-journey-<id>` → { completedDays }.
@@ -23,7 +23,6 @@ const KEYS = {
   journalDrafts: "mindkshetra-journal-drafts",
   timezoneSynced: "mindkshetra-tz-synced",
   sadhanaLog: "mindkshetra-sadhana-log",
-  panchangToday: "mindkshetra-panchang-today",
   pushToken: "mindkshetra-push-token",
   notifPrompt: "mindkshetra-notif-prompt",
   milestonesSeen: "mindkshetra-milestones-seen",
@@ -31,45 +30,7 @@ const KEYS = {
   personalization: "mindkshetra-personalization-draft",
   meditationQueue: "mindkshetra-meditation-queue",
   meditationRun: "mindkshetra-meditation-run-foundation-7",
-  /** Incognito chart birth payload awaiting createMember after sign-in. */
-  pendingAstroSave: "mindkshetra-astro-pending-save",
 } as const;
-
-export type PendingAstroSave = {
-  name: string;
-  relationship: string;
-  dob: string;
-  tob: string | null;
-  tobUnknown: boolean;
-  gender: string | null;
-  placeLabel: string;
-  lat: number;
-  lng: number;
-  ianaTz: string;
-  utcOffsetMinutes?: number;
-};
-
-export async function getPendingAstroSave(): Promise<PendingAstroSave | null> {
-  const raw = await AsyncStorage.getItem(KEYS.pendingAstroSave);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as PendingAstroSave;
-    if (!parsed?.dob) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-export async function setPendingAstroSave(
-  payload: PendingAstroSave
-): Promise<void> {
-  await AsyncStorage.setItem(KEYS.pendingAstroSave, JSON.stringify(payload));
-}
-
-export async function clearPendingAstroSave(): Promise<void> {
-  await AsyncStorage.removeItem(KEYS.pendingAstroSave);
-}
 
 export async function clearChatSessionId(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.chatSession);
@@ -222,7 +183,6 @@ export async function clearUserLocalState(): Promise<void> {
     KEYS.sadhanaLog,
     KEYS.pushToken,
     KEYS.pendingProgress,
-    KEYS.pendingAstroSave,
     KEYS.personalization,
     KEYS.meditationQueue,
     KEYS.meditationRun,
@@ -282,7 +242,7 @@ export function localDayStamp(now = new Date()): string {
 
 /**
  * Asia/Kolkata civil day as YYYY-MM-DD — matches the server's New Delhi
- * reference sky for panchang / VOTD freshness (not the device zone).
+ * day for VOTD freshness (not the device zone).
  */
 export function istDayStamp(now = new Date()): string {
   try {
@@ -324,8 +284,6 @@ export type StoredVotd = {
   id: number;
   ref: string;
   date: string;
-  /** Present when the day's verse was moon-driven. */
-  nakshatra?: string;
 };
 
 /** Day-scoped cache of the server verse of the day (offline fallback). */
@@ -472,23 +430,6 @@ export async function setMilestonesSeen(keys: string[]): Promise<void> {
     KEYS.milestonesSeen,
     JSON.stringify(Array.from(new Set(keys)))
   );
-}
-
-export type StoredPanchang = { date: string; payload: PanchangDay };
-
-/** Day-scoped cache of the daily panchang (offline fallback, like votdToday). */
-export async function getStoredPanchang(): Promise<StoredPanchang | null> {
-  const raw = await AsyncStorage.getItem(KEYS.panchangToday);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as StoredPanchang;
-  } catch {
-    return null;
-  }
-}
-
-export async function setStoredPanchang(entry: StoredPanchang): Promise<void> {
-  await AsyncStorage.setItem(KEYS.panchangToday, JSON.stringify(entry));
 }
 
 export type JournalDraft = { slokaId: number; text: string; at: number };

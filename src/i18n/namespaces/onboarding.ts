@@ -3,7 +3,7 @@ export const en = {
   onboardingWelcomeTitle: "Clarity for the battlefield of the mind",
   onboardingBrandStory:
     "MindKshetra is the field of the mind, a calm Bhagavad Gita companion for moments of duty, doubt, and confusion. Read, reflect, sit for a short daily sādhana, and return when life feels heavy.",
-  onboardingPathsEyebrow: "Six paths in",
+  onboardingPathsEyebrow: "Five paths in",
   onboardingPathsTitle: "How MindKshetra helps",
   onboardingPathExploreTitle: "Explore",
   onboardingPathExploreBlurb:
@@ -17,9 +17,6 @@ export const en = {
   onboardingPathMadhavTitle: "Ask Madhav",
   onboardingPathMadhavBlurb:
     "Guidance in Krishna’s voice, grounded in real teachings.",
-  onboardingPathAstrologyTitle: "Astrology",
-  onboardingPathAstrologyBlurb:
-    "Birth chart, dasha, and a verse chosen by today’s moon.",
   onboardingPathPathsTitle: "Themed paths",
   onboardingPathPathsBlurb:
     "Anxiety, grief, purpose, relationships, seven days each.",
@@ -52,7 +49,7 @@ export const hi: Record<keyof typeof en, string> = {
   onboardingWelcomeTitle: "मन के कुरुक्षेत्र के लिए स्पष्टता",
   onboardingBrandStory:
     "MindKshetra मन का क्षेत्र है, कर्तव्य, संशय और उलझन के क्षणों के लिए एक शांत भगवद्गीता साथी। पढ़ें, चिंतन करें, रोज़ एक छोटी साधना करें, और जब जीवन भारी लगे तब लौटें।",
-  onboardingPathsEyebrow: "छह मार्ग",
+  onboardingPathsEyebrow: "पाँच मार्ग",
   onboardingPathsTitle: "MindKshetra कैसे मदद करता है",
   onboardingPathExploreTitle: "अन्वेषण",
   onboardingPathExploreBlurb:
@@ -66,9 +63,6 @@ export const hi: Record<keyof typeof en, string> = {
   onboardingPathMadhavTitle: "माधव से पूछें",
   onboardingPathMadhavBlurb:
     "कृष्ण की वाणी में मार्गदर्शन, वास्तविक शिक्षाओं पर आधारित।",
-  onboardingPathAstrologyTitle: "ज्योतिष",
-  onboardingPathAstrologyBlurb:
-    "जन्म कुंडली, दशा और आज के चंद्र नक्षत्र से चुना श्लोक।",
   onboardingPathPathsTitle: "विषयगत मार्ग",
   onboardingPathPathsBlurb:
     "चिंता, शोक, उद्देश्य, संबंध, प्रत्येक सात दिन।",

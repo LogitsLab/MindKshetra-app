@@ -10,24 +10,22 @@ export type HomePathEntry = {
     | "homeMoodTitle"
     | "homeMeditationTitle"
     | "homeMadhavTitle"
-    | "homeAstroTitle"
     | "homeBlockPathsTitle";
   blurbKey:
     | "homeExploreBlurb"
     | "homeMoodBlurb"
     | "homeMeditationBlurb"
     | "homeMadhavBlurb"
-    | "homeAstroBlurb"
     | "homeBlockPathsBody";
   image: ImageSourcePropType;
   /** Cover-crop preference for tall hero art. */
   imageFocus?: CoverImageFocus;
-  mark: "explore" | "mood" | "meditation" | "madhav" | "astrology" | "paths";
+  mark: "explore" | "mood" | "meditation" | "madhav" | "paths";
   href: Href;
 };
 
 /**
- * Paths Into, Home + Path tab (six tiles, including Ask Madhav).
+ * Paths Into, Home + Path tab.
  */
 export const HOME_PATHS: HomePathEntry[] = [
   {
@@ -65,14 +63,6 @@ export const HOME_PATHS: HomePathEntry[] = [
   },
   {
     index: "05",
-    titleKey: "homeAstroTitle",
-    blurbKey: "homeAstroBlurb",
-    image: images.pathAstrology,
-    mark: "astrology",
-    href: "/(tabs)/astrology",
-  },
-  {
-    index: "06",
     titleKey: "homeBlockPathsTitle",
     blurbKey: "homeBlockPathsBody",
     image: images.pathPaths,

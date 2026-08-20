@@ -35,10 +35,7 @@ export function MadhavFab() {
     pathname === "/path" ||
     pathname === "/profile" ||
     pathname?.startsWith("/explore") ||
-    pathname?.startsWith("/mood") ||
-    (pathname?.startsWith("/astrology") &&
-      !pathname.includes("/members") &&
-      !pathname.includes("/incognito"));
+    pathname?.startsWith("/mood");
 
   useEffect(() => {
     if (!streaming) {

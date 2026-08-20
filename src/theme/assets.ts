@@ -22,11 +22,9 @@ export const images = {
   pathMadhav: require("../../assets/paths/madhav.jpg"),
   /** Vishwaroop graded to path-tile teal/brass (Ask Madhav tile). */
   pathMadhavVishwaroop: require("../../assets/paths/madhav-vishwaroop.jpg"),
-  pathAstrology: require("../../assets/paths/astrology.jpg"),
   pathCommunity: require("../../assets/paths/community.jpg"),
   pathSadhana: require("../../assets/paths/sadhana.jpg"),
   pathPaths: require("../../assets/paths/paths.jpg"),
-  pathPanchangRing: require("../../assets/paths/panchang-ring.jpg"),
   madhavPortrait: require("../../assets/brand/madhav.jpg"),
   arjunPortrait: require("../../assets/brand/arjun.jpg"),
   madhavMark: require("../../assets/paths/path-madhav-mark.jpg"),

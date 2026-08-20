@@ -11,7 +11,6 @@ import type { Sloka } from "@/types";
 
 export type FeaturedVerse = {
   sloka: Sloka;
-  nakshatra: string | null;
   /** 0 = today, -1 = yesterday, -2 = earlier */
   offset: number;
 };
@@ -49,7 +48,6 @@ export function useFeaturedVerses(): {
           seen.add(sloka.id);
           found.push({
             sloka,
-            nakshatra: meta.nakshatra ?? null,
             offset,
           });
           await cacheVerse(meta.id, sloka);
@@ -58,7 +56,6 @@ export function useFeaturedVerses(): {
               id: meta.id,
               ref: meta.ref,
               date: localDayStamp(),
-              ...(meta.nakshatra ? { nakshatra: meta.nakshatra } : {}),
             });
             if (alive) setStale(meta.date !== localDayStamp());
           }
@@ -74,7 +71,6 @@ export function useFeaturedVerses(): {
           if (cached) {
             found.push({
               sloka: cached,
-              nakshatra: meta.nakshatra ?? null,
               offset: 0,
             });
             if (alive) {

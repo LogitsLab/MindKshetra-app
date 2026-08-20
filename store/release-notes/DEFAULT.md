@@ -2,4 +2,4 @@
 
 - Richer Krishna atmosphere and a gentle startup image
 - Bug fixes and performance improvements
-- Keep exploring verses, Madhav, and astrology charts
+- Keep exploring verses, Madhav, japa, and daily practice
