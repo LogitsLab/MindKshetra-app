@@ -11,10 +11,12 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { KeyboardStickyView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { Screen } from "@/components/Screen";
@@ -34,6 +36,7 @@ import {
 } from "@/storage/local";
 import { images } from "@/theme/assets";
 import { radii, spacing } from "@/theme/tokens";
+import { multilineInputProps } from "@/components/KeyboardForm";
 import type { ChatMessage, Citation } from "@/types";
 import { TokenBuffer } from "@/utils/TokenBuffer";
 
@@ -60,6 +63,7 @@ export default function MadhavScreen() {
   const { isSignedIn } = useAuth();
   const {
     pendingPrompt,
+    contextLabel,
     memberId,
     chartSessionId,
     birthPayload,
@@ -87,7 +91,8 @@ export default function MadhavScreen() {
   const [error, setError] = useState<string | null>(null);
   const [crisisBanner, setCrisisBanner] = useState<string | null>(null);
   // Modal + headerShown:false makes KeyboardAvoidingView under-shift on iOS;
-  // track keyboard height and pad the composer directly instead.
+  // KeyboardStickyView moves the composer with the IME on both platforms.
+  // keyboardHeight still collapses the hero so the input is not squeezed to 0.
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const listRef = useRef<FlatList<UiMessage>>(null);
   const autoSentPrompt = useRef<string | null>(null);
@@ -130,7 +135,7 @@ export default function MadhavScreen() {
           members.find(
             (m) => (m.relationship ?? "").toLowerCase() === "self"
           ) ?? members[0];
-        if (self?.id) attachMemberChart(self.id);
+        if (self?.id) attachMemberChart(self.id, self.name);
       })
       .catch(() => undefined);
     return () => {
@@ -494,11 +499,14 @@ export default function MadhavScreen() {
     );
   };
 
-  // Android uses softwareKeyboardLayoutMode:"resize", so only iOS needs the
-  // manual lift. When the keyboard is up it covers the home indicator.
-  const keyboardLift = Platform.OS === "ios" ? keyboardHeight : 0;
-  const composerPad =
-    keyboardLift > 0 ? spacing.sm : Math.max(insets.bottom, spacing.sm);
+  const { width, height } = useWindowDimensions();
+  // Edge-to-edge Android does not resize the window. Lift and collapse on both.
+  const keyboardOpen = keyboardHeight > 0;
+  const landscape = width > height;
+  const compactChrome = keyboardOpen || landscape;
+  const composerPad = keyboardOpen
+    ? spacing.sm
+    : Math.max(insets.bottom, spacing.sm);
 
   return (
     <Screen
@@ -508,6 +516,7 @@ export default function MadhavScreen() {
       atmosphere="soft"
     >
       <View style={{ flex: 1 }}>
+        {!compactChrome ? (
         <ImageBackground
           source={images.krishnaVishwaroop}
           style={styles.headerHero}
@@ -544,6 +553,15 @@ export default function MadhavScreen() {
               >
                 {lang === "hi" ? "गीता मार्गदर्शक" : "Gita guide"}
               </Text>
+              {contextLabel ? (
+                <Text
+                  variant="muted"
+                  color={colors.brassSoft}
+                  style={{ marginTop: 4, fontSize: 12 }}
+                >
+                  {contextLabel}
+                </Text>
+              ) : null}
             </View>
             <Pressable
               testID="madhav-close"
@@ -630,6 +648,50 @@ export default function MadhavScreen() {
             </View>
           ) : null}
         </ImageBackground>
+        ) : (
+          <View
+            style={[
+              styles.header,
+              {
+                backgroundColor: colors.navBg,
+                paddingBottom: spacing.sm,
+              },
+            ]}
+          >
+            <Image
+              source={images.madhavPortrait}
+              style={styles.portrait}
+              resizeMode="cover"
+            />
+            <View style={{ flex: 1 }}>
+              <Text variant="title" color={colors.brassSoft} style={styles.madhavName}>
+                Madhav
+              </Text>
+              {contextLabel ? (
+                <Text variant="muted" color={colors.brassSoft} style={{ marginTop: 2, fontSize: 12 }}>
+                  {contextLabel}
+                </Text>
+              ) : null}
+            </View>
+            <Pressable
+              testID="madhav-close"
+              accessibilityRole="button"
+              accessibilityLabel="Close Madhav"
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                styles.close,
+                {
+                  borderColor: colors.line,
+                  opacity: pressed ? 0.55 : 1,
+                },
+              ]}
+            >
+              <Text style={{ color: colors.text, fontSize: 22, lineHeight: 24 }}>
+                ×
+              </Text>
+            </Pressable>
+          </View>
+        )}
 
         {showSessions ||
         (isSignedIn &&
@@ -762,13 +824,13 @@ export default function MadhavScreen() {
           </Text>
         ) : null}
 
+        <KeyboardStickyView>
         <View
           style={[
             styles.composer,
             {
               backgroundColor: colors.navBg,
               paddingBottom: composerPad,
-              marginBottom: keyboardLift,
             },
           ]}
         >
@@ -779,6 +841,12 @@ export default function MadhavScreen() {
             placeholder={lang === "hi" ? "पार्थ, लिखें…" : "Type a message…"}
             placeholderTextColor={colors.textMuted}
             multiline
+            {...multilineInputProps}
+            onFocus={() => {
+              requestAnimationFrame(() => {
+                listRef.current?.scrollToEnd({ animated: true });
+              });
+            }}
             style={[
               styles.input,
               {
@@ -804,6 +872,7 @@ export default function MadhavScreen() {
             <Text style={{ color: colors.onBrass, fontSize: 20, lineHeight: 22 }}>➤</Text>
           </Pressable>
         </View>
+        </KeyboardStickyView>
       </View>
     </Screen>
   );

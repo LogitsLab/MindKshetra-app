@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import Svg, { Path } from "react-native-svg";
 import { Screen } from "@/components/Screen";
+import { KeyboardFormScroll, multilineInputProps } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
@@ -473,7 +474,7 @@ export default function SlokaScreen() {
         </View>
       ) : null}
 
-      <ScrollView
+      <KeyboardFormScroll
         ref={scrollRef}
         testID="sloka-scroll"
         showsVerticalScrollIndicator={false}
@@ -858,6 +859,7 @@ export default function SlokaScreen() {
                 setShareHeld(false);
               }}
               multiline
+              {...multilineInputProps}
               accessibilityLabel={
                 lang === "hi" ? "आपका निजी चिन्तन" : "Your private reflection"
               }
@@ -1016,7 +1018,7 @@ export default function SlokaScreen() {
         ) : null}
 
         <VerseReflections slokaId={sloka.id} />
-      </ScrollView>
+      </KeyboardFormScroll>
 
       <NotificationPrompt
         visible={notifPromptVisible}

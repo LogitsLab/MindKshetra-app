@@ -88,6 +88,17 @@ export const en = {
   medHomeStart: "Begin the sitting course",
   medAmbientOn: "Stop music",
   medAmbientOff: "Play music",
+  medSitModeLabel: "This sit",
+  medSitGuided: "Guided (voice)",
+  medSitSilent: "Silent + music",
+  medSitGuidedHint: "Spoken phases from today’s script, then silence.",
+  medSitSilentHint: "One quiet timer with the music you choose. No voice.",
+  medAmbientLabel: "Music",
+  medAmbientSilence: "Silence",
+  medAmbientDrone: "Drone",
+  medAmbientBowls: "Bowls",
+  medAmbientRain: "Rain",
+  medAmbientCredit: "Original beds, free to use with the app.",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -177,4 +188,15 @@ export const hi: Record<keyof typeof en, string> = {
   medHomeStart: "बैठने का पाठ्यक्रम आरंभ करें",
   medAmbientOn: "संगीत रोकें",
   medAmbientOff: "संगीत चलाएँ",
+  medSitModeLabel: "यह बैठक",
+  medSitGuided: "मार्गदर्शित (आवाज़)",
+  medSitSilent: "मौन + संगीत",
+  medSitGuidedHint: "आज की लिपि की बोलने वाली अवस्थाएँ, फिर मौन।",
+  medSitSilentHint: "चुने हुए संगीत के साथ एक शांत घड़ी। कोई आवाज़ नहीं।",
+  medAmbientLabel: "संगीत",
+  medAmbientSilence: "मौन",
+  medAmbientDrone: "ड्रोन",
+  medAmbientBowls: "कटोरे",
+  medAmbientRain: "वर्षा",
+  medAmbientCredit: "मूल संगीत, ऐप के साथ मुफ़्त उपयोग।",
 };

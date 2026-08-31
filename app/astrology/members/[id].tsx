@@ -11,7 +11,7 @@ import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/SlokaCard";
-import { ChartOverviewPanel } from "@/components/astrology/ChartOverviewPanel";
+import { ChartDesk, type DeskTab } from "@/components/astrology/ChartDesk";
 import { DashaTimelinePanel } from "@/components/astrology/DashaTimelinePanel";
 import { PredictionsPanel } from "@/components/astrology/PredictionsPanel";
 import { PredictionsStatus } from "@/components/astrology/PredictionsStatus";
@@ -32,14 +32,14 @@ import {
   type PredictionsText,
 } from "@/types/astrology";
 
-type Tab = "chart" | "dasha" | "predictions";
+type Tab = DeskTab;
 
 export default function AstrologyMemberDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { colors } = useTheme();
   const { lang, t } = useLanguage();
-  const { askAboutChart } = useMadhav();
+  const { askAboutChart, attachMemberChart } = useMadhav();
 
   const [member, setMember] = useState<AstrologyMember | null>(null);
   const [chart, setChart] = useState<Record<string, unknown> | null>(null);
@@ -65,6 +65,7 @@ export default function AstrologyMemberDetailScreen() {
         ]);
         if (!alive) return;
         setMember(mRes.member);
+        attachMemberChart(id, mRes.member?.name);
         const nextChart = cRes.chart ?? null;
         setChart(nextChart);
         const existing = nextChart?.predictionsText as PredictionsText | undefined;
@@ -173,106 +174,70 @@ export default function AstrologyMemberDetailScreen() {
           {t("astroEyebrow")}
         </Text>
 
-        <View style={styles.tabs}>
-          {(
-            [
-              ["chart", t("astroTabChart")],
-              ["dasha", t("astroTabDasha")],
-              ["predictions", t("astroTabPredictions")],
-            ] as const
-          ).map(([key, label]) => (
-            <Pressable
-              key={key}
-              onPress={() => setTab(key)}
-              style={[
-                styles.tab,
-                {
-                  borderColor: colors.line,
-                  backgroundColor: tab === key ? colors.surfaceHover : colors.surface,
-                },
-              ]}
-            >
-              <Text
-                variant="muted"
-                style={{ color: tab === key ? colors.brassSoft : colors.textMuted }}
-              >
-                {label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
         {error ? (
           <Text variant="muted" style={{ marginTop: spacing.sm, color: colors.danger }}>
             {error}
           </Text>
         ) : null}
 
-        <View
-          style={[
-            styles.panel,
-            { borderColor: colors.line, backgroundColor: colors.panel },
-          ]}
-        >
-          {tab === "chart" ? (
-            <ChartOverviewPanel
+        {chart ? (
+          <View
+            style={[
+              styles.panel,
+              { borderColor: colors.line, backgroundColor: colors.panel },
+            ]}
+          >
+            <ChartDesk
+              chart={chart}
+              title={member?.name ?? t("astroGuestChart")}
+              tab={tab}
+              onTab={setTab}
+              memberId={id}
               overview={overview}
               planets={planets}
-              tobUnknown={Boolean(chart?.tobUnknown)}
               themeLine={themeLine}
-              labels={{
-                asc: t("astroAsc"),
-                moon: t("astroMoon"),
-                sun: t("astroSun"),
-                dasha: t("astroCurrentDasha"),
-                planet: t("astroPlanet"),
-                tobUnknown: t("astroTobUnknown"),
-                atAGlance: t("astroAtAGlance"),
-              }}
+              dashaNode={
+                <DashaTimelinePanel
+                  tree={dashaTree}
+                  currentMaha={overview?.currentMaha}
+                  currentAntar={overview?.currentAntar}
+                  emptyLabel={lang === "hi" ? "दशा डेटा नहीं" : "No dasha data"}
+                  currentLabel={t("astroCurrentDasha")}
+                />
+              }
+              predictionsNode={
+                predictions.predictions ? (
+                  <PredictionsPanel
+                    predictions={predictions.predictions}
+                    featuredArea={featuredAreaFromChart(chart)}
+                    detailed
+                    labels={{
+                      portrait: t("astroPortrait"),
+                      rulesBanner: t("astroPredRulesBanner"),
+                      regenerateHint: t("astroPredRegenerateHint"),
+                      strengths: t("astroStrengths"),
+                      watchouts: t("astroWatchouts"),
+                      now: t("astroNowPeriod"),
+                      nearTerm: t("astroNearTerm"),
+                      guidance: t("astroPredTryThis"),
+                      featured: t("astroFeaturedArea"),
+                      area: areaLabel,
+                    }}
+                  />
+                ) : (
+                  <PredictionsStatus
+                    busy={predictions.busy}
+                    stage={predictions.stage}
+                    error={predictions.error}
+                    errorKind={predictions.errorKind}
+                    retryAfterSec={predictions.retryAfterSec}
+                    onRetry={() => void predictions.load()}
+                  />
+                )
+              }
             />
-          ) : null}
-
-          {tab === "dasha" ? (
-            <DashaTimelinePanel
-              tree={dashaTree}
-              currentMaha={overview?.currentMaha}
-              currentAntar={overview?.currentAntar}
-              emptyLabel={lang === "hi" ? "दशा डेटा नहीं" : "No dasha data"}
-              currentLabel={t("astroCurrentDasha")}
-            />
-          ) : null}
-
-          {tab === "predictions" ? (
-            predictions.predictions ? (
-              <PredictionsPanel
-                predictions={predictions.predictions}
-                featuredArea={featuredAreaFromChart(chart)}
-                detailed
-                labels={{
-                  portrait: t("astroPortrait"),
-                  rulesBanner: t("astroPredRulesBanner"),
-                  regenerateHint: t("astroPredRegenerateHint"),
-                  strengths: t("astroStrengths"),
-                  watchouts: t("astroWatchouts"),
-                  now: t("astroNowPeriod"),
-                  nearTerm: t("astroNearTerm"),
-                  guidance: t("astroPredTryThis"),
-                  featured: t("astroFeaturedArea"),
-                  area: areaLabel,
-                }}
-              />
-            ) : (
-              <PredictionsStatus
-                busy={predictions.busy}
-                stage={predictions.stage}
-                error={predictions.error}
-                errorKind={predictions.errorKind}
-                retryAfterSec={predictions.retryAfterSec}
-                onRetry={() => void predictions.load()}
-              />
-            )
-          ) : null}
-        </View>
+          </View>
+        ) : null}
 
         {tab === "chart" || tab === "predictions" ? (
           <PressurePracticeCard memberId={id} />
@@ -280,15 +245,10 @@ export default function AstrologyMemberDetailScreen() {
 
         <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
           <Button
-            label={t("askMadhavAbout")}
+            label={t("astroAskThisChart")}
             onPress={() => {
-              askAboutChart(
-                id,
-                lang === "hi"
-                  ? "इस कुंडली के आधार पर आज क्या चिंतन करूँ?"
-                  : "What does my chart suggest I should reflect on today?"
-              );
-              router.push("/madhav");
+              askAboutChart(id, undefined, member?.name ?? undefined);
+              setTab("chat");
             }}
           />
           <Button

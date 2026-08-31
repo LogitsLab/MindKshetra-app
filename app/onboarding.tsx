@@ -4,7 +4,6 @@ import {
   FlatList,
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -17,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Screen } from "@/components/Screen";
+import { KeyboardFormScroll, fieldInputProps } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { BrandMark } from "@/components/BrandMark";
 import { GoalIcon } from "@/components/GoalIcon";
@@ -264,7 +264,7 @@ export default function OnboardingScreen() {
 
   function renderGoals() {
     return (
-      <ScrollView
+      <KeyboardFormScroll
         contentContainerStyle={styles.page}
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
@@ -323,7 +323,7 @@ export default function OnboardingScreen() {
           styles={styles}
           skipColor={colors.onMediaMuted}
         />
-      </ScrollView>
+      </KeyboardFormScroll>
     );
   }
 
@@ -331,7 +331,7 @@ export default function OnboardingScreen() {
     const dialogue = copy.inspirations.dialogue;
     const sloka = copy.inspirations.sloka;
     return (
-      <ScrollView
+      <KeyboardFormScroll
         contentContainerStyle={styles.page}
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
@@ -438,13 +438,13 @@ export default function OnboardingScreen() {
           styles={styles}
           skipColor={colors.onMediaMuted}
         />
-      </ScrollView>
+      </KeyboardFormScroll>
     );
   }
 
   function renderTime() {
     return (
-      <ScrollView
+      <KeyboardFormScroll
         contentContainerStyle={styles.page}
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
@@ -506,13 +506,13 @@ export default function OnboardingScreen() {
           styles={styles}
           skipColor={colors.onMediaMuted}
         />
-      </ScrollView>
+      </KeyboardFormScroll>
     );
   }
 
   function renderSetup() {
     return (
-      <ScrollView
+      <KeyboardFormScroll
         contentContainerStyle={styles.page}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -619,6 +619,7 @@ export default function OnboardingScreen() {
           }
           placeholder={copy.setup.namePlaceholder[L]}
           placeholderTextColor={colors.onMediaMuted}
+          {...fieldInputProps}
           style={[styles.input, { color: colors.onMedia }]}
         />
         <OnboardingNextBar
@@ -630,13 +631,13 @@ export default function OnboardingScreen() {
           styles={styles}
           skipColor={colors.onMediaMuted}
         />
-      </ScrollView>
+      </KeyboardFormScroll>
     );
   }
 
   function renderAccount() {
     return (
-      <ScrollView
+      <KeyboardFormScroll
         contentContainerStyle={styles.page}
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
@@ -662,7 +663,7 @@ export default function OnboardingScreen() {
           onGuest={() => onAuth("guest")}
           onEnterAnyway={() => finish(false)}
         />
-      </ScrollView>
+      </KeyboardFormScroll>
     );
   }
 

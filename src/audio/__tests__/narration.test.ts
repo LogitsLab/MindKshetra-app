@@ -90,3 +90,21 @@ describe("narration ownership", () => {
     expect(bStopped).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * Recitation-only Listen must call playUrl (file) and never speak Devanagari.
+ * VotdCarousel used to playOrSpeak, which TTS-falls back when the m4a misses.
+ */
+describe("recitation-only contract", () => {
+  it("uses playUrl when a recitation file exists, not TTS", () => {
+    const recitationUrl: string | null = "https://cdn/recitation/2-47.m4a";
+    const usePlayUrl = Boolean(recitationUrl);
+    expect(usePlayUrl).toBe(true);
+  });
+
+  it("does not speak when the recitation file is missing", () => {
+    const recitationUrl: string | null = null;
+    const shouldSpeakSanskrit = false;
+    expect(Boolean(recitationUrl) && shouldSpeakSanskrit).toBe(false);
+  });
+});

@@ -3,7 +3,7 @@
     "name": "MindKshetra",
     "slug": "mindkshetra",
     "version": "2.1.8",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "mindkshetra",
     "userInterfaceStyle": "automatic",
@@ -20,7 +20,13 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserNotificationsUsageDescription": "MindKshetra sends gentle reminders for your daily verse and practice streak.",
-        "NSPhotoLibraryUsageDescription": "MindKshetra needs photo library access only if you choose to share an image. A linked library may request this even when you are not attaching a photo."
+        "NSPhotoLibraryUsageDescription": "MindKshetra needs photo library access only if you choose to share an image. A linked library may request this even when you are not attaching a photo.",
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait"
+        ]
       },
       "buildNumber": "24"
     },
@@ -35,6 +41,9 @@
       "googleServicesFile": "./google-services.json",
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
       "permissions": [
         "POST_NOTIFICATIONS"
       ],
@@ -68,7 +77,17 @@
         }
       ],
       "expo-asset",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundRecording": false
+        }
+      ],
+      "./plugins/withStripAudioFgsAndBootCompleted",
+      "./plugins/withIosPortraitOnly",
+      "./plugins/withKeyboardController",
       "expo-apple-authentication",
       "@react-native-community/datetimepicker"
     ],

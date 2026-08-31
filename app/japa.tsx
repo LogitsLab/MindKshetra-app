@@ -3,10 +3,10 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
+  TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -20,21 +20,51 @@ import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
 import { MilestoneLine, takeNewMilestone } from "@/components/PracticeMarks";
+import {
+  KeyboardFormScroll,
+  fieldInputProps,
+} from "@/components/KeyboardForm";
 import { sadhanaApi } from "@/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
-import { mantras, type Mantra } from "@/data/mantras";
+import {
+  CUSTOM_MANTRA_ID,
+  looksDevanagari,
+  mantras,
+  type Mantra,
+} from "@/data/mantras";
+import { hasJapaChant, playJapaChant, stopJapaChant } from "@/audio/japa";
 import type { Milestone } from "@/data/milestones";
-import { appendSadhanaLog, localDayStamp } from "@/storage/local";
+import {
+  appendSadhanaLog,
+  getJapaPrefs,
+  localDayStamp,
+  setJapaPrefs,
+  type JapaMode,
+  type JapaTarget,
+} from "@/storage/local";
 import { uuidv4 } from "@/utils/uuid";
 import { images } from "@/theme/assets";
-import { spacing, type ThemeColors } from "@/theme/tokens";
+import { radii, spacing, type ThemeColors } from "@/theme/tokens";
 
-const BEADS_PER_MALA = 108;
 const RING_SIZE = 248;
 const BEAD_R = 2.6;
 const GURU_R = 4.5;
+const TARGETS: JapaTarget[] = [27, 54, 108];
+
+function customMantra(naam: string): Mantra {
+  const trimmed = naam.trim();
+  const devanagari = looksDevanagari(trimmed) ? trimmed : "";
+  const iast = looksDevanagari(trimmed) ? "" : trimmed;
+  return {
+    id: CUSTOM_MANTRA_ID,
+    devanagari: devanagari || trimmed,
+    iast: iast || trimmed,
+    meaning_en: "The name you brought to this mala.",
+    meaning_hi: "वह नाम जो आप इस माला पर लाए।",
+  };
+}
 
 export default function JapaScreen() {
   useKeepAwake();
@@ -43,30 +73,55 @@ export default function JapaScreen() {
   const { t, lang } = useLanguage();
   const { session } = useAuth();
 
-  const [mantra, setMantra] = useState<Mantra>(mantras[0]);
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [stage, setStage] = useState<"setup" | "count">("setup");
+  const [mantraId, setMantraId] = useState(mantras[0].id);
+  const [customNaam, setCustomNaam] = useState("");
+  const [target, setTarget] = useState<JapaTarget>(108);
+  const [mode, setMode] = useState<JapaMode>("self");
   const [total, setTotal] = useState(0);
   const [milestone, setMilestone] = useState<Milestone | null>(null);
-  /** Brief full-ring light when a mala completes (count has already wrapped to 0). */
   const [malaFlash, setMalaFlash] = useState(false);
   const reduceMotion = useRef(false);
   const pulse = useRef(new Animated.Value(1)).current;
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Everything the leave-time log needs lives in refs so the unmount effect
-  // never re-runs — a re-run's cleanup would log mid-practice.
   const totalRef = useRef(0);
   const startedAtRef = useRef<number | null>(null);
   const loggedRef = useRef(false);
   const clientRefRef = useRef(uuidv4());
   const sessionRef = useRef(session);
+  const modeRef = useRef(mode);
+  const mantraRef = useRef<Mantra>(mantras[0]);
+  const targetRef = useRef(target);
 
   useEffect(() => {
     sessionRef.current = session;
   }, [session]);
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+  useEffect(() => {
+    targetRef.current = target;
+  }, [target]);
+
+  const mantra: Mantra = useMemo(() => {
+    if (mantraId === CUSTOM_MANTRA_ID) return customMantra(customNaam);
+    return mantras.find((m) => m.id === mantraId) ?? mantras[0];
+  }, [mantraId, customNaam]);
+
+  useEffect(() => {
+    mantraRef.current = mantra;
+  }, [mantra]);
 
   useEffect(() => {
     let alive = true;
+    void getJapaPrefs().then((prefs) => {
+      if (!alive) return;
+      setMantraId(prefs.mantraId);
+      setCustomNaam(prefs.customNaam);
+      setTarget(prefs.target);
+      setMode(prefs.mode);
+    });
     void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
       if (alive) reduceMotion.current = enabled;
     });
@@ -80,20 +135,20 @@ export default function JapaScreen() {
       alive = false;
       sub.remove();
       if (flashTimer.current) clearTimeout(flashTimer.current);
+      stopJapaChant();
     };
   }, []);
 
-  const bead = total % BEADS_PER_MALA;
-  const malas = Math.floor(total / BEADS_PER_MALA);
-  const litCount = malaFlash ? BEADS_PER_MALA : bead;
+  const bead = total;
+  const complete = total >= target;
+  const litCount = malaFlash ? target : Math.min(bead, target);
 
   const playTapMotion = (nextTotal: number) => {
-    // Ring stays still — beads light up in place. Only the count pulses.
     if (reduceMotion.current) {
       pulse.setValue(1);
       return;
     }
-    const malaDone = nextTotal % BEADS_PER_MALA === 0;
+    const malaDone = nextTotal >= targetRef.current;
     Animated.sequence([
       Animated.timing(pulse, {
         toValue: malaDone ? 1.12 : 1.05,
@@ -110,33 +165,35 @@ export default function JapaScreen() {
     ]).start();
   };
 
+  const chantAssisted = () => {
+    void playJapaChant(mantraRef.current.id);
+  };
+
   const onTap = () => {
+    if (totalRef.current >= targetRef.current) return;
     if (startedAtRef.current == null) startedAtRef.current = Date.now();
+    if (modeRef.current === "assisted") chantAssisted();
     const next = totalRef.current + 1;
     totalRef.current = next;
     setTotal(next);
     playTapMotion(next);
-    if (next % BEADS_PER_MALA === 0) {
-      // One full mala — light every bead briefly, then clear for the next round.
+    if (next >= targetRef.current) {
       setMalaFlash(true);
       if (flashTimer.current) clearTimeout(flashTimer.current);
       flashTimer.current = setTimeout(() => setMalaFlash(false), 420);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // The mala-completion moment: at most one newly-crossed mark. This is
-      // where japa gets its quiet line — the screen has no done stage, it
-      // returns straight to where it came from.
       void takeNewMilestone().then(setMilestone);
     } else {
       void Haptics.selectionAsync();
     }
   };
 
-  /** Log once per visit — from Finish or from leaving the screen. */
   const logSession = useCallback(() => {
     if (loggedRef.current) return;
     const count = totalRef.current;
     if (count <= 0) return;
     loggedRef.current = true;
+    stopJapaChant();
     const durationSec = startedAtRef.current
       ? Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000))
       : undefined;
@@ -148,7 +205,6 @@ export default function JapaScreen() {
       clientRef: clientRefRef.current,
     };
     if (sessionRef.current) {
-      // Any Supabase session — anonymous included — persists server-side.
       let timezone: string | undefined;
       try {
         timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
@@ -164,8 +220,6 @@ export default function JapaScreen() {
           timezone,
         })
         .catch(() => {
-          // Offline — queue on-device; /api/sadhana/merge replays it later
-          // and clientRef keeps a double landing harmless.
           void appendSadhanaLog(entry);
         });
     } else {
@@ -175,16 +229,208 @@ export default function JapaScreen() {
 
   useEffect(() => () => logSession(), [logSession]);
 
+  const beginCount = () => {
+    const chosen =
+      mantraId === CUSTOM_MANTRA_ID && !customNaam.trim()
+        ? mantras[0].id
+        : mantraId;
+    setMantraId(chosen);
+    void setJapaPrefs({
+      mantraId: chosen,
+      customNaam,
+      target,
+      mode,
+    });
+    totalRef.current = 0;
+    startedAtRef.current = null;
+    loggedRef.current = false;
+    clientRefRef.current = uuidv4();
+    setTotal(0);
+    setMilestone(null);
+    setStage("count");
+  };
+
   const meaning = lang === "hi" ? mantra.meaning_hi : mantra.meaning_en;
-  // A letter-spaced eyebrow breaks Devanagari matra shaping — zero tracking
-  // for the Hindi picker title (docs/design/VISUAL_SYSTEM.md).
   const hiEyebrow =
     lang === "hi"
       ? { letterSpacing: 0, textTransform: "none" as const }
       : null;
 
+  if (stage === "setup") {
+    const canBegin =
+      mantraId !== CUSTOM_MANTRA_ID || customNaam.trim().length > 0;
+    return (
+      <Screen atmosphere="soft" padded testID="screen-japa">
+        <KeyboardFormScroll
+          contentContainerStyle={{ paddingBottom: spacing.xxl }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Rise>
+            <PageHero
+              image={images.krishnaCharan}
+              eyebrow={lang === "hi" ? "जप" : "Japa"}
+              title={t("japaSetupTitle")}
+              intro={t("japaSetupIntro")}
+              compact
+            />
+          </Rise>
+
+          <Text
+            variant="eyebrow"
+            color={colors.brassSoft}
+            style={[{ marginTop: spacing.lg }, hiEyebrow]}
+          >
+            {t("japaPickTitle")}
+          </Text>
+          {mantras.map((m) => (
+            <Pressable
+              key={m.id}
+              onPress={() => setMantraId(m.id)}
+              style={[
+                styles.mantraRow,
+                {
+                  borderColor: colors.hairline,
+                  backgroundColor:
+                    m.id === mantraId ? colors.surfaceHover : "transparent",
+                },
+              ]}
+            >
+              <Text variant="sanskrit" style={{ fontSize: 17, lineHeight: 26 }}>
+                {m.devanagari}
+              </Text>
+              <Text
+                variant="muted"
+                numberOfLines={1}
+                style={{ marginTop: 2, fontStyle: "italic" }}
+              >
+                {m.iast}
+              </Text>
+            </Pressable>
+          ))}
+          <Pressable
+            onPress={() => setMantraId(CUSTOM_MANTRA_ID)}
+            style={[
+              styles.mantraRow,
+              {
+                borderColor: colors.hairline,
+                backgroundColor:
+                  mantraId === CUSTOM_MANTRA_ID
+                    ? colors.surfaceHover
+                    : "transparent",
+              },
+            ]}
+          >
+            <Text variant="body">{t("japaCustomNaam")}</Text>
+          </Pressable>
+          {mantraId === CUSTOM_MANTRA_ID ? (
+            <TextInput
+              value={customNaam}
+              onChangeText={setCustomNaam}
+              placeholder={t("japaCustomPlaceholder")}
+              placeholderTextColor={colors.textMuted}
+              accessibilityLabel={t("japaCustomNaam")}
+              {...fieldInputProps}
+              style={[
+                styles.customInput,
+                {
+                  color: colors.text,
+                  borderColor: colors.line,
+                  backgroundColor: colors.inputBg,
+                },
+              ]}
+            />
+          ) : null}
+
+          <Text
+            variant="eyebrow"
+            color={colors.brassSoft}
+            style={{ marginTop: spacing.lg }}
+          >
+            {t("japaTargetLabel")}
+          </Text>
+          <View style={styles.chipRow}>
+            {TARGETS.map((n) => (
+              <Pressable
+                key={n}
+                onPress={() => setTarget(n)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: target === n }}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: target === n ? colors.brass : colors.line,
+                    backgroundColor:
+                      target === n ? colors.surfaceHover : "transparent",
+                  },
+                ]}
+              >
+                <Text color={target === n ? colors.brassSoft : colors.text}>
+                  {n}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text
+            variant="eyebrow"
+            color={colors.brassSoft}
+            style={{ marginTop: spacing.lg }}
+          >
+            {t("japaModeLabel")}
+          </Text>
+          <View style={styles.chipRow}>
+            {(["assisted", "self"] as const).map((m) => (
+              <Pressable
+                key={m}
+                onPress={() => setMode(m)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: mode === m }}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: mode === m ? colors.brass : colors.line,
+                    backgroundColor:
+                      mode === m ? colors.surfaceHover : "transparent",
+                  },
+                ]}
+              >
+                <Text color={mode === m ? colors.brassSoft : colors.text}>
+                  {m === "assisted" ? t("japaModeAssisted") : t("japaModeSelf")}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text variant="muted" style={{ marginTop: spacing.sm }}>
+            {mode === "assisted"
+              ? hasJapaChant(mantraId)
+                ? t("japaModeAssistedHint")
+                : t("japaModeAssistedNoneHint")
+              : t("japaModeSelfHint")}
+          </Text>
+          {mode === "assisted" && hasJapaChant(mantraId) ? (
+            <Text variant="muted" style={{ marginTop: spacing.xs }}>
+              {t("japaChantCredit")}
+            </Text>
+          ) : null}
+
+          <Button
+            label={t("japaBegin")}
+            onPress={beginCount}
+            disabled={!canBegin}
+            style={{ marginTop: spacing.xl }}
+          />
+        </KeyboardFormScroll>
+      </Screen>
+    );
+  }
+
   return (
     <Screen atmosphere="soft" padded testID="screen-japa">
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: spacing.lg }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <Rise>
         <PageHero
           image={images.krishnaCharan}
@@ -201,22 +447,29 @@ export default function JapaScreen() {
         accessibilityLabel={t("japaTapHint")}
       >
         <Rise delay={40}>
-          <Pressable onPress={() => setPickerOpen(true)}>
+          <Pressable
+            onPress={() => {
+              stopJapaChant();
+              setStage("setup");
+            }}
+          >
             <Panel>
               <Text
                 variant="sanskrit"
                 style={{ fontSize: 20, lineHeight: 32 }}
                 numberOfLines={2}
               >
-                {mantra.devanagari}
+                {mantra.devanagari || mantra.iast}
               </Text>
-              <Text
-                variant="muted"
-                style={{ marginTop: spacing.sm, fontStyle: "italic" }}
-                numberOfLines={2}
-              >
-                {mantra.iast}
-              </Text>
+              {mantra.iast ? (
+                <Text
+                  variant="muted"
+                  style={{ marginTop: spacing.sm, fontStyle: "italic" }}
+                  numberOfLines={2}
+                >
+                  {mantra.iast}
+                </Text>
+              ) : null}
               <Text variant="soft" style={{ marginTop: spacing.sm }}>
                 {meaning}
               </Text>
@@ -225,7 +478,7 @@ export default function JapaScreen() {
                 color={colors.brassSoft}
                 style={{ marginTop: spacing.md }}
               >
-                {t("japaChangeMantra")} →
+                {t("japaChangeSetup")} →
               </Text>
             </Panel>
           </Pressable>
@@ -233,26 +486,27 @@ export default function JapaScreen() {
 
         <View style={styles.counter}>
           <View style={styles.malaStage}>
-            <MalaRing litCount={litCount} colors={colors} />
+            <MalaRing
+              beadCount={target}
+              litCount={litCount}
+              colors={colors}
+            />
             <Animated.View
-              style={[
-                styles.countStack,
-                { transform: [{ scale: pulse }] },
-              ]}
+              style={[styles.countStack, { transform: [{ scale: pulse }] }]}
             >
               <Text style={[styles.bead, { color: colors.text }]}>{bead}</Text>
-              <Text variant="muted">{t("japaOf108")}</Text>
+              <Text variant="muted">
+                {t("japaOfTarget").replace("{n}", String(target))}
+              </Text>
             </Animated.View>
           </View>
-          {malas > 0 ? (
+          {complete ? (
             <Text
               variant="soft"
               color={colors.brassSoft}
               style={{ marginTop: spacing.md }}
             >
-              {malas === 1
-                ? t("japaMalaOne")
-                : t("japaMalaMany").replace("{n}", String(malas))}
+              {t("japaTargetDone")}
             </Text>
           ) : null}
           {milestone ? <MilestoneLine milestone={milestone} /> : null}
@@ -275,99 +529,25 @@ export default function JapaScreen() {
           />
         </View>
       </Pressable>
-
-      <Modal
-        visible={pickerOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPickerOpen(false)}
-      >
-        <Pressable
-          style={[styles.scrim, { backgroundColor: colors.scrim }]}
-          onPress={() => setPickerOpen(false)}
-        >
-          {/* Swallow taps on the sheet so only the scrim dismisses. */}
-          <Pressable onPress={() => undefined}>
-            <Panel strong padded={false}>
-              <Text
-                variant="eyebrow"
-                color={colors.brassSoft}
-                style={[
-                  {
-                    paddingHorizontal: spacing.md,
-                    paddingTop: spacing.md,
-                    paddingBottom: spacing.sm,
-                  },
-                  hiEyebrow,
-                ]}
-              >
-                {t("japaPickTitle")}
-              </Text>
-              <ScrollView style={{ maxHeight: 440 }}>
-                {mantras.map((m, i) => (
-                  <Pressable
-                    key={m.id}
-                    onPress={() => {
-                      setMantra(m);
-                      setPickerOpen(false);
-                      void Haptics.selectionAsync();
-                    }}
-                    style={[
-                      styles.mantraRow,
-                      {
-                        borderBottomColor: colors.hairline,
-                        borderBottomWidth:
-                          i === mantras.length - 1
-                            ? 0
-                            : StyleSheet.hairlineWidth * 2,
-                        backgroundColor:
-                          m.id === mantra.id
-                            ? colors.surfaceHover
-                            : "transparent",
-                      },
-                    ]}
-                  >
-                    <Text
-                      variant="sanskrit"
-                      style={{ fontSize: 17, lineHeight: 26 }}
-                      numberOfLines={2}
-                    >
-                      {m.devanagari}
-                    </Text>
-                    <Text
-                      variant="muted"
-                      numberOfLines={1}
-                      style={{ marginTop: 2, fontStyle: "italic" }}
-                    >
-                      {m.iast}
-                    </Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </Panel>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      </ScrollView>
     </Screen>
   );
 }
 
-/**
- * Stationary 108-bead jap mala (option 3). Each tap lights the next bead
- * in place — the ring does not rotate.
- */
 function MalaRing({
+  beadCount,
   litCount,
   colors,
 }: {
+  beadCount: number;
   litCount: number;
   colors: ThemeColors;
 }) {
   const dots = useMemo(() => {
     const center = RING_SIZE / 2;
     const radius = center - GURU_R - 2;
-    return Array.from({ length: BEADS_PER_MALA }, (_, i) => {
-      const angle = (i / BEADS_PER_MALA) * Math.PI * 2 - Math.PI / 2;
+    return Array.from({ length: beadCount }, (_, i) => {
+      const angle = (i / beadCount) * Math.PI * 2 - Math.PI / 2;
       return {
         key: i,
         cx: center + Math.cos(angle) * radius,
@@ -376,7 +556,7 @@ function MalaRing({
         guru: i === 0,
       };
     });
-  }, []);
+  }, [beadCount]);
 
   return (
     <Svg
@@ -411,14 +591,14 @@ function MalaRing({
 
 const styles = StyleSheet.create({
   surface: {
-    flex: 1,
     paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
+    minHeight: 520,
   },
   counter: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: spacing.lg,
   },
   malaStage: {
     width: RING_SIZE,
@@ -444,13 +624,31 @@ const styles = StyleSheet.create({
   footer: {
     paddingBottom: spacing.sm,
   },
-  scrim: {
-    flex: 1,
-    justifyContent: "center",
-    padding: spacing.lg,
-  },
   mantraRow: {
-    paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth * 2,
+  },
+  customInput: {
+    marginTop: spacing.sm,
+    minHeight: 48,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    fontFamily: "Sora_400Regular",
+    fontSize: 16,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  chip: {
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
+    justifyContent: "center",
   },
 });

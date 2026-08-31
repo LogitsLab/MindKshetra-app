@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -10,6 +9,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
+import { KeyboardFormScroll, fieldInputProps } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { useAuth } from "@/context/AuthContext";
@@ -156,7 +156,7 @@ export default function PersonalizeSettingsScreen() {
 
   return (
     <Screen>
-      <ScrollView
+      <KeyboardFormScroll
         contentContainerStyle={styles.pad}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -185,6 +185,7 @@ export default function PersonalizeSettingsScreen() {
           onChangeText={setDisplayName}
           placeholder={copy.setup.namePlaceholder[L]}
           placeholderTextColor={colors.textMuted}
+          {...fieldInputProps}
           style={[
             styles.input,
             { color: colors.text, borderColor: colors.line, backgroundColor: colors.field },
@@ -329,7 +330,7 @@ export default function PersonalizeSettingsScreen() {
         ) : null}
           </>
         )}
-      </ScrollView>
+      </KeyboardFormScroll>
     </Screen>
   );
 }

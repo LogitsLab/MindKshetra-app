@@ -42,3 +42,8 @@ export function speechHash(text: string): string {
     v0.toString(16).padStart(4, "0")
   );
 }
+
+/** Stable cache filename for a remote recitation/ambient URL. */
+export function cacheFileName(remoteUrl: string): string {
+  return `${speechHash(remoteUrl)}.m4a`;
+}

@@ -4,11 +4,14 @@ import {
   setAudioModeAsync,
   type AudioPlayer,
 } from "expo-audio";
+import { localAudioUri } from "@/audio/cache";
 import { resolveSpeechUrl } from "@/audio/manifest";
 
 /**
  * Narration = pre-generated studio audio when the manifest has it, device TTS
  * otherwise. One session at a time — async gaps must not spawn orphan players.
+ *
+ * Sanskrit recitation uses `playUrl` (file only). Never TTS-fallback Devanagari.
  */
 let player: AudioPlayer | null = null;
 let audioModeSet = false;
@@ -104,35 +107,53 @@ export type PlayUrlOptions = {
 };
 
 /**
- * Warm the HTTP/edge cache for a recitation URL without playing.
+ * Warm disk cache for a recitation URL without playing.
  * Fire-and-forget — safe to call from SpeakButton mount.
  */
 export function prefetchAudioUrl(url: string | null | undefined): void {
   if (!url) return;
-  void fetch(url, { method: "GET", headers: { Range: "bytes=0-1" } }).catch(
-    () => undefined
-  );
+  void localAudioUri(url).catch(() => undefined);
 }
 
 async function ensureAudioMode(): Promise<void> {
   if (audioModeSet) return;
-  audioModeSet = true;
-  await setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
+  try {
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      interruptionMode: "doNotMix",
+      shouldPlayInBackground: false,
+      allowsRecording: false,
+    });
+    audioModeSet = true;
+  } catch {
+    audioModeSet = false;
+  }
 }
 
-/** Play a remote (or local) file. Call play() immediately — waiting on isLoaded races with Expo remounts. */
+/**
+ * Play a local (preferred) or remote file. Do not wait on isLoaded — that
+ * gate raced Expo remounts and was reverted. Disk-cache first so play() is
+ * against a local URI instead of a cold HTTP stream.
+ */
 async function playLoaded(
   url: string,
   options: PlayUrlOptions,
   mySession: number
 ): Promise<boolean> {
+  const local = await localAudioUri(url);
+  if (mySession !== session) {
+    options.onStopped?.();
+    return false;
+  }
+
   await ensureAudioMode();
   if (mySession !== session) {
     options.onStopped?.();
     return false;
   }
 
-  const p = createAudioPlayer({ uri: url });
+  const playUri = local ?? url;
+  const p = createAudioPlayer({ uri: playUri });
   player = p;
   bindActiveCallbacks(options);
 

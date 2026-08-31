@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -11,6 +10,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
 import { Screen } from "@/components/Screen";
+import { KeyboardFormScroll, multilineInputProps } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
@@ -397,7 +397,7 @@ export default function SadhanaScreen() {
 
   return (
     <Screen testID="screen-sadhana">
-      <ScrollView
+      <KeyboardFormScroll
         contentContainerStyle={{
           paddingBottom: spacing.contentBottom,
           paddingTop: spacing.sm,
@@ -592,6 +592,7 @@ export default function SadhanaScreen() {
                 onChangeText={setReflection}
                 placeholder={t("sadhanaReflectPlaceholder")}
                 placeholderTextColor={colors.textMuted}
+                {...multilineInputProps}
                 editable={!streakRes && !guestSaved}
                 style={[
                   styles.input,
@@ -671,7 +672,7 @@ export default function SadhanaScreen() {
             </Pressable>
           </Rise>
         ) : null}
-      </ScrollView>
+      </KeyboardFormScroll>
     </Screen>
   );
 }

@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
 import { Screen } from "@/components/Screen";
+import { KeyboardFormScroll, multilineInputProps } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
@@ -75,7 +75,7 @@ export default function JournalScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.pad} keyboardShouldPersistTaps="handled">
+      <KeyboardFormScroll contentContainerStyle={styles.pad} keyboardShouldPersistTaps="handled">
         <Text variant="display">{L === "hi" ? "जर्नल" : "Journal"}</Text>
         <Text variant="soft" style={{ marginTop: spacing.sm }}>
           {L === "hi"
@@ -115,6 +115,7 @@ export default function JournalScreen() {
               value={text}
               onChangeText={setText}
               multiline
+              {...multilineInputProps}
               accessibilityLabel={L === "hi" ? "जर्नल प्रविष्टि" : "Journal entry"}
               placeholder={L === "hi" ? "आज की पंक्ति…" : "An honest line…"}
               placeholderTextColor={colors.textMuted}
@@ -209,7 +210,7 @@ export default function JournalScreen() {
             )}
           </>
         )}
-      </ScrollView>
+      </KeyboardFormScroll>
     </Screen>
   );
 }

@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import { Text } from "@/components/Text";
+import { fieldInputProps } from "@/components/KeyboardForm";
 import { Button, Hairline } from "@/components/Button";
 import { AppleSignInButton } from "@/components/AppleSignInButton";
 import { Panel } from "@/components/Panel";
@@ -143,6 +144,7 @@ export function OnboardingAuthStep({
                 placeholderTextColor={colors.onMediaMuted}
                 onFocus={() => setEmailFocused(true)}
                 onBlur={() => setEmailFocused(false)}
+                {...fieldInputProps}
                 style={[
                   styles.input,
                   {
@@ -175,6 +177,7 @@ export function OnboardingAuthStep({
                 accessibilityLabel={t("passwordLabel")}
                 placeholder={t("passwordPlaceholder")}
                 placeholderTextColor={colors.onMediaMuted}
+                {...fieldInputProps}
                 style={[
                   styles.input,
                   {

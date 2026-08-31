@@ -9,6 +9,7 @@ import {
 import { useRouter } from "expo-router";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
+import { fieldInputProps } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
 import { ScreenHeader } from "@/components/ScreenHeader";
@@ -131,6 +132,7 @@ export default function ExploreScreen() {
           onChangeText={setQ}
           placeholder={lang === "hi" ? "अध्याय खोजें" : "Search chapters"}
           placeholderTextColor={colors.textMuted}
+          {...fieldInputProps}
           style={[styles.search, { color: colors.text }]}
         />
       </Panel>

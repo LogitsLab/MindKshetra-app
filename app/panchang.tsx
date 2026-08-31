@@ -13,9 +13,12 @@ import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
 import { EmptyState } from "@/components/SlokaCard";
+import { SpeakButton } from "@/components/SpeakButton";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { usePanchang } from "@/hooks/usePanchang";
+import { useVotd } from "@/hooks/useVotd";
+import { loreForPanchang, pickBlurb } from "@/data/panchangLore";
 import { images } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 
@@ -86,6 +89,7 @@ export default function PanchangScreen() {
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const { panchang, loading, error } = usePanchang();
+  const { votd } = useVotd();
   const locale = lang === "hi" ? "hi-IN" : "en-IN";
 
   // The Devanagari serif and the untracked eyebrow now live in PageHero,
@@ -120,6 +124,10 @@ export default function PanchangScreen() {
   const nakSub = [`${t("panchangPada")} ${panchang.pada}`, nakUntil]
     .filter(Boolean)
     .join(" · ");
+  const lore = loreForPanchang(panchang);
+  const festival = panchang.festivals?.[0];
+  const festivalStory =
+    festival && (lang === "hi" ? festival.storyHi : festival.storyEn);
 
   return (
     <Screen atmosphere="soft" testID="screen-panchang">
@@ -144,6 +152,80 @@ export default function PanchangScreen() {
             <Text variant="soft" color={colors.brassSoft}>
               {t("panchangEkadashi").replace("{tithi}", panchang.tithi)}
             </Text>
+          </Panel>
+        ) : null}
+
+        <Panel style={{ marginTop: spacing.lg }}>
+          <Text variant="eyebrow" color={colors.brassSoft}>
+            {t("panchangWhyTitle")}
+          </Text>
+          {festival ? (
+            <>
+              <Text variant="title" style={{ marginTop: spacing.sm }}>
+                {lang === "hi" ? festival.labelHi : festival.labelEn}
+              </Text>
+              {festivalStory ? (
+                <Text variant="muted" style={{ marginTop: spacing.sm }}>
+                  {festivalStory}
+                </Text>
+              ) : null}
+            </>
+          ) : null}
+          {lore.special ? (
+            <Text variant="muted" style={{ marginTop: spacing.sm }}>
+              {pickBlurb(lore.special, lang)}
+            </Text>
+          ) : null}
+          {lore.tithi ? (
+            <Text variant="muted" style={{ marginTop: spacing.sm }}>
+              {pickBlurb(lore.tithi, lang)}
+            </Text>
+          ) : null}
+          {lore.nakshatra ? (
+            <Text variant="muted" style={{ marginTop: spacing.sm }}>
+              {pickBlurb(lore.nakshatra, lang)}
+            </Text>
+          ) : null}
+          {lore.vaar ? (
+            <Text variant="muted" style={{ marginTop: spacing.sm }}>
+              {pickBlurb(lore.vaar, lang)}
+            </Text>
+          ) : null}
+        </Panel>
+
+        {votd ? (
+          <Panel style={{ marginTop: spacing.lg }}>
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {t("panchangVotdTitle")}
+            </Text>
+            <Text variant="title" style={{ marginTop: spacing.sm }}>
+              {votd.chapter}.{votd.verse_number}
+            </Text>
+            <Text
+              variant="sanskrit"
+              style={{ marginTop: spacing.sm, fontSize: 18, lineHeight: 28 }}
+            >
+              {votd.sanskrit_devanagari}
+            </Text>
+            <Text variant="muted" style={{ marginTop: spacing.sm }}>
+              {lang === "hi"
+                ? votd.hindi_translation
+                : votd.english_translation}
+            </Text>
+            <View style={{ marginTop: spacing.md, flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
+              <SpeakButton
+                text={votd.sanskrit_devanagari}
+                lang={lang}
+                listenLabel={t("verseListen")}
+                stopLabel={t("verseStop")}
+                chapter={votd.chapter}
+                verseNumber={votd.verse_number}
+                recitationOnly
+              />
+              <Pressable onPress={() => router.push(`/sloka/${votd.id}`)}>
+                <Text color={colors.brassSoft}>{t("homeFeaturedDetail")} →</Text>
+              </Pressable>
+            </View>
           </Panel>
         ) : null}
 

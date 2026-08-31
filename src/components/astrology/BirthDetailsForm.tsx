@@ -13,6 +13,7 @@ import DateTimePicker, {
   DateTimePickerAndroid,
 } from "@react-native-community/datetimepicker";
 import { Text } from "@/components/Text";
+import { fieldInputProps } from "@/components/KeyboardForm";
 import { Button } from "@/components/Button";
 import { astrologyApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
@@ -248,6 +249,7 @@ export function BirthDetailsForm({ value, onChange }: Props) {
           placeholderTextColor={colors.textMuted}
           autoCorrect={false}
           accessibilityLabel={t("astroPlace")}
+          {...fieldInputProps}
           style={[
             styles.field,
             styles.input,

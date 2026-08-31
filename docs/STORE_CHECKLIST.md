@@ -48,6 +48,51 @@ Apple’s App Review “Submitted By” column is the identity that **sent the v
 
 TestFlight binary upload via EAS + API key is fine. App Review click is not.
 
+## Android quality (API 35 / 36)
+
+Portrait lock is **iOS-only** (`UISupportedInterfaceOrientations`). Android
+`orientation` is `default` so Play does not see `screenOrientation=portrait`
+on `MainActivity`.
+
+Play’s [26 Aug 2026 quality post](https://android-developers.googleblog.com/2026/08/app-quality-memory-optimization-secure-onboarding.html)
+and [technical quality requirements](https://support.google.com/googleplay/android-developer/answer/17492799)
+are **upcoming**, not this binary. Missing them after the dates below can cut
+visibility and publishing. MindKshetra is an **app** (not a game) on phone/tablet.
+
+### Memory + DEX — enforce Feb 2027
+
+Play scores **P90 over 28 days**, Android 13+, by RAM tier and process state.
+Anon RSS + swap for apps (4 GB devices): **2 GB** foreground, **1 GB**
+background / user-perceived services. Higher RAM tiers are looser. Bitmap P90
+must stay **≤ 200 MB** in background / user-perceived services and **≤ 400 MB**
+cached (foreground has no bitmap cap in the table).
+
+- Production EAS Android builds minify with **R8** (Expo release default). Do
+  not ship a debug APK/AAB to Play.
+- After the first Play AAB, open **App bundle explorer** and confirm DEX
+  shrink / optimize / obfuscate are each **≥ 25%** if DEX is **> 10 MB** (apps
+  under 10 MB DEX are not forced).
+- `CoverImage` uses `resizeMethod="resize"` on Android so decoded bitmaps match
+  view size. Watch Android vitals **Memory** (anon RSS + swap, bitmap) once
+  production traffic exists; do not hold hero bitmaps after the UI is hidden.
+- FGS / `BOOT_COMPLETED` already stripped (`plugins/withStripAudioFgsAndBootCompleted.js`)
+  so we do not keep a background process that inflates RSS.
+
+### Zero-Tap Sign-In — enforce Apr 2027
+
+Any app with sign-in (optional or required) must restore the **active**
+session on a new phone/tablet via the
+[Restore Credentials API](https://developer.android.com/identity/sign-in/restore-credentials)
+(Android 9+), when the user restores from D2D or cloud backup. Guest / signed-out
+users must stay unsigned-in. Games are exempt; we are not a game.
+
+Google sign-in is still **browser OAuth** (`AuthContext.signInWithGoogle`).
+That does **not** meet this rule. Credential Manager restore + writing a
+restore key on sign-in (and deleting it on logout) is a native auth rewrite —
+track it here; **do not block this binary**. Block Store only counts if it was
+live on or before **30 Sep 2026**; we never shipped it, so the path is Restore
+Credentials, not Block Store.
+
 ## Manual QA before submission
 
 - [ ] Visual QA vs `docs/design/VISUAL_SYSTEM.md` (dark + light)

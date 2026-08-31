@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useFonts, Fraunces_500Medium, Fraunces_600SemiBold } from "@expo-google-fonts/fraunces";
 import {
   NotoSerifDevanagari_500Medium,
@@ -222,21 +223,23 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#07090f" }}>
-      <ThemeProvider>
-        <TextScaleProvider>
-          <LanguageProvider>
-            <OnboardingProvider>
-              <AuthProvider>
-                <MadhavProvider>
-                  <OnboardingGate>
-                    <AppWithBootReveal />
-                  </OnboardingGate>
-                </MadhavProvider>
-              </AuthProvider>
-            </OnboardingProvider>
-          </LanguageProvider>
-        </TextScaleProvider>
-      </ThemeProvider>
+      <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
+        <ThemeProvider>
+          <TextScaleProvider>
+            <LanguageProvider>
+              <OnboardingProvider>
+                <AuthProvider>
+                  <MadhavProvider>
+                    <OnboardingGate>
+                      <AppWithBootReveal />
+                    </OnboardingGate>
+                  </MadhavProvider>
+                </AuthProvider>
+              </OnboardingProvider>
+            </LanguageProvider>
+          </TextScaleProvider>
+        </ThemeProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

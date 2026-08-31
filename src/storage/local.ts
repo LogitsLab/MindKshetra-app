@@ -33,6 +33,7 @@ const KEYS = {
   meditationRun: "mindkshetra-meditation-run-foundation-7",
   /** Incognito chart birth payload awaiting createMember after sign-in. */
   pendingAstroSave: "mindkshetra-astro-pending-save",
+  japaPrefs: "mindkshetra-japa-prefs",
 } as const;
 
 export type PendingAstroSave = {
@@ -593,4 +594,50 @@ export async function cacheVerse(id: number, payload: unknown): Promise<void> {
 export async function getCachedVerse<T>(id: number): Promise<T | null> {
   const map = await loadVerseCache();
   return (map[String(id)]?.payload as T | undefined) ?? null;
+}
+
+export type JapaTarget = 27 | 54 | 108;
+export type JapaMode = "assisted" | "self";
+
+export type JapaPrefs = {
+  mantraId: string;
+  customNaam: string;
+  target: JapaTarget;
+  mode: JapaMode;
+};
+
+const DEFAULT_JAPA_PREFS: JapaPrefs = {
+  mantraId: "om",
+  customNaam: "",
+  target: 108,
+  mode: "self",
+};
+
+export async function getJapaPrefs(): Promise<JapaPrefs> {
+  const raw = await AsyncStorage.getItem(KEYS.japaPrefs);
+  if (!raw) return { ...DEFAULT_JAPA_PREFS };
+  try {
+    const parsed = JSON.parse(raw) as Partial<JapaPrefs>;
+    const target =
+      parsed.target === 27 || parsed.target === 54 || parsed.target === 108
+        ? parsed.target
+        : 108;
+    const mode = parsed.mode === "assisted" ? "assisted" : "self";
+    return {
+      mantraId:
+        typeof parsed.mantraId === "string" && parsed.mantraId
+          ? parsed.mantraId
+          : "om",
+      customNaam:
+        typeof parsed.customNaam === "string" ? parsed.customNaam : "",
+      target,
+      mode,
+    };
+  } catch {
+    return { ...DEFAULT_JAPA_PREFS };
+  }
+}
+
+export async function setJapaPrefs(prefs: JapaPrefs): Promise<void> {
+  await AsyncStorage.setItem(KEYS.japaPrefs, JSON.stringify(prefs));
 }
