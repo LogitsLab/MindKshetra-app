@@ -101,7 +101,7 @@ export default function PathsScreen() {
               <CoverImage source={images.pathPaths} opacity={0.9} />
               <LinearGradient
                 colors={["rgba(7,9,15,0.35)", "rgba(7,9,15,0.88)"]}
-                style={StyleSheet.absoluteFillObject}
+                style={StyleSheet.absoluteFill}
               />
               <Text variant="eyebrow" color={colors.brassSoft}>
                 {lang === "hi" ? "जारी रखें" : "Continue"}

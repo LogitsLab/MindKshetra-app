@@ -23,6 +23,8 @@ type Props = {
   verseNumber?: number;
   /** When true, only play if a recitation file exists — no TTS fallback. */
   recitationOnly?: boolean;
+  /** Smaller control for chat bubbles. */
+  compact?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
@@ -41,6 +43,7 @@ export function SpeakButton({
   chapter,
   verseNumber,
   recitationOnly = false,
+  compact = false,
   style,
   testID,
 }: Props) {
@@ -187,17 +190,20 @@ export function SpeakButton({
       onPress={() => void toggle()}
       style={({ pressed }) => [
         styles.btn,
+        compact ? styles.btnCompact : null,
         {
-          borderColor: speaking ? colors.brass : "rgba(201,162,39,0.45)",
-          backgroundColor: speaking
-            ? "rgba(201,162,39,0.16)"
-            : "transparent",
+          borderColor: speaking ? colors.brass : colors.line,
+          backgroundColor: speaking ? colors.surfaceHover : "transparent",
           opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
         },
         style,
       ]}
     >
-      <Text variant="eyebrow" color={colors.brassSoft}>
+      <Text
+        variant="eyebrow"
+        color={colors.brassSoft}
+        style={compact ? styles.compactLabel : undefined}
+      >
         {speaking ? stopLabel : listenLabel}
       </Text>
     </Pressable>
@@ -213,5 +219,14 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     alignItems: "center",
     justifyContent: "center",
+  },
+  btnCompact: {
+    minHeight: 32,
+    paddingHorizontal: spacing.sm + 4,
+    paddingVertical: spacing.xs,
+    alignSelf: "flex-start",
+  },
+  compactLabel: {
+    fontSize: 10,
   },
 });

@@ -27,6 +27,11 @@ export const en = {
   loading: "Loading…",
   historyIncognitoHint: "Turn off Incognito to browse saved chats.",
   navAstrology: "Astrology",
+  goBack: "Go back",
+  couldntLoad: "Couldn’t load",
+  noVerses: "No verses",
+  noVersesBody: "No verses returned just now.",
+  noVersesYet: "No verses yet",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -51,4 +56,9 @@ export const hi: Record<keyof typeof en, string> = {
   loading: "लोड हो रहा है…",
   historyIncognitoHint: "सहेजी वार्ताएँ देखने के लिए गुप्त मोड बंद करें।",
   navAstrology: "ज्योतिष",
+  goBack: "वापस जाएँ",
+  couldntLoad: "लोड नहीं हो सका",
+  noVerses: "कोई श्लोक नहीं",
+  noVersesBody: "अभी श्लोक नहीं मिले।",
+  noVersesYet: "अभी कोई श्लोक नहीं",
 };

@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import { SpeakButton } from "@/components/SpeakButton";
 import { Text } from "@/components/Text";
 import type { AppLang } from "@/i18n/dictionary";
 import { mentionsCrisisResource } from "@/safety/crisis";
@@ -27,6 +28,9 @@ type Props = {
   colors: ThemeColors;
   onPressCitation: (id: Citation["id"]) => void;
   onPracticeCitation?: (id: Citation["id"]) => void;
+  listenLabel?: string;
+  stopLabel?: string;
+  unsupportedLabel?: string;
 };
 
 /**
@@ -46,6 +50,9 @@ export const MessageBubble = React.memo(function MessageBubble({
   colors,
   onPressCitation,
   onPracticeCitation,
+  listenLabel,
+  stopLabel,
+  unsupportedLabel,
 }: Props) {
   const crisis = !isUser && mentionsCrisisResource(content);
 
@@ -102,6 +109,17 @@ export const MessageBubble = React.memo(function MessageBubble({
         >
           {content || (loading ? "…" : "")}
         </Text>
+        {!isUser && content.trim() && listenLabel && stopLabel ? (
+          <SpeakButton
+            text={content}
+            lang={lang}
+            listenLabel={listenLabel}
+            stopLabel={stopLabel}
+            unsupportedLabel={unsupportedLabel}
+            compact
+            style={{ marginTop: spacing.sm }}
+          />
+        ) : null}
       </View>
       {citations && citations.length > 0 ? (
         <View style={styles.cites}>

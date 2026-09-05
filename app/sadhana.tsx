@@ -9,12 +9,14 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
+import Svg, { Circle } from "react-native-svg";
 import { Screen } from "@/components/Screen";
 import { KeyboardFormScroll, multilineInputProps } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { MilestoneLine, takeNewMilestone } from "@/components/PracticeMarks";
 import { Rise } from "@/components/Rise";
 import { MoodIcon } from "@/components/MoodIcon";
@@ -39,15 +41,64 @@ import {
 } from "@/storage/local";
 import { images, moodAccent } from "@/theme/assets";
 import { uuidv4 } from "@/utils/uuid";
-import { radii, spacing } from "@/theme/tokens";
+import { radii, spacing, type ThemeColors } from "@/theme/tokens";
 import type { Mood, SadhanaStreak, Sloka } from "@/types";
 
 const SIT_PRESETS = [3, 5, 10] as const;
+const SIT_RING = 176;
+const SIT_STROKE = 5;
 
 function formatClock(totalSec: number): string {
   const m = Math.floor(totalSec / 60);
   const s = totalSec % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function SitRemainingRing({
+  remaining,
+  total,
+  done,
+  colors,
+}: {
+  remaining: number;
+  total: number;
+  done: boolean;
+  colors: ThemeColors;
+}) {
+  const r = (SIT_RING - SIT_STROKE) / 2;
+  const c = 2 * Math.PI * r;
+  const progress = done ? 1 : total > 0 ? Math.min(1, 1 - remaining / total) : 0;
+  const cx = SIT_RING / 2;
+  return (
+    <Svg
+      width={SIT_RING}
+      height={SIT_RING}
+      pointerEvents="none"
+      style={StyleSheet.absoluteFill}
+    >
+      <Circle
+        cx={cx}
+        cy={cx}
+        r={r}
+        stroke={colors.line}
+        strokeWidth={SIT_STROKE}
+        fill="none"
+      />
+      <Circle
+        cx={cx}
+        cy={cx}
+        r={r}
+        stroke={colors.brass}
+        strokeWidth={SIT_STROKE}
+        fill="none"
+        strokeDasharray={`${c}`}
+        strokeDashoffset={c * (1 - progress)}
+        strokeLinecap="round"
+        rotation="-90"
+        origin={`${cx}, ${cx}`}
+      />
+    </Svg>
+  );
 }
 
 /**
@@ -397,6 +448,7 @@ export default function SadhanaScreen() {
 
   return (
     <Screen testID="screen-sadhana">
+      <ScreenHeader showBack backFallback="/(tabs)/home" />
       <KeyboardFormScroll
         contentContainerStyle={{
           paddingBottom: spacing.contentBottom,
@@ -505,9 +557,30 @@ export default function SadhanaScreen() {
                 </Pressable>
               </Panel>
             ) : verseFailed ? (
-              <Text variant="soft" style={{ marginTop: spacing.md }}>
-                {t("sadhanaVerseFailed")}
-              </Text>
+              <View style={{ marginTop: spacing.md }}>
+                <Text variant="soft">{t("sadhanaVerseFailed")}</Text>
+                {(moodId && moodId !== "path") ||
+                (params.slokaId && Number(params.slokaId) > 0) ? (
+                  <View style={{ marginTop: spacing.sm }}>
+                    <Button
+                      label={t("retry")}
+                      variant="ghost"
+                      onPress={() => {
+                        if (moodId && moodId !== "path") {
+                          pickMood(moodId);
+                          return;
+                        }
+                        const slokaId = params.slokaId
+                          ? Number(params.slokaId)
+                          : NaN;
+                        if (Number.isInteger(slokaId) && slokaId > 0) {
+                          loadVerseById(slokaId);
+                        }
+                      }}
+                    />
+                  </View>
+                ) : null}
+              </View>
             ) : null}
           </View>
         ) : null}
@@ -532,7 +605,7 @@ export default function SadhanaScreen() {
                         {
                           borderColor: selected ? colors.brass : colors.line,
                           backgroundColor: selected
-                            ? "rgba(201, 162, 39, 0.14)"
+                            ? colors.atmosphereBrass
                             : colors.surface,
                           opacity: running && !selected ? 0.4 : 1,
                         },
@@ -549,9 +622,17 @@ export default function SadhanaScreen() {
                 })}
               </View>
             ) : null}
-            <Text style={[styles.clock, { color: colors.text }]}>
-              {formatClock(remaining)}
-            </Text>
+            <View style={styles.sitRingWrap}>
+              <SitRemainingRing
+                remaining={remaining}
+                total={presetMin * 60}
+                done={sitDone}
+                colors={colors}
+              />
+              <Text style={[styles.clock, { color: colors.text }]}>
+                {formatClock(remaining)}
+              </Text>
+            </View>
             {sitDone ? (
               <Text
                 variant="soft"
@@ -704,13 +785,20 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth * 2,
   },
+  sitRingWrap: {
+    width: SIT_RING,
+    height: SIT_RING,
+    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: spacing.lg,
+  },
   clock: {
     fontFamily: "Fraunces_600SemiBold",
-    fontSize: 64,
-    lineHeight: 72,
+    fontSize: 44,
+    lineHeight: 52,
     letterSpacing: -1,
     textAlign: "center",
-    marginTop: spacing.lg,
   },
   input: {
     minHeight: 48,

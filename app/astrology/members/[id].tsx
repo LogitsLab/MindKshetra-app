@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -53,8 +53,10 @@ export default function AstrologyMemberDetailScreen() {
     onChart: (c) => setChart(c),
   });
 
-  useEffect(() => {
+  const load = useCallback(() => {
     let alive = true;
+    setLoading(true);
+    setError(null);
     (async () => {
       try {
         const [mRes, cRes] = await Promise.all([
@@ -72,7 +74,6 @@ export default function AstrologyMemberDetailScreen() {
         if (existing?.portrait) {
           predictions.seed(lang, existing);
         } else {
-          // Prefetch so the predictions tab is warm when it is opened.
           void predictions.load();
         }
       } catch (e) {
@@ -84,6 +85,10 @@ export default function AstrologyMemberDetailScreen() {
     return () => {
       alive = false;
     };
+  }, [id, lang, attachMemberChart]);
+
+  useEffect(() => {
+    return load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -113,7 +118,14 @@ export default function AstrologyMemberDetailScreen() {
   if (error && !member) {
     return (
       <Screen>
-        <EmptyState title={lang === "hi" ? "त्रुटि" : "Couldn’t load"} body={error} />
+        <EmptyState
+          title={t("couldntLoad")}
+          body={error}
+          actionLabel={t("retry")}
+          onAction={() => {
+            load();
+          }}
+        />
       </Screen>
     );
   }

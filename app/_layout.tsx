@@ -1,3 +1,4 @@
+import "react-native-reanimated";
 import React, { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { Stack } from "expo-router";
@@ -58,7 +59,7 @@ function RootNavigator() {
 
   return (
     <>
-      <StatusBar style={mode === "dark" ? "light" : "dark"} translucent />
+      <StatusBar style={mode === "dark" ? "light" : "dark"} />
       <Stack
         initialRouteName="index"
         screenOptions={{

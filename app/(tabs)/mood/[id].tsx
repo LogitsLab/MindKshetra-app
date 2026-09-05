@@ -16,11 +16,12 @@ import type { Sloka } from "@/types";
 export default function MoodDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const mood = getMoodById(id);
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const { colors } = useTheme();
   const [slokas, setSlokas] = useState<Sloka[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -38,7 +39,7 @@ export default function MoodDetailScreen() {
     return () => {
       alive = false;
     };
-  }, [id]);
+  }, [id, reloadKey]);
 
   const accent = moodAccent[id] ?? colors.brass;
 
@@ -60,7 +61,16 @@ export default function MoodDetailScreen() {
           <ActivityIndicator color={colors.brass} />
         </View>
       ) : error ? (
-        <EmptyState title="Couldn’t load" body={error} />
+        <EmptyState
+          title={t("couldntLoad")}
+          body={error}
+          actionLabel={t("retry")}
+          onAction={() => {
+            setError(null);
+            setLoading(true);
+            setReloadKey((k) => k + 1);
+          }}
+        />
       ) : (
         <FlatList
           data={slokas}
@@ -69,12 +79,8 @@ export default function MoodDetailScreen() {
           renderItem={({ item }) => <SlokaCard sloka={item} lang={lang} />}
           ListEmptyComponent={
             <EmptyState
-              title={lang === "hi" ? "कोई श्लोक नहीं" : "No verses yet"}
-              body={
-                lang === "hi"
-                  ? "इस मनोदशा के लिए श्लोक नहीं मिले।"
-                  : "No verses for this mood."
-              }
+              title={t("noVersesYet")}
+              body={t("noMoodMatch")}
             />
           }
         />

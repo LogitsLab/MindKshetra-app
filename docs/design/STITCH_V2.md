@@ -30,4 +30,4 @@ Full index: `../MindKshetra/docs/design-v2/README.md`
 
 ## Nav lock
 
-Tabs: Home · Explore · Mood · Astrology. Madhav = FAB only.
+Tabs: Home · Practise · Path · Profile. Explore, Mood, and Astrology are stacked off-tab. Madhav = FAB only.

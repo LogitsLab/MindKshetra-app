@@ -18,6 +18,7 @@ import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { Rise } from "@/components/Rise";
 import { MilestoneLine, takeNewMilestone } from "@/components/PracticeMarks";
 import {
@@ -81,9 +82,11 @@ export default function JapaScreen() {
   const [total, setTotal] = useState(0);
   const [milestone, setMilestone] = useState<Milestone | null>(null);
   const [malaFlash, setMalaFlash] = useState(false);
+  const [chantPlaying, setChantPlaying] = useState(false);
   const reduceMotion = useRef(false);
   const pulse = useRef(new Animated.Value(1)).current;
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chantTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const totalRef = useRef(0);
   const startedAtRef = useRef<number | null>(null);
@@ -135,6 +138,7 @@ export default function JapaScreen() {
       alive = false;
       sub.remove();
       if (flashTimer.current) clearTimeout(flashTimer.current);
+      if (chantTimer.current) clearTimeout(chantTimer.current);
       stopJapaChant();
     };
   }, []);
@@ -166,7 +170,15 @@ export default function JapaScreen() {
   };
 
   const chantAssisted = () => {
-    void playJapaChant(mantraRef.current.id);
+    void playJapaChant(mantraRef.current.id).then((ok) => {
+      if (!ok) {
+        setChantPlaying(false);
+        return;
+      }
+      setChantPlaying(true);
+      if (chantTimer.current) clearTimeout(chantTimer.current);
+      chantTimer.current = setTimeout(() => setChantPlaying(false), 2200);
+    });
   };
 
   const onTap = () => {
@@ -261,6 +273,7 @@ export default function JapaScreen() {
       mantraId !== CUSTOM_MANTRA_ID || customNaam.trim().length > 0;
     return (
       <Screen atmosphere="soft" padded testID="screen-japa">
+        <ScreenHeader showBack backFallback="/(tabs)/home" />
         <KeyboardFormScroll
           contentContainerStyle={{ paddingBottom: spacing.xxl }}
           keyboardShouldPersistTaps="handled"
@@ -268,7 +281,7 @@ export default function JapaScreen() {
           <Rise>
             <PageHero
               image={images.krishnaCharan}
-              eyebrow={lang === "hi" ? "जप" : "Japa"}
+              eyebrow={t("homeJapaTitle")}
               title={t("japaSetupTitle")}
               intro={t("japaSetupIntro")}
               compact
@@ -426,6 +439,7 @@ export default function JapaScreen() {
 
   return (
     <Screen atmosphere="soft" padded testID="screen-japa">
+      <ScreenHeader showBack backFallback="/(tabs)/home" />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, paddingBottom: spacing.lg }}
         keyboardShouldPersistTaps="handled"
@@ -434,7 +448,7 @@ export default function JapaScreen() {
       <Rise>
         <PageHero
           image={images.krishnaCharan}
-          eyebrow={lang === "hi" ? "जप" : "Japa"}
+          eyebrow={t("homeJapaTitle")}
           title={t("homeJapaTitle")}
           intro={t("homeJapaBody")}
           compact
@@ -513,6 +527,19 @@ export default function JapaScreen() {
         </View>
 
         <View style={styles.footer}>
+          {mode === "assisted" ? (
+            <Text
+              variant="muted"
+              color={colors.brassSoft}
+              style={{ textAlign: "center", marginBottom: spacing.sm }}
+            >
+              {hasJapaChant(mantraId)
+                ? chantPlaying
+                  ? t("japaAssistedPlaying")
+                  : t("japaAssistedReady")
+                : t("japaAssistedMuted")}
+            </Text>
+          ) : null}
           <Text
             variant="muted"
             style={{ textAlign: "center", marginBottom: spacing.md }}

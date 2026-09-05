@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   ring: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: radii.fab,
     borderWidth: StyleSheet.hairlineWidth * 2,
     opacity: 0.55,

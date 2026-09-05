@@ -121,16 +121,14 @@ export default function ExploreScreen() {
   return (
     <Screen testID="screen-explore">
       <ScreenHeader
-        title={lang === "hi" ? "अन्वेषण" : "Explore"}
-        subtitle={
-          lang === "hi" ? "अठारह अध्याय, एक मार्ग" : "Eighteen chapters, one path"
-        }
+        title={t("exploreTitle")}
+        subtitle={t("explorePathLine")}
       />
       <Panel style={{ marginTop: spacing.md, padding: 0 }} padded={false}>
         <TextInput
           value={q}
           onChangeText={setQ}
-          placeholder={lang === "hi" ? "अध्याय खोजें" : "Search chapters"}
+          placeholder={t("searchChapters")}
           placeholderTextColor={colors.textMuted}
           {...fieldInputProps}
           style={[styles.search, { color: colors.text }]}
@@ -228,8 +226,10 @@ export default function ExploreScreen() {
                 numberOfLines={1}
               >
                 {done > 0
-                  ? `${done}/${total} ${lang === "hi" ? "पूर्ण" : "done"} →`
-                  : `${total} ${lang === "hi" ? "श्लोक" : "verses"} →`}
+                  ? t("chapterProgressDone")
+                      .replace("{done}", String(done))
+                      .replace("{total}", String(total))
+                  : t("chapterVerseCount").replace("{total}", String(total))}
               </Text>
             </Pressable>
           );

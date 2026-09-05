@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { CoverImage, type CoverImageFocus } from "@/components/CoverImage";
 import { Text } from "@/components/Text";
+import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { useTheme } from "@/context/ThemeContext";
 import { images } from "@/theme/assets";
@@ -84,9 +85,13 @@ export function SlokaCard({
 export function EmptyState({
   title,
   body,
+  actionLabel,
+  onAction,
 }: {
   title: string;
   body: string;
+  actionLabel?: string;
+  onAction?: () => void;
 }) {
   const { colors } = useTheme();
   return (
@@ -111,6 +116,11 @@ export function EmptyState({
       >
         {body}
       </Text>
+      {onAction && actionLabel ? (
+        <View style={{ marginTop: spacing.md, alignSelf: "stretch" }}>
+          <Button label={actionLabel} variant="ghost" onPress={onAction} />
+        </View>
+      ) : null}
     </Panel>
   );
 }
@@ -206,9 +216,36 @@ export type PathMarkKind =
   | "meditation"
   | "paths";
 
+export function PathMark({
+  kind,
+  size = 28,
+}: {
+  kind: PathMarkKind;
+  size?: number;
+}) {
+  if (kind === "madhav") {
+    return (
+      <Image
+        source={images.madhavMark}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: StyleSheet.hairlineWidth * 2,
+          borderColor: "rgba(201, 162, 39, 0.5)",
+        }}
+        resizeMode="cover"
+      />
+    );
+  }
+  if (kind === "mood") return <MoodPathMark size={size} />;
+  if (kind === "meditation") return <MeditationPathMark size={size} />;
+  return <ExplorePathMark size={size} />;
+}
+
 /**
- * Path card for Home. Default near-square grid tile; `layout="wide"` is the
- * UI 2.0 / Stitch full-bleed cinematic row (title + chevron).
+ * Path card for Path tab / grids. Default near-square tile; `layout="wide"` is
+ * the UI 2.0 / Stitch full-bleed cinematic row (title + chevron).
  */
 export function PathTile({
   title,
@@ -266,7 +303,7 @@ export function PathTile({
         locations={wide ? [0, 0.5, 1] : [0, 0.45, 1]}
         start={wide ? { x: 0, y: 0.5 } : { x: 0.5, y: 0 }}
         end={wide ? { x: 1, y: 0.5 } : { x: 0.5, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
       {wide ? (
         <View style={styles.pathWideRow}>
@@ -302,19 +339,7 @@ export function PathTile({
       ) : (
         <View style={styles.pathFooter}>
           <View style={styles.pathMark}>
-            {mark === "madhav" ? (
-              <Image
-                source={images.madhavMark}
-                style={styles.madhavMark}
-                resizeMode="cover"
-              />
-            ) : mark === "mood" ? (
-              <MoodPathMark size={28} />
-            ) : mark === "meditation" ? (
-              <MeditationPathMark size={28} />
-            ) : (
-              <ExplorePathMark size={28} />
-            )}
+            <PathMark kind={mark} size={28} />
           </View>
           <Text variant="eyebrow" color={colors.brassSoft} numberOfLines={1}>
             {index}
@@ -398,13 +423,6 @@ const styles = StyleSheet.create({
   },
   pathMark: {
     marginBottom: 4,
-  },
-  madhavMark: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderColor: "rgba(201, 162, 39, 0.5)",
   },
   pathTitle: {
     marginTop: 2,

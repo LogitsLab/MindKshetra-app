@@ -270,7 +270,7 @@ export function HomeHero({
     >
       <LinearGradient
         colors={[tintA, tintB]}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
 
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   ringWrap: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
   },

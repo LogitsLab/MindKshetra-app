@@ -68,7 +68,7 @@ export function PageHero({
       <LinearGradient
         colors={["rgba(7,9,15,0.22)", "rgba(7,9,15,0.55)", "rgba(7,9,15,0.94)"]}
         locations={[0, 0.45, 1]}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
       <View style={styles.copy}>
         {eyebrow ? (

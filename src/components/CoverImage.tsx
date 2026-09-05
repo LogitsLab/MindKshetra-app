@@ -33,7 +33,7 @@ export function CoverImage({
   return (
     <View
       pointerEvents="none"
-      style={[StyleSheet.absoluteFillObject, styles.clip, style, { opacity }]}
+      style={[StyleSheet.absoluteFill, styles.clip, style, { opacity }]}
     >
       <Image
         source={source}

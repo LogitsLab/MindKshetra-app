@@ -50,6 +50,9 @@ TestFlight binary upload via EAS + API key is fine. App Review click is not.
 
 ## Android quality (API 35 / 36)
 
+Product-level copy of this section also lives in the web repo
+`MindKshetra/docs/STORE_CHECKLIST.md`. Keep the two in step.
+
 Portrait lock is **iOS-only** (`UISupportedInterfaceOrientations`). Android
 `orientation` is `default` so Play does not see `screenOrientation=portrait`
 on `MainActivity`.

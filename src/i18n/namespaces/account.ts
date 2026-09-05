@@ -160,6 +160,9 @@ export const en = {
     "Marks appear as the practice deepens, begin with today’s sādhana.",
   marksGuestHint:
     "These marks live on this device for now, sign in to keep them.",
+  personalizeTitle: "Personalize",
+  personalizeBlurb:
+    "Goals, inspirations, time, and guidance — edit anytime without replaying onboarding.",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -316,4 +319,7 @@ export const hi: Record<keyof typeof en, string> = {
   marksEmpty: "अभ्यास गहराने पर चिह्न यहाँ दिखेंगे, आज की साधना से आरंभ करें।",
   marksGuestHint:
     "ये चिह्न अभी इसी डिवाइस पर हैं, सहेजे रखने के लिए साइन इन करें।",
+  personalizeTitle: "व्यक्तिगत करें",
+  personalizeBlurb:
+    "लक्ष्य, प्रेरणा, समय और मार्गदर्शन — जब चाहें बदलें, ऑनबोर्डिंग दोहराने की ज़रूरत नहीं।",
 };

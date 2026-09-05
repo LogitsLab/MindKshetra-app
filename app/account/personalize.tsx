@@ -12,6 +12,7 @@ import { Screen } from "@/components/Screen";
 import { KeyboardFormScroll, fieldInputProps } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -36,7 +37,7 @@ import { radii, spacing } from "@/theme/tokens";
  */
 export default function PersonalizeSettingsScreen() {
   const { colors } = useTheme();
-  const { lang, setLang } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
   const { isSignedIn, isAnonymous } = useAuth();
   const router = useRouter();
   const L = lang === "hi" ? "hi" : "en";
@@ -156,21 +157,17 @@ export default function PersonalizeSettingsScreen() {
 
   return (
     <Screen>
+      <ScreenHeader showBack title={t("personalizeTitle")} />
       <KeyboardFormScroll
         contentContainerStyle={styles.pad}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         <Text variant="eyebrow" color={colors.brassSoft}>
-          {L === "hi" ? "सेटिंग्स" : "SETTINGS"}
-        </Text>
-        <Text variant="display" color={colors.brassSoft} style={styles.title}>
-          {L === "hi" ? "व्यक्तिगत करें" : "Personalize"}
+          {t("settingsTitle")}
         </Text>
         <Text variant="soft" style={styles.blurb}>
-          {L === "hi"
-            ? "लक्ष्य, प्रेरणा, समय और मार्गदर्शन — जब चाहें बदलें।"
-            : "Goals, inspirations, time, and guidance — edit anytime without replaying onboarding."}
+          {t("personalizeBlurb")}
         </Text>
 
         {hydrating ? (

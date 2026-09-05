@@ -115,6 +115,33 @@ export const motion = {
   fabPulseMs: 700,
 } as const;
 
+/**
+ * Photo-cover overlays stay dark in both themes so `onMedia` type stays
+ * readable. Components should use these instead of raw rgba(7,9,15,…) /
+ * brass hex overlays.
+ */
+export const mediaOverlay = {
+  madhavBand: ["rgba(7, 9, 15, 0.9)", "rgba(7, 9, 15, 0.5)", "rgba(7, 9, 15, 0.28)"] as [
+    string,
+    string,
+    string,
+  ],
+  coverTile: ["rgba(7, 9, 15, 0.1)", "rgba(7, 9, 15, 0.45)", "rgba(7, 9, 15, 0.92)"] as [
+    string,
+    string,
+    string,
+  ],
+  madhavHero: ["rgba(7, 9, 15, 0.72)", "rgba(7, 9, 15, 0.88)", "rgba(7, 9, 15, 0.96)"] as [
+    string,
+    string,
+    string,
+  ],
+  ivoryHairline: "rgba(232, 224, 208, 0.28)",
+  voidSoft: "rgba(7, 9, 15, 0.35)",
+  brassFill: "rgba(201, 162, 39, 0.22)",
+  brassBorder: "rgba(201, 162, 39, 0.45)",
+} as const;
+
 export const typeScale = {
   poster: { size: 52, line: 58 },
   display: { size: 32, line: 38 },

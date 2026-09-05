@@ -88,7 +88,7 @@ export default function PanchangScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
-  const { panchang, loading, error } = usePanchang();
+  const { panchang, loading, error, reload } = usePanchang();
   const { votd } = useVotd();
   const locale = lang === "hi" ? "hi-IN" : "en-IN";
 
@@ -109,6 +109,8 @@ export default function PanchangScreen() {
         <EmptyState
           title={t("panchangUnavailable")}
           body={t("panchangUnavailableBody")}
+          actionLabel={t("retry")}
+          onAction={reload}
         />
       </Screen>
     );

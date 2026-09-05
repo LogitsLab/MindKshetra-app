@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#07090f",
   },
   brandWrap: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "flex-end",
     paddingBottom: 64,

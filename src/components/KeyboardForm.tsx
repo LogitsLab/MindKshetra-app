@@ -1,15 +1,18 @@
 import React, { forwardRef } from "react";
-import type { ScrollView } from "react-native";
 import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewProps,
+  type KeyboardAwareScrollViewRef,
 } from "react-native-keyboard-controller";
 
 /**
  * Android 15 edge-to-edge + adjustResize often leaves the focused field under
  * the IME. Keyboard-controller reads IME insets and scrolls the caret into view.
  */
-export const KeyboardFormScroll = forwardRef<ScrollView, KeyboardAwareScrollViewProps>(
+export const KeyboardFormScroll = forwardRef<
+  KeyboardAwareScrollViewRef,
+  KeyboardAwareScrollViewProps
+>(
   function KeyboardFormScroll(
     {
       children,

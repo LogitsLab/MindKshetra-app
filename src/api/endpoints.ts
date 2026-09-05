@@ -620,6 +620,20 @@ export const chatApi = {
       method: "POST",
       body: JSON.stringify({ sessionId }),
     }),
+  /** Empty-state greeting. Public; signed-in users get practice + prefs. */
+  today: (opts?: { lang?: "en" | "hi"; tz?: string }) => {
+    const params = new URLSearchParams();
+    if (opts?.lang) params.set("lang", opts.lang);
+    if (opts?.tz) params.set("tz", opts.tz);
+    const q = params.toString();
+    return apiFetch<{
+      displayName: string;
+      addressName: string;
+      greeting: string;
+      starters: string[];
+      votdRef: string | null;
+    }>(`/api/madhav/today${q ? `?${q}` : ""}`);
+  },
 };
 
 /**

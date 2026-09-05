@@ -34,6 +34,7 @@ const KEYS = {
   /** Incognito chart birth payload awaiting createMember after sign-in. */
   pendingAstroSave: "mindkshetra-astro-pending-save",
   japaPrefs: "mindkshetra-japa-prefs",
+  chartInviteDismissed: "mindkshetra-chart-invite-dismissed",
 } as const;
 
 export type PendingAstroSave = {
@@ -640,4 +641,13 @@ export async function getJapaPrefs(): Promise<JapaPrefs> {
 
 export async function setJapaPrefs(prefs: JapaPrefs): Promise<void> {
   await AsyncStorage.setItem(KEYS.japaPrefs, JSON.stringify(prefs));
+}
+
+export async function getChartInviteDismissed(): Promise<boolean> {
+  const v = await AsyncStorage.getItem(KEYS.chartInviteDismissed);
+  return v === "1";
+}
+
+export async function setChartInviteDismissed(): Promise<void> {
+  await AsyncStorage.setItem(KEYS.chartInviteDismissed, "1");
 }

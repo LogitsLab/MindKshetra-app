@@ -21,40 +21,38 @@ import type { AstrologyMember } from "@/types";
 export default function AstrologyMembersScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
   const { isSignedIn, loading: authLoading } = useAuth();
   const [members, setMembers] = useState<AstrologyMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const loadMembers = useCallback(() => {
+    if (authLoading) return;
+    if (!isSignedIn) {
+      setLoading(false);
+      setMembers([]);
+      return;
+    }
+    setLoading(true);
+    astrologyApi
+      .members()
+      .then((res) => {
+        setMembers(res.members ?? []);
+        setError(null);
+      })
+      .catch((e) => {
+        setError((e as Error).message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [isSignedIn, authLoading]);
+
   useFocusEffect(
     useCallback(() => {
-      if (authLoading) return;
-      if (!isSignedIn) {
-        setLoading(false);
-        setMembers([]);
-        return;
-      }
-      let alive = true;
-      setLoading(true);
-      astrologyApi
-        .members()
-        .then((res) => {
-          if (alive) {
-            setMembers(res.members ?? []);
-            setError(null);
-          }
-        })
-        .catch((e) => {
-          if (alive) setError((e as Error).message);
-        })
-        .finally(() => {
-          if (alive) setLoading(false);
-        });
-      return () => {
-        alive = false;
-      };
-    }, [isSignedIn, authLoading])
+      loadMembers();
+    }, [loadMembers])
   );
 
   if (!authLoading && !isSignedIn) {
@@ -88,7 +86,12 @@ export default function AstrologyMembersScreen() {
       {loading ? (
         <ActivityIndicator color={colors.brass} style={{ marginTop: spacing.xl }} />
       ) : error ? (
-        <EmptyState title={lang === "hi" ? "त्रुटि" : "Couldn’t load"} body={error} />
+        <EmptyState
+          title={t("couldntLoad")}
+          body={error}
+          actionLabel={t("retry")}
+          onAction={loadMembers}
+        />
       ) : (
         <FlatList
           data={members}

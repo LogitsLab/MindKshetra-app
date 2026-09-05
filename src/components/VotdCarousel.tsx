@@ -172,7 +172,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
         <CoverImage source={images.krishnaGlade} opacity={0.75} />
         <LinearGradient
           colors={["rgba(7,9,15,0.55)", "rgba(7,9,15,0.82)", "rgba(7,9,15,0.94)"]}
-          style={StyleSheet.absoluteFillObject}
+          style={StyleSheet.absoluteFill}
         />
         <View style={styles.inner}>
           <Text variant="eyebrow" color={colors.brassSoft}>
@@ -288,7 +288,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
                   "rgba(7,9,15,0.94)",
                 ]}
                 locations={[0, 0.5, 1]}
-                style={StyleSheet.absoluteFillObject}
+                style={StyleSheet.absoluteFill}
               />
               <View style={styles.inner}>
                 <Pressable

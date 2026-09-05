@@ -24,7 +24,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useFeaturedVerses } from "@/hooks/useFeaturedVerses";
 import { images } from "@/theme/assets";
-import { motion, radii, spacing } from "@/theme/tokens";
+import { mediaOverlay, motion, radii, spacing } from "@/theme/tokens";
 import { truncateAtWord } from "@/utils/text";
 
 /**
@@ -59,6 +59,7 @@ export default function HomeScreen() {
       edges={["left", "right"]}
     >
       <ScrollView
+        nestedScrollEnabled
         contentContainerStyle={{
           paddingBottom: bottomPad,
         }}
@@ -113,6 +114,8 @@ export default function HomeScreen() {
         <Rise delay={motion.staggerMs * 5} style={{ marginTop: spacing.xl }}>
           <Pressable
             onPress={() => router.push("/madhav")}
+            accessibilityRole="button"
+            accessibilityLabel={t("homeCloseCta")}
             style={({ pressed }) => [
               styles.closeBand,
               {
@@ -124,18 +127,14 @@ export default function HomeScreen() {
           >
             <CoverImage source={images.pathMadhav} opacity={0.9} />
             <LinearGradient
-              colors={[
-                "rgba(7,9,15,0.9)",
-                "rgba(7,9,15,0.5)",
-                "rgba(7,9,15,0.28)",
-              ]}
+              colors={mediaOverlay.madhavBand}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
-              style={StyleSheet.absoluteFillObject}
+              style={StyleSheet.absoluteFill}
             />
             <View style={styles.closeCopy}>
               <Text variant="eyebrow" color={colors.brassSoft}>
-                Madhav
+                {t("madhav")}
               </Text>
               <Text
                 variant="title"
@@ -203,6 +202,8 @@ function TogetherTile({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
       style={({ pressed }) => [
         styles.togetherTile,
         {
@@ -214,8 +215,8 @@ function TogetherTile({
     >
       <CoverImage source={image} opacity={0.88} />
       <LinearGradient
-        colors={["rgba(7,9,15,0.1)", "rgba(7,9,15,0.45)", "rgba(7,9,15,0.92)"]}
-        style={StyleSheet.absoluteFillObject}
+        colors={mediaOverlay.coverTile}
+        style={StyleSheet.absoluteFill}
       />
       <View style={styles.togetherCopy}>
         <Text

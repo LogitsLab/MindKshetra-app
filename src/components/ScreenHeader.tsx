@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { BrandNavLabel } from "@/components/BrandWordmark";
 import { Text } from "@/components/Text";
+import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 
@@ -20,12 +21,13 @@ export function HeaderBrandRight() {
 export function BackButton({ fallback = "/(tabs)/home" }: { fallback?: string }) {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useLanguage();
 
   return (
     <Pressable
       testID="nav-back"
       accessibilityRole="button"
-      accessibilityLabel="Go back"
+      accessibilityLabel={t("goBack")}
       hitSlop={12}
       onPress={() => {
         if (router.canGoBack()) router.back();

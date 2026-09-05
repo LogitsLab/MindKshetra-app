@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   Share,
   StyleSheet,
   Switch,
@@ -16,6 +15,7 @@ import * as Haptics from "expo-haptics";
 import Svg, { Path } from "react-native-svg";
 import { Screen } from "@/components/Screen";
 import { KeyboardFormScroll, multilineInputProps } from "@/components/KeyboardForm";
+import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
@@ -89,7 +89,7 @@ export default function SlokaScreen() {
   const [progressNotice, setProgressNotice] = useState<string | null>(null);
   const [verseComplete, setVerseComplete] = useState(false);
   const [notifPromptVisible, setNotifPromptVisible] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
   const journalY = useRef(0);
   const pendingJournalScroll = useRef(false);
 

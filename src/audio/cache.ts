@@ -30,10 +30,36 @@ export async function localAudioUri(
     if (file.exists && file.size > 0) {
       return file.uri;
     }
-    const downloaded = await File.downloadFileAsync(remoteUrl, file, {
+    // Download to a temp sibling first, then move into place. An interrupted
+    // download (app killed / network drop) otherwise leaves a truncated file at
+    // the real path: it passes the `size > 0` check on the next Listen, so a
+    // partial recitation plays and cuts off abruptly — and stays cached that way
+    // until the user clears storage.
+    const part = new File(dir, cacheFileName(remoteUrl) + ".part");
+    try {
+      if (part.exists) part.delete();
+    } catch {
+      /* ignore */
+    }
+    const downloaded = await File.downloadFileAsync(remoteUrl, part, {
       idempotent: true,
     });
-    return downloaded.exists && downloaded.size > 0 ? downloaded.uri : null;
+    if (!downloaded.exists || downloaded.size <= 0) {
+      try {
+        if (part.exists) part.delete();
+      } catch {
+        /* ignore */
+      }
+      return null;
+    }
+    try {
+      if (file.exists) file.delete();
+      downloaded.move(file);
+    } catch {
+      // Move failed — the fully-downloaded temp file is still whole to play from.
+      return downloaded.exists && downloaded.size > 0 ? downloaded.uri : null;
+    }
+    return file.exists && file.size > 0 ? file.uri : null;
   } catch {
     return null;
   }

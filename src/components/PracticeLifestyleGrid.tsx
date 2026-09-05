@@ -581,7 +581,7 @@ export function PracticeTile({
       <LinearGradient
         colors={["rgba(7,9,15,0.05)", "rgba(7,9,15,0.35)", "rgba(7,9,15,0.88)"]}
         locations={[0, 0.45, 1]}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
       <View style={styles.tileCopy}>
         <Text
