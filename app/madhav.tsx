@@ -601,8 +601,12 @@ export default function MadhavScreen() {
             },
             onDone: () => {
               buffer.flush();
+              // The model surfaced a helpline: show the concise crisis banner,
+              // never the whole reply — a long reply overflows the fixed,
+              // non-scrollable banner and traps the screen. The reply itself
+              // stays readable in the scrollable message bubble.
               if (!userCrisis && mentionsCrisisResource(full)) {
-                setCrisisBanner(full);
+                setCrisisBanner(t("crisisBody"));
               }
             },
           },
@@ -617,7 +621,7 @@ export default function MadhavScreen() {
           const fallback = t("chatReplyFailed");
           replaceLast((m) => ({ ...m, content: fallback, citations }));
         } else if (!userCrisis && mentionsCrisisResource(full)) {
-          setCrisisBanner(full);
+          setCrisisBanner(t("crisisBody"));
         }
       } catch (e) {
         // Land any buffered tokens first so the keep-or-remove check below
