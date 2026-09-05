@@ -6,6 +6,7 @@ import {
   View,
 } from "react-native";
 import { Text } from "@/components/Text";
+import { MarkdownText } from "@/components/MarkdownText";
 import { buildChatRequestBody, streamChat } from "@/api/client";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -148,7 +149,11 @@ export function ChartChatPanel({
           <Text variant="muted" style={{ marginBottom: 2 }}>
             {m.role === "user" ? t("you") : t("madhav")}
           </Text>
-          <Text variant="soft">{m.content}</Text>
+          {m.role === "user" ? (
+            <Text variant="soft">{m.content}</Text>
+          ) : (
+            <MarkdownText text={m.content} variant="soft" />
+          )}
         </View>
       ))}
 
