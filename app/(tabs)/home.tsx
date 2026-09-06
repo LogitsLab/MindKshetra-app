@@ -1,36 +1,47 @@
 import React, { useEffect, useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-  type ImageSourcePropType,
-} from "react-native";
-import { useRouter } from "expo-router";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useRouter, type Href } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { CoverImage } from "@/components/CoverImage";
-import { PathTile } from "@/components/SlokaCard";
-import { PracticeLifestyleGrid } from "@/components/PracticeLifestyleGrid";
 import { Rise } from "@/components/Rise";
 import { HomeHero } from "@/components/HomeHero";
 import { VotdCarousel } from "@/components/VotdCarousel";
-import { userApi } from "@/api/endpoints";
-import { HOME_PATHS } from "@/data/homePaths";
+import { ApiError } from "@/api/client";
+import { astrologyApi, userApi } from "@/api/endpoints";
+import { sittingProgram } from "@/data/meditation";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useFeaturedVerses } from "@/hooks/useFeaturedVerses";
-import { images } from "@/theme/assets";
-import { mediaOverlay, motion, radii, spacing } from "@/theme/tokens";
+import { useMeditationProgress } from "@/hooks/useMeditationProgress";
+import { usePanchang } from "@/hooks/usePanchang";
+import { motion, radii, spacing } from "@/theme/tokens";
 import { truncateAtWord } from "@/utils/text";
 
-/**
- * Full companion Home — VOTD, practice, paths, together, Madhav.
- * Path / Practise tabs still hold the same grids for focused browsing.
- */
+/** Warm-to-dark gradient variants so rail cards aren't identical photo tiles. */
+const TINTS: [string, string][] = [
+  ["#3a2b1c", "#141a26"],
+  ["#243b3a", "#141a26"],
+  ["#2c2540", "#141a26"],
+  ["#3a2436", "#141a26"],
+];
+
+type RailItem = {
+  key: string;
+  glyph: string;
+  titleKey: string;
+  descKey: string;
+  href: Href;
+  progress?: number;
+};
+
+function fmtMuhuratWindow(startIso: string, endIso: string): string {
+  const opts: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit" };
+  return `${new Date(startIso).toLocaleTimeString([], opts)}–${new Date(endIso).toLocaleTimeString([], opts)}`;
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -38,148 +49,134 @@ export default function HomeScreen() {
   const { t } = useLanguage();
   const { isSignedIn } = useAuth();
   const [streak, setStreak] = useState(0);
+  const [best, setBest] = useState(0);
   const { verses, error: votdError, stale: votdStale } = useFeaturedVerses();
+  const { panchang } = usePanchang();
+  const med = useMeditationProgress();
+  const [muhurat, setMuhurat] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSignedIn) return;
     userApi
       .streak()
-      .then((s) => setStreak(s.current ?? 0))
+      .then((s) => {
+        setStreak(s.current ?? 0);
+        setBest((s as { best?: number }).best ?? s.current ?? 0);
+      })
       .catch(() => undefined);
   }, [isSignedIn]);
+
+  useEffect(() => {
+    let alive = true;
+    void astrologyApi
+      .muhurat()
+      .then((data) => {
+        if (!alive) return;
+        const abhijit =
+          data.muhurats?.find((m) => /abhijit/i.test(m.nameEn)) ?? data.muhurats?.[0];
+        setMuhurat(
+          abhijit?.startIso && abhijit?.endIso
+            ? fmtMuhuratWindow(abhijit.startIso, abhijit.endIso)
+            : null
+        );
+      })
+      .catch((e) => {
+        if (!alive) return;
+        if (e instanceof ApiError && (e.status === 404 || e.status === 503)) setMuhurat(null);
+        else setMuhurat(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const bottomPad =
     spacing.tabBar + insets.bottom + spacing.fab + spacing.fabInset + spacing.xl;
 
+  const medProgress = Math.min(1, med.completedDays.length / (sittingProgram.days_count || 45));
+
+  // Continue (learn / browse) — each destination appears once.
+  const continueRail: RailItem[] = [
+    { key: "explore", glyph: "☸", titleKey: "homeExploreTitle", descKey: "homeExploreBlurb", href: "/(tabs)/explore" },
+    { key: "mood", glyph: "☺", titleKey: "homeMoodTitle", descKey: "homeMoodBlurb", href: "/(tabs)/mood" },
+    { key: "astrology", glyph: "✦", titleKey: "homeAstroTitle", descKey: "homeAstroBlurb", href: "/(tabs)/astrology" },
+    { key: "paths", glyph: "✿", titleKey: "homeBlockPathsTitle", descKey: "homeBlockPathsBody", href: "/paths" },
+  ];
+  // Practice (do) — distinct set; meditation carries live progress.
+  const practiceRail: RailItem[] = [
+    { key: "meditation", glyph: "❁", titleKey: "homeMeditationTitle", descKey: "homeMeditationBlurb", href: "/meditation", progress: medProgress },
+    { key: "sadhana", glyph: "🪔", titleKey: "homeSadhanaTitle", descKey: "homeSadhanaBody", href: "/sadhana" },
+    { key: "japa", glyph: "ॐ", titleKey: "homeJapaTitle", descKey: "homeJapaBody", href: "/japa" },
+    { key: "panchang", glyph: "☾", titleKey: "homeBlockPanchangTitle", descKey: "homeBlockPanchangBody", href: "/panchang" },
+  ];
+
   return (
-    <Screen
-      testID="screen-home"
-      atmosphere="soft"
-      padded
-      edges={["left", "right"]}
-    >
+    <Screen testID="screen-home" atmosphere="soft" padded edges={["left", "right"]}>
       <ScrollView
         nestedScrollEnabled
-        contentContainerStyle={{
-          paddingBottom: bottomPad,
-        }}
+        contentContainerStyle={{ paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
       >
         <HomeHero
           votdSanskrit={verses[0]?.sloka.sanskrit_devanagari}
           topInset={insets.top}
           streak={streak}
+          bestStreak={best}
         />
 
-        <Rise delay={motion.staggerMs * 2} style={{ marginTop: spacing.md }}>
-          <VotdCarousel
-            verses={verses}
-            error={votdError}
-            stale={votdStale}
-          />
+        {/* Info bar — timing cue, a single quiet row (not a card) */}
+        {muhurat || panchang?.tithi ? (
+          <Rise delay={motion.staggerMs * 2} style={{ marginTop: spacing.md }}>
+            <Pressable
+              onPress={() => router.push("/panchang")}
+              accessibilityRole="link"
+              style={[styles.infoBar, { borderColor: colors.hairline }]}
+            >
+              <Text style={{ color: colors.brassSoft, fontSize: 15 }}>◷</Text>
+              <Text variant="muted" color={colors.textSoft} style={styles.infoText} numberOfLines={1}>
+                {muhurat ? `${t("homeMuhuratCue").replace("{window}", muhurat)}` : ""}
+                {muhurat && panchang?.tithi ? " · " : ""}
+                {panchang?.tithi ?? ""}
+              </Text>
+              <Text style={{ color: colors.brass, fontSize: 16 }}>›</Text>
+            </Pressable>
+          </Rise>
+        ) : null}
+
+        {/* Daily verse — the one carousel */}
+        <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.lg }}>
+          <VotdCarousel verses={verses} error={votdError} stale={votdStale} />
         </Rise>
 
-        <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.xl }}>
-          <Text variant="eyebrow" color={colors.brassSoft}>
-            {t("homePaths")}
-          </Text>
-          <View style={[styles.pathGrid, { marginTop: spacing.md }]}>
-            {Array.from(
-              { length: Math.ceil(HOME_PATHS.length / 2) },
-              (_, row) => HOME_PATHS.slice(row * 2, row * 2 + 2)
-            ).map((pair, row) => (
-              <View key={row} style={styles.pathRow}>
-                {pair.map((path) => (
-                  <PathTile
-                    key={path.index}
-                    index={path.index}
-                    title={t(path.titleKey)}
-                    body={t(path.blurbKey)}
-                    image={path.image}
-                    imageFocus={path.imageFocus}
-                    mark={path.mark}
-                    onPress={() => router.push(path.href)}
-                    style={pair.length === 1 ? { maxWidth: "48.5%" } : undefined}
-                  />
-                ))}
-              </View>
-            ))}
-          </View>
-        </Rise>
-
+        {/* Continue your path */}
         <Rise delay={motion.staggerMs * 4} style={{ marginTop: spacing.xl }}>
-          <PracticeLifestyleGrid />
+          <SectionHead
+            eyebrow={t("homeContinueEyebrow")}
+            actionLabel={t("homeSeeAll")}
+            onAction={() => router.push("/path")}
+          />
+          <Rail items={continueRail} onPress={(h) => router.push(h)} />
         </Rise>
 
+        {/* Practice paths */}
         <Rise delay={motion.staggerMs * 5} style={{ marginTop: spacing.xl }}>
-          <Pressable
-            onPress={() => router.push("/madhav")}
-            accessibilityRole="button"
-            accessibilityLabel={t("homeCloseCta")}
-            style={({ pressed }) => [
-              styles.closeBand,
-              {
-                borderColor: colors.line,
-                opacity: pressed ? 0.92 : 1,
-                transform: [{ scale: pressed ? 0.985 : 1 }],
-              },
-            ]}
-          >
-            <CoverImage source={images.pathMadhav} opacity={0.9} />
-            <LinearGradient
-              colors={mediaOverlay.madhavBand}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.closeCopy}>
-              <Text variant="eyebrow" color={colors.brassSoft}>
-                {t("madhav")}
-              </Text>
-              <Text
-                variant="title"
-                color={colors.onMedia}
-                style={styles.closeTitle}
-              >
-                {t("homeCloseLine")}
-              </Text>
-              <Text
-                variant="muted"
-                color={colors.brassSoft}
-                style={{ marginTop: spacing.md }}
-              >
-                {t("homeCloseCta")} →
-              </Text>
-            </View>
-          </Pressable>
+          <SectionHead
+            eyebrow={t("homePracticePathsEyebrow")}
+            actionLabel={t("homeSeeAll")}
+            onAction={() => router.push("/(tabs)/practise")}
+          />
+          <Rail items={practiceRail} onPress={(h) => router.push(h)} />
         </Rise>
 
+        {/* Community & support — compact chips, not tall cards */}
         <Rise delay={motion.staggerMs * 6} style={{ marginTop: spacing.xl }}>
           <Text variant="eyebrow" color={colors.brassSoft}>
-            {t("homeTogetherEyebrow")}
+            {t("homeCommunityEyebrow")}
           </Text>
-          <Text variant="title" style={styles.sectionTitle}>
-            {t("homeTogetherTitle")}
-          </Text>
-          <View style={styles.togetherRow}>
-            <TogetherTile
-              image={images.pathCommunity}
-              title={t("homeBlockSanghaTitle")}
-              body={t("homeBlockSanghaBody")}
-              onPress={() => router.push("/community")}
-            />
-            <TogetherTile
-              image={images.pathMood}
-              title={t("homeBlockCareTitle")}
-              body={t("homeBlockCareBody")}
-              onPress={() => router.push("/care")}
-            />
-            <TogetherTile
-              image={images.pathPaths}
-              title={t("homeBlockSupportTitle")}
-              body={t("homeBlockSupportBody")}
-              onPress={() => router.push("/support")}
-            />
+          <View style={styles.chipRow}>
+            <CommunityChip label={t("homeCommunityCommunity")} onPress={() => router.push("/community")} />
+            <CommunityChip label={t("homeCommunityCare")} care onPress={() => router.push("/care")} />
+            <CommunityChip label={t("homeCommunityDana")} onPress={() => router.push("/support")} />
           </View>
         </Rise>
       </ScrollView>
@@ -187,117 +184,178 @@ export default function HomeScreen() {
   );
 }
 
-function TogetherTile({
-  image,
-  title,
-  body,
+function SectionHead({
+  eyebrow,
+  actionLabel,
+  onAction,
+}: {
+  eyebrow: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.sectionHead}>
+      <Text variant="eyebrow" color={colors.brassSoft}>
+        {eyebrow}
+      </Text>
+      <Pressable onPress={onAction} hitSlop={8} accessibilityRole="link">
+        <Text variant="muted" color={colors.brass} style={{ fontSize: 12 }}>
+          {actionLabel}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function Rail({
+  items,
   onPress,
 }: {
-  image: ImageSourcePropType;
-  title: string;
-  body: string;
+  items: RailItem[];
+  onPress: (href: Href) => void;
+}) {
+  const { colors } = useTheme();
+  const { t } = useLanguage();
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.rail}
+      style={{ marginHorizontal: -spacing.md }}
+    >
+      {items.map((item, i) => (
+        <Pressable
+          key={item.key}
+          testID={`home-rail-${item.key}`}
+          onPress={() => onPress(item.href)}
+          accessibilityRole="button"
+          accessibilityLabel={t(item.titleKey as never)}
+          style={[styles.railCard, { borderColor: colors.hairline }]}
+        >
+          <LinearGradient colors={TINTS[i % TINTS.length]} style={styles.railArt}>
+            <View style={[styles.railBadge, { borderColor: colors.line }]}>
+              <Text style={{ color: colors.brassSoft, fontSize: 15 }}>{item.glyph}</Text>
+            </View>
+          </LinearGradient>
+          <View style={styles.railBody}>
+            <Text variant="body" color={colors.text} style={styles.railTitle} numberOfLines={1}>
+              {t(item.titleKey as never)}
+            </Text>
+            <Text variant="muted" color={colors.textMuted} style={styles.railDesc} numberOfLines={2}>
+              {truncateAtWord(t(item.descKey as never), 48)}
+            </Text>
+            {item.progress != null ? (
+              <View style={styles.railBarTrack}>
+                <View
+                  style={[
+                    styles.railBarFill,
+                    { width: `${Math.round(item.progress * 100)}%`, backgroundColor: colors.brass },
+                  ]}
+                />
+              </View>
+            ) : null}
+          </View>
+        </Pressable>
+      ))}
+    </ScrollView>
+  );
+}
+
+function CommunityChip({
+  label,
+  onPress,
+  care,
+}: {
+  label: string;
   onPress: () => void;
+  care?: boolean;
 }) {
   const { colors } = useTheme();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={label}
       style={({ pressed }) => [
-        styles.togetherTile,
+        styles.chip,
         {
-          borderColor: colors.line,
-          opacity: pressed ? 0.94 : 1,
-          transform: [{ scale: pressed ? 0.975 : 1 }],
+          borderColor: care ? "rgba(224,138,146,0.45)" : colors.line,
+          backgroundColor: care ? "rgba(224,138,146,0.08)" : colors.surface,
+          opacity: pressed ? 0.85 : 1,
         },
       ]}
     >
-      <CoverImage source={image} opacity={0.88} />
-      <LinearGradient
-        colors={mediaOverlay.coverTile}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={styles.togetherCopy}>
-        <Text
-          variant="title"
-          color={colors.onMedia}
-          style={styles.togetherTitle}
-          numberOfLines={2}
-        >
-          {title}
-        </Text>
-        <Text
-          variant="muted"
-          color={colors.onMediaMuted}
-          style={styles.togetherBody}
-          numberOfLines={2}
-        >
-          {truncateAtWord(body, 48)}
-        </Text>
-      </View>
+      <Text variant="muted" color={care ? "#e08a92" : colors.textSoft} style={{ fontSize: 13 }}>
+        {care ? "♥ " : ""}
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: {
-    marginTop: spacing.xs,
+  infoBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm + 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  infoText: { flex: 1, fontSize: 12.5, lineHeight: 16 },
+  sectionHead: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
     marginBottom: spacing.md,
-    fontSize: 22,
-    lineHeight: 28,
   },
-  pathGrid: {
+  rail: {
+    paddingHorizontal: spacing.md,
     gap: spacing.sm,
   },
-  pathRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  togetherRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  togetherTile: {
-    flex: 1,
-    minHeight: 148,
+  railCard: {
+    width: 148,
     borderRadius: radii.lg,
-    overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth * 2,
+    overflow: "hidden",
+    backgroundColor: "rgba(238,242,247,0.045)",
+  },
+  railArt: {
+    height: 74,
     justifyContent: "flex-end",
-    backgroundColor: "#0e1420",
-    position: "relative",
+    padding: spacing.sm,
   },
-  togetherCopy: {
-    padding: spacing.sm + 2,
-    zIndex: 1,
-  },
-  togetherTitle: {
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  togetherBody: {
-    marginTop: 4,
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  closeBand: {
-    minHeight: 168,
-    borderRadius: radii.lg,
-    overflow: "hidden",
+  railBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: StyleSheet.hairlineWidth * 2,
+    backgroundColor: "rgba(7,9,15,0.55)",
+    alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#0e1420",
-    position: "relative",
   },
-  closeCopy: {
-    padding: spacing.lg,
-    maxWidth: 320,
-    zIndex: 1,
+  railBody: { padding: spacing.sm + 2 },
+  railTitle: { fontSize: 14, fontFamily: "Sora_600SemiBold" },
+  railDesc: { marginTop: 3, fontSize: 11, lineHeight: 15 },
+  railBarTrack: {
+    height: 5,
+    borderRadius: 5,
+    marginTop: 8,
+    backgroundColor: "rgba(255,255,255,0.09)",
+    overflow: "hidden",
   },
-  closeTitle: {
-    fontSize: 22,
-    lineHeight: 28,
-    marginTop: spacing.sm,
+  railBarFill: { height: "100%", borderRadius: 5 },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth * 2,
   },
 });
