@@ -97,17 +97,25 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # eas-cli >= 23 (installed as "latest") requires Node 22.
+          # Node 20 made Setup EAS fail on yarn engine checks every release.
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
       - name: Setup EAS
+        id: eas_setup
+        continue-on-error: true
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install EAS CLI fallback
+        if: steps.eas_setup.outcome == 'failure'
+        run: npm install -g eas-cli
 
       # EXPO_TOKEN must belong to the Expo owner of this project (imsaksham.c).
       # A token from another account used to fail every store release with
