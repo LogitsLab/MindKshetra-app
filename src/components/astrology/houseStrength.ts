@@ -79,11 +79,20 @@ export function isCombust(planet: DeskPlanet, sun: DeskPlanet | undefined): bool
   return angularSeparation(planet.longitude, sun.longitude) <= orb;
 }
 
-/** Map a signed score + signal flags to a level with the same rubric everywhere. */
-function levelFrom(score: number, hasStrongPos: boolean, hasNeg: boolean): StrengthLevel {
-  if (score <= -2) return "weak";
-  if (hasStrongPos && hasNeg) return "complex";
+/**
+ * Map a signed score + conflict flags to a level.
+ *
+ * "complex" is reserved for a GENUINE tension — a clearly favourable dignity
+ * that also carries a clearly afflicting placement (exalted in a dusthana,
+ * own-sign but combust, or a house holding both a strong and a weak planet).
+ * It must NOT be driven by aspects: a 7th-house aspect from some malefic is
+ * nearly universal, so counting that as a conflict made almost everything read
+ * "complex". Aspects are a light score nudge only.
+ */
+function levelFrom(score: number, strongPos: boolean, strongNeg: boolean): StrengthLevel {
+  if (strongPos && strongNeg) return "complex";
   if (score >= 2) return "strong";
+  if (score <= -2) return "weak";
   return "moderate";
 }
 
@@ -103,20 +112,22 @@ export function planetStrength(
 ): Strength {
   const reasons: StrengthReason[] = [];
   let score = 0;
-  let hasStrongPos = false;
-  let hasNeg = false;
+  // `strongPos`/`strongNeg` flag CLEAR dignity/placement signals only — they
+  // decide "complex". Aspects deliberately don't touch them.
+  let strongPos = false;
+  let strongNeg = false;
 
   if (dignity === "exalted") {
-    score += 2;
-    hasStrongPos = true;
+    score += 3;
+    strongPos = true;
     reasons.push({ code: "exalted", sign: planet.sign });
   } else if (dignity === "own" || dignity === "mooltrikona") {
-    score += 1;
-    hasStrongPos = true;
+    score += 2;
+    strongPos = true;
     reasons.push({ code: "own", sign: planet.sign });
   } else if (dignity === "debilitated") {
-    score -= 2;
-    hasNeg = true;
+    score -= 3;
+    strongNeg = true;
     reasons.push({ code: "debilitated", sign: planet.sign });
   }
 
@@ -124,19 +135,18 @@ export function planetStrength(
     const kind = houseType(planet.house);
     if (kind === "trikona" || kind === "kendra") {
       score += 1;
-      hasStrongPos = true;
       reasons.push({ code: kind, house: planet.house });
     } else if (kind === "dusthana") {
-      score -= 1;
-      hasNeg = true;
+      score -= 2;
+      strongNeg = true;
       reasons.push({ code: "dusthana", house: planet.house });
     }
   }
 
   const sun = planets.find((p) => p.id === "sun");
   if (isCombust(planet, sun)) {
-    score -= 1;
-    hasNeg = true;
+    score -= 2;
+    strongNeg = true;
     reasons.push({ code: "combust" });
   }
 
@@ -144,25 +154,25 @@ export function planetStrength(
     reasons.push({ code: "retrograde" });
   }
 
-  let beneficHits = 0;
-  let maleficHits = 0;
+  // Light modifier only (see levelFrom): benefic/malefic aspects nudge the score
+  // but never set the complex flags.
+  let benefic = 0;
+  let malefic = 0;
   for (const a of aspects) {
     if (a.to !== planet.id) continue;
-    if (BENEFICS.has(a.from)) beneficHits += 1;
-    else if (MALEFICS.has(a.from)) maleficHits += 1;
+    if (BENEFICS.has(a.from)) benefic += 1;
+    else if (MALEFICS.has(a.from)) malefic += 1;
   }
-  if (beneficHits > 0) {
-    score += Math.min(2, beneficHits);
-    hasStrongPos = true;
+  if (benefic > 0) {
+    score += 1;
     reasons.push({ code: "beneficAspect" });
   }
-  if (maleficHits > 0) {
-    score -= Math.min(2, maleficHits);
-    hasNeg = true;
+  if (malefic > 0) {
+    score -= 1;
     reasons.push({ code: "maleficAspect" });
   }
 
-  return { level: levelFrom(score, hasStrongPos, hasNeg), reasons };
+  return { level: levelFrom(score, strongPos, strongNeg), reasons };
 }
 
 export type HouseStrengthInput = {
@@ -183,17 +193,16 @@ export function houseStrength(
 ): Strength {
   const reasons: StrengthReason[] = [];
   let score = 0;
-  let hasStrongPos = false;
-  let hasNeg = false;
+  let strongPos = false;
+  let strongNeg = false;
 
   const kind = houseType(house);
   if (kind === "trikona" || kind === "kendra") {
     score += 1;
-    hasStrongPos = true;
     reasons.push({ code: kind, house });
   } else if (kind === "dusthana") {
-    score -= 1;
-    hasNeg = true;
+    score -= 2;
+    strongNeg = true;
     reasons.push({ code: "dusthana", house });
   }
 
@@ -204,38 +213,38 @@ export function houseStrength(
     const s = planetStrength(occ, { dignity: dignities[occ.id], aspects, planets });
     if (s.level === "strong") {
       score += 2;
-      hasStrongPos = true;
+      strongPos = true;
     } else if (s.level === "moderate") {
       score += 1;
     } else if (s.level === "weak") {
       score -= 2;
-      hasNeg = true;
+      strongNeg = true;
     } else {
-      // complex occupant → mixed
-      hasStrongPos = true;
-      hasNeg = true;
+      // a complex occupant is itself a genuine mix
+      strongPos = true;
+      strongNeg = true;
     }
-    // Surface the occupant's headline reason (dignity/house) for the "why".
+    // Surface the occupant's headline reason (dignity) for the "why".
     const headline = s.reasons.find(
       (r) => r.code === "exalted" || r.code === "debilitated" || r.code === "own"
     );
     if (headline) reasons.push({ ...headline, planet: occ.id });
   }
 
+  // Lord placement is a score nudge, not a complex trigger (its dusthana is a
+  // mild weakness, not the sharp tension "complex" is meant to capture).
   if (lordInHouse != null) {
     const lordKind = houseType(lordInHouse);
     if (lordKind === "trikona" || lordKind === "kendra") {
       score += 1;
-      hasStrongPos = true;
       reasons.push({ code: "lordStrong", house: lordInHouse });
     } else if (lordKind === "dusthana") {
       score -= 1;
-      hasNeg = true;
       reasons.push({ code: "lordDusthana", house: lordInHouse });
     }
   }
 
-  return { level: levelFrom(score, hasStrongPos, hasNeg), reasons };
+  return { level: levelFrom(score, strongPos, strongNeg), reasons };
 }
 
 /** Filled-dot meter for a level (UI helper). */

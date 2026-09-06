@@ -107,6 +107,27 @@ describe("planetStrength", () => {
     });
     expect(s.reasons.map((r) => r.code)).toContain("beneficAspect");
   });
+
+  // Regression: a malefic 7th aspect is near-universal, so it must NOT alone
+  // push an ordinary planet to "complex".
+  it("a malefic aspect alone does not make a neutral planet complex", () => {
+    const s = planetStrength(planet({ id: "sun", house: 10 }), {
+      dignity: "neutral",
+      aspects: [{ from: "saturn", to: "sun", kind: "full" }],
+      planets: [],
+    });
+    expect(s.level).not.toBe("complex");
+    expect(s.level).toBe("moderate"); // kendra +1, malefic -1 → 0
+  });
+
+  it("an exalted planet stays strong despite a malefic aspect", () => {
+    const s = planetStrength(planet({ id: "sun", house: 10 }), {
+      dignity: "exalted",
+      aspects: [{ from: "saturn", to: "sun", kind: "full" }],
+      planets: [],
+    });
+    expect(s.level).toBe("strong");
+  });
 });
 
 describe("houseStrength", () => {
