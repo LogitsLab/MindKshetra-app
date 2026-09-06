@@ -546,12 +546,13 @@ export default function MadhavScreen() {
         await streamChat(
           buildChatRequestBody({
             language: lang,
-            sessionId,
+            sessionId: incognitoRef.current ? null : sessionId,
             slokaId,
             memberId,
             chartSessionId,
             birth: birthPayload,
             messages: history,
+            incognito: incognitoRef.current,
           }),
           {
             onSession: (id) => {

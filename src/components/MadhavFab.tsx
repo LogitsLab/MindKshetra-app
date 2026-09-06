@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { usePathname, useRouter } from "expo-router";
+import { FullWindowOverlay } from "react-native-screens";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMadhav } from "@/context/MadhavContext";
@@ -73,7 +74,7 @@ export function MadhavFab() {
   const bottom =
     bottomInset + spacing.sm + (onTabs ? TAB_BAR_HEIGHT : spacing.md);
 
-  return (
+  const fab = (
     <Animated.View
       style={[
         styles.wrap,
@@ -117,6 +118,17 @@ export function MadhavFab() {
         />
       </Pressable>
     </Animated.View>
+  );
+
+  // On iOS the root-level absolute overlay is painted BEHIND the nested tab
+  // navigator's screens, so the FAB vanished on Home/Practise/Path/Profile.
+  // FullWindowOverlay renders it in a window above every navigator; it passes
+  // touches through everywhere except the FAB itself. Android layers the root
+  // overlay correctly, so it stays as-is there.
+  return Platform.OS === "ios" ? (
+    <FullWindowOverlay>{fab}</FullWindowOverlay>
+  ) : (
+    fab
   );
 }
 
