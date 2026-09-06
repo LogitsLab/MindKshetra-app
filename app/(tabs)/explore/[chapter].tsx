@@ -43,6 +43,7 @@ export default function ChapterScreen() {
   const [continueSlokaId, setContinueSlokaId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const listRef = useRef<FlatList<Sloka> | null>(null);
 
   const title = chapterTitle(meta, lang, `${t("chapter")} ${chapterNum}`);
@@ -74,7 +75,7 @@ export default function ChapterScreen() {
     return () => {
       alive = false;
     };
-  }, [chapterNum]);
+  }, [chapterNum, reloadKey]);
 
   useFocusRefresh(
     "progress",
@@ -229,7 +230,16 @@ export default function ChapterScreen() {
           <ActivityIndicator color={colors.brass} />
         </View>
       ) : error ? (
-        <EmptyState title="Couldn’t load" body={error} />
+        <EmptyState
+          title={t("couldntLoad")}
+          body={error}
+          actionLabel={t("retry")}
+          onAction={() => {
+            setError(null);
+            setLoading(true);
+            setReloadKey((k) => k + 1);
+          }}
+        />
       ) : (
         <FlatList
           ref={listRef}
@@ -246,12 +256,8 @@ export default function ChapterScreen() {
           ListHeaderComponent={listHeader}
           ListEmptyComponent={
             <EmptyState
-              title={lang === "hi" ? "कोई श्लोक नहीं" : "No verses"}
-              body={
-                lang === "hi"
-                  ? "API से श्लोक नहीं मिले।"
-                  : "No verses returned from the API."
-              }
+              title={t("noVerses")}
+              body={t("noVersesBody")}
             />
           }
           onScrollToIndexFailed={(info) => {

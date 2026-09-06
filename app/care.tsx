@@ -26,18 +26,19 @@ export default function CareScreen() {
   }
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen atmosphere="soft" padded={false} edges={["left", "right"]}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <Rise>
           <PageHero
+            fullBleed
+            backFallback="/(tabs)/home"
             image={images.pathMood}
             eyebrow={t("careEyebrow")}
             title={t("homeBlockCareTitle")}
             intro={t("careHeroBody")}
-            compact
           />
         </Rise>
 
@@ -95,6 +96,7 @@ export default function CareScreen() {
 
 const styles = StyleSheet.create({
   content: {
+    paddingHorizontal: spacing.md,
     paddingBottom: spacing.xxl,
   },
   section: {

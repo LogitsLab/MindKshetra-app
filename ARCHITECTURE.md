@@ -28,7 +28,7 @@ flowchart LR
 ```
 app/                      # Expo Router
   _layout.tsx             # Providers, fonts, Madhav FAB
-  (tabs)/                 # Home, Explore, Mood, Astrology
+  (tabs)/                 # Home, Practise, Path, Profile
   madhav.tsx              # Modal chat
   astrology/              # Incognito + members flows
   account/                # Profile, auth, reflections
@@ -47,7 +47,7 @@ src/
   types/astrology.ts      # Chart / predictionsText helpers
 ```
 
-**Navigation:** tabs = Home · Explore · Mood · Astrology. Madhav = FAB → modal (not a tab).
+**Navigation:** tabs = Home · Practise · Path · Profile. Explore, Mood, and Astrology are stacked off-tab from Home. Madhav = FAB → modal (not a tab).
 
 **Provider order:** Theme → TextScale → Language → Onboarding → Auth → Madhav.
 

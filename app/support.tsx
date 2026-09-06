@@ -19,18 +19,19 @@ export default function SupportScreen() {
   const { t } = useLanguage();
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen atmosphere="soft" padded={false} edges={["left", "right"]}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <Rise>
           <PageHero
+            fullBleed
+            backFallback="/(tabs)/home"
             image={images.pathPaths}
             eyebrow={t("supportEyebrow")}
             title={t("homeBlockSupportTitle")}
             intro={t("supportHeroBody")}
-            compact
           />
         </Rise>
 
@@ -76,6 +77,7 @@ export default function SupportScreen() {
 
 const styles = StyleSheet.create({
   content: {
+    paddingHorizontal: spacing.md,
     paddingBottom: spacing.xxl,
   },
   section: {

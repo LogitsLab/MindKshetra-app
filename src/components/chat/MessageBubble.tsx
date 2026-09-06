@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "@/components/Text";
+import { MarkdownText } from "@/components/MarkdownText";
 import type { AppLang } from "@/i18n/dictionary";
 import { mentionsCrisisResource } from "@/safety/crisis";
 import { radii, spacing } from "@/theme/tokens";
@@ -96,12 +97,20 @@ export const MessageBubble = React.memo(function MessageBubble({
           },
         ]}
       >
-        <Text
-          variant="body"
-          style={{ color: crisis ? colors.danger : colors.textSoft }}
-        >
-          {content || (loading ? "…" : "")}
-        </Text>
+        {content ? (
+          <MarkdownText
+            text={content}
+            variant="body"
+            color={crisis ? colors.danger : colors.textSoft}
+          />
+        ) : (
+          <Text
+            variant="body"
+            style={{ color: crisis ? colors.danger : colors.textSoft }}
+          >
+            {loading ? "…" : ""}
+          </Text>
+        )}
       </View>
       {citations && citations.length > 0 ? (
         <View style={styles.cites}>

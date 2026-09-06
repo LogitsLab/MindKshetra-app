@@ -5,11 +5,24 @@ import {
 } from "expo-audio";
 
 /**
- * Soft looping bed under silence countdowns. Uses the hosted drone on the
- * public audio bucket (same file the web player prefers).
+ * Soft looping bed under silence. Hosted files on the public audio bucket
+ * first; bundled CC0 originals if the object 404s so sits are never dry.
  */
-const DRONE_PATH = "ambient/meditation-drone.m4a";
-/** Optional one-shot at sit end — fail soft if the bucket object is missing. */
+export type AmbientBed = "off" | "drone" | "bowls" | "rain";
+
+const HOSTED: Record<Exclude<AmbientBed, "off">, string> = {
+  drone: "ambient/meditation-drone.m4a",
+  bowls: "ambient/bowls.m4a",
+  rain: "ambient/rain.m4a",
+};
+
+const BUNDLED: Record<Exclude<AmbientBed, "off">, number> = {
+  drone: require("../../assets/audio/meditation-drone.m4a"),
+  bowls: require("../../assets/audio/bowls.m4a"),
+  rain: require("../../assets/audio/rain.m4a"),
+};
+
+const BUNDLED_BELL = require("../../assets/audio/soft-bell.m4a");
 const BELL_PATH = "ambient/soft-bell.m4a";
 
 let player: AudioPlayer | null = null;
@@ -25,9 +38,11 @@ function bucketBase(): string | null {
   return `${url}/storage/v1/object/public/audio`;
 }
 
-export function ambientLoopUrl(): string | null {
+export function ambientLoopUrl(
+  bed: Exclude<AmbientBed, "off"> = "drone"
+): string | null {
   const base = bucketBase();
-  return base ? `${base}/${DRONE_PATH}` : null;
+  return base ? `${base}/${HOSTED[bed]}` : null;
 }
 
 export function softBellUrl(): string | null {
@@ -35,72 +50,105 @@ export function softBellUrl(): string | null {
   return base ? `${base}/${BELL_PATH}` : null;
 }
 
+async function ensureAudioMode(): Promise<void> {
+  try {
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      interruptionMode: "doNotMix",
+      shouldPlayInBackground: false,
+      allowsRecording: false,
+    });
+    audioModeSet = true;
+  } catch {
+    audioModeSet = false;
+  }
+}
+
+function release(p: AudioPlayer | null): void {
+  if (!p) return;
+  try {
+    p.pause();
+  } catch {
+    /* ignore */
+  }
+  try {
+    p.remove();
+  } catch {
+    /* already released */
+  }
+}
+
+function playSource(source: { uri: string } | number, loop: boolean, volume: number) {
+  const p = createAudioPlayer(source);
+  p.loop = loop;
+  p.volume = Math.min(1, Math.max(0, volume));
+  p.play();
+  return p;
+}
+
 /** One-shot soft bell when the last phase ends. Never throws; missing = no-op. */
 export async function playSoftBell(volume = 0.45): Promise<boolean> {
-  const url = softBellUrl();
-  if (!url) return false;
+  release(bellPlayer);
+  bellPlayer = null;
   try {
-    if (bellPlayer) {
+    if (!audioModeSet) await ensureAudioMode();
+    const url = softBellUrl();
+    if (url) {
       try {
-        bellPlayer.pause();
-        bellPlayer.remove();
+        const p = playSource({ uri: url }, false, volume);
+        bellPlayer = p;
+        return true;
       } catch {
-        /* already released */
+        /* fall through to bundled */
       }
-      bellPlayer = null;
     }
-    if (!audioModeSet) {
-      audioModeSet = true;
-      await setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
-    }
-    const p = createAudioPlayer({ uri: url });
-    p.loop = false;
-    p.volume = Math.min(1, Math.max(0, volume));
+    const p = playSource(BUNDLED_BELL, false, volume);
     bellPlayer = p;
-    p.play();
     return true;
   } catch {
-    if (bellPlayer) {
-      try {
-        bellPlayer.remove();
-      } catch {
-        /* ignore */
-      }
-      bellPlayer = null;
-    }
+    release(bellPlayer);
+    bellPlayer = null;
     return false;
   }
 }
 
 export function stopAmbient(): void {
   running = false;
-  if (!player) return;
-  try {
-    player.pause();
-    player.remove();
-  } catch {
-    /* already released */
-  }
+  release(player);
   player = null;
 }
 
-export async function startAmbient(volume = 0.35): Promise<boolean> {
-  const url = ambientLoopUrl();
-  if (!url) return false;
-
+/**
+ * Start the ambient bed. Hosted URL first, bundled asset if that fails.
+ * `bed: "off"` is a no-op. Safe to call repeatedly — restarts cleanly.
+ */
+export async function startAmbient(
+  volume = 0.35,
+  bed: AmbientBed = "drone"
+): Promise<boolean> {
   stopAmbient();
+  if (bed === "off") return false;
   running = true;
 
   try {
-    if (!audioModeSet) {
-      audioModeSet = true;
-      await setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
+    if (!audioModeSet) await ensureAudioMode();
+    const url = ambientLoopUrl(bed);
+    if (url) {
+      try {
+        const p = playSource({ uri: url }, true, volume);
+        player = p;
+        if (!running) {
+          stopAmbient();
+          return false;
+        }
+        return true;
+      } catch {
+        /* bundled fallback */
+      }
     }
-    const p = createAudioPlayer({ uri: url });
-    p.loop = true;
-    p.volume = Math.min(1, Math.max(0, volume));
+    if (!running) return false;
+    const p = playSource(BUNDLED[bed], true, volume);
     player = p;
-    p.play();
     if (!running) {
       stopAmbient();
       return false;
@@ -114,4 +162,10 @@ export async function startAmbient(volume = 0.35): Promise<boolean> {
 
 export function isAmbientRunning(): boolean {
   return running && player != null;
+}
+
+export function releaseAmbientPlayers(): void {
+  stopAmbient();
+  release(bellPlayer);
+  bellPlayer = null;
 }

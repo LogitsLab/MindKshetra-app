@@ -1,6 +1,7 @@
 /** @jest-environment node */
 
 import {
+  chatApi,
   contentApi,
   journeysApi,
   notificationPrefsApi,
@@ -169,5 +170,23 @@ describe("journeysApi", () => {
       method: "POST",
       body: JSON.stringify({ day: 2 }),
     });
+  });
+});
+
+describe("chatApi.today", () => {
+  beforeEach(() => {
+    mockApiFetch.mockReset();
+  });
+
+  it("GETs /api/madhav/today with lang and timezone", async () => {
+    mockApiFetch.mockResolvedValue({
+      addressName: "Parth",
+      greeting: "Parth, I am Madhav.",
+      starters: [],
+    });
+    await chatApi.today({ lang: "hi", tz: "Asia/Kolkata" });
+    expect(mockApiFetch).toHaveBeenCalledWith(
+      "/api/madhav/today?lang=hi&tz=Asia%2FKolkata"
+    );
   });
 });

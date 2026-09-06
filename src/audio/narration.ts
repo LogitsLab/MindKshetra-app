@@ -1,14 +1,19 @@
-import * as Speech from "expo-speech";
 import {
   createAudioPlayer,
   setAudioModeAsync,
   type AudioPlayer,
 } from "expo-audio";
+import { localAudioUri } from "@/audio/cache";
 import { resolveSpeechUrl } from "@/audio/manifest";
 
 /**
- * Narration = pre-generated studio audio when the manifest has it, device TTS
- * otherwise. One session at a time — async gaps must not spawn orphan players.
+ * Narration = pre-generated / recorded audio when the manifest has it, and
+ * silence otherwise. There is NO device text-to-speech: the app only ever
+ * plays real recordings (recitation, japa chants, ambient beds, bells, and —
+ * where a voice pack exists — preloaded narration). One session at a time;
+ * async gaps must not spawn orphan players.
+ *
+ * Sanskrit recitation uses `playUrl` (file only). Never synthesize Devanagari.
  */
 let player: AudioPlayer | null = null;
 let audioModeSet = false;
@@ -49,7 +54,6 @@ export function stopNarration(): void {
   session += 1;
   const prevStopped = activeStopped;
   clearActiveCallbacks();
-  Speech.stop();
   if (player) {
     try {
       player.removeAllListeners("playbackStatusUpdate");
@@ -74,27 +78,6 @@ export function stopNarrationIfOwner(ownerSession: number): void {
   }
 }
 
-function speakFallback(text: string, options: NarrationOptions): void {
-  bindActiveCallbacks(options);
-  Speech.speak(text, {
-    language: options.lang === "hi" ? "hi-IN" : "en-IN",
-    rate: options.rate,
-    onStart: options.onStart,
-    onDone: () => {
-      clearActiveCallbacks();
-      options.onDone?.();
-    },
-    onStopped: () => {
-      clearActiveCallbacks();
-      options.onStopped?.();
-    },
-    onError: () => {
-      clearActiveCallbacks();
-      options.onError?.();
-    },
-  });
-}
-
 export type PlayUrlOptions = {
   rate?: number;
   onStart?: () => void;
@@ -104,35 +87,53 @@ export type PlayUrlOptions = {
 };
 
 /**
- * Warm the HTTP/edge cache for a recitation URL without playing.
+ * Warm disk cache for a recitation URL without playing.
  * Fire-and-forget — safe to call from SpeakButton mount.
  */
 export function prefetchAudioUrl(url: string | null | undefined): void {
   if (!url) return;
-  void fetch(url, { method: "GET", headers: { Range: "bytes=0-1" } }).catch(
-    () => undefined
-  );
+  void localAudioUri(url).catch(() => undefined);
 }
 
 async function ensureAudioMode(): Promise<void> {
   if (audioModeSet) return;
-  audioModeSet = true;
-  await setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
+  try {
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      interruptionMode: "doNotMix",
+      shouldPlayInBackground: false,
+      allowsRecording: false,
+    });
+    audioModeSet = true;
+  } catch {
+    audioModeSet = false;
+  }
 }
 
-/** Play a remote (or local) file. Call play() immediately — waiting on isLoaded races with Expo remounts. */
+/**
+ * Play a local (preferred) or remote file. Do not wait on isLoaded — that
+ * gate raced Expo remounts and was reverted. Disk-cache first so play() is
+ * against a local URI instead of a cold HTTP stream.
+ */
 async function playLoaded(
   url: string,
   options: PlayUrlOptions,
   mySession: number
 ): Promise<boolean> {
+  const local = await localAudioUri(url);
+  if (mySession !== session) {
+    options.onStopped?.();
+    return false;
+  }
+
   await ensureAudioMode();
   if (mySession !== session) {
     options.onStopped?.();
     return false;
   }
 
-  const p = createAudioPlayer({ uri: url });
+  const playUri = local ?? url;
+  const p = createAudioPlayer({ uri: playUri });
   player = p;
   bindActiveCallbacks(options);
 
@@ -188,7 +189,15 @@ export async function playUrl(
   }
 }
 
-export async function playOrSpeak(
+/**
+ * Play preloaded narration for `text` IF the manifest (or an explicit
+ * `options.url`) has a recording for it. There is no synthetic-voice fallback:
+ * when no recording exists this resolves `false` and plays nothing, so callers
+ * can fall back to a silent, music-led experience. Returns `true` only when a
+ * real audio file started playing. This is the hook future voice packs plug
+ * into — drop a file into the manifest and guided narration "just works".
+ */
+export async function playNarrationIfAvailable(
   text: string,
   options: NarrationOptions
 ): Promise<boolean> {
@@ -204,26 +213,20 @@ export async function playOrSpeak(
     }
   }
 
-  // A newer play/stop won while we were resolving audio.
-  if (mySession !== session) {
+  // A newer play/stop won while we were resolving audio, or there is simply no
+  // recording — either way, play nothing.
+  if (mySession !== session || !url) {
     options.onStopped?.();
     return false;
-  }
-
-  if (!url) {
-    speakFallback(text, options);
-    return true;
   }
 
   try {
     return await playLoaded(url, options, mySession);
   } catch {
-    if (mySession !== session) {
+    if (mySession === session) {
+      clearActiveCallbacks();
       options.onStopped?.();
-      return false;
     }
-    stopNarration();
-    speakFallback(text, options);
-    return true;
+    return false;
   }
 }

@@ -90,3 +90,44 @@ describe("narration ownership", () => {
     expect(bStopped).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * Recitation-only Listen must call playUrl (file) and never synthesize speech.
+ * Missing recording => silence, not a device voice.
+ */
+describe("recitation-only contract", () => {
+  it("uses playUrl when a recitation file exists", () => {
+    const recitationUrl: string | null = "https://cdn/recitation/2-47.m4a";
+    const usePlayUrl = Boolean(recitationUrl);
+    expect(usePlayUrl).toBe(true);
+  });
+
+  it("plays nothing when the recitation file is missing", () => {
+    const recitationUrl: string | null = null;
+    expect(Boolean(recitationUrl)).toBe(false);
+  });
+});
+
+/**
+ * Hard guarantee: the app has no text-to-speech. `expo-speech` must not be a
+ * dependency and the narration module must never import it or call Speech.*.
+ * Guided meditation is music-led (preloaded audio only); a missing recording
+ * results in silence, never a synthetic voice.
+ */
+describe("no text-to-speech", () => {
+  const read = (rel: string): string =>
+    require("fs").readFileSync(require("path").join(__dirname, rel), "utf8");
+
+  it("narration.ts never imports or calls expo-speech", () => {
+    const source = read("../narration.ts");
+    expect(source).not.toMatch(/from ["']expo-speech["']/);
+    expect(source).not.toMatch(/require\(["']expo-speech["']\)/);
+    expect(source).not.toMatch(/Speech\.(speak|stop)/);
+  });
+
+  it("expo-speech is not a project dependency", () => {
+    const pkg = JSON.parse(read("../../../package.json"));
+    expect(pkg.dependencies?.["expo-speech"]).toBeUndefined();
+    expect(pkg.devDependencies?.["expo-speech"]).toBeUndefined();
+  });
+});

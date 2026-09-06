@@ -129,6 +129,8 @@ export type PanchangFestival = {
   labelHi: string;
   practiceHint?: "japa" | "verse";
   verseRef?: string;
+  storyEn?: string;
+  storyHi?: string;
 };
 
 /** Server daily panchang, computed at local sunrise for its location. */

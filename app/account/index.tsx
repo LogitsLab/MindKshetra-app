@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
+import { KeyboardFormScroll, fieldInputProps, multilineInputProps } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { Button, Hairline } from "@/components/Button";
 import { AppleSignInButton } from "@/components/AppleSignInButton";
@@ -436,7 +437,7 @@ export default function AccountScreen() {
 
   return (
     <Screen testID="screen-profile">
-      <ScrollView
+      <KeyboardFormScroll
         contentContainerStyle={{
           paddingBottom: spacing.tabBar + 100,
           paddingTop: spacing.md,
@@ -667,6 +668,7 @@ export default function AccountScreen() {
               autoCorrect={false}
               placeholder="your_name"
               placeholderTextColor={colors.textMuted}
+              {...fieldInputProps}
               style={[
                 styles.input,
                 {
@@ -683,6 +685,7 @@ export default function AccountScreen() {
               value={displayName}
               onChangeText={setDisplayName}
               placeholderTextColor={colors.textMuted}
+              {...fieldInputProps}
               style={[
                 styles.input,
                 {
@@ -700,6 +703,7 @@ export default function AccountScreen() {
               onChangeText={setBio}
               multiline
               placeholderTextColor={colors.textMuted}
+              {...multilineInputProps}
               style={[
                 styles.input,
                 {
@@ -796,6 +800,7 @@ export default function AccountScreen() {
                   textContentType="emailAddress"
                   placeholder={t("emailPlaceholder")}
                   placeholderTextColor={colors.textMuted}
+                  {...fieldInputProps}
                   style={[
                     styles.input,
                     {
@@ -818,6 +823,7 @@ export default function AccountScreen() {
                   textContentType="password"
                   placeholder={t("passwordPlaceholder")}
                   placeholderTextColor={colors.textMuted}
+                  {...fieldInputProps}
                   style={[
                     styles.input,
                     {
@@ -1355,12 +1361,11 @@ export default function AccountScreen() {
             </Text>
           </Pressable>
         ) : null}
-      </ScrollView>
+      </KeyboardFormScroll>
     </Screen>
   );
 }
 
-/** The app's quiet two-state switch, shared by the notification rows. */
 function ToggleSwitch({
   checked,
   disabled,

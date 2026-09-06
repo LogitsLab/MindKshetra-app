@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Image,
+  Platform,
   StyleSheet,
   View,
   type ImageSourcePropType,
@@ -32,12 +33,13 @@ export function CoverImage({
   return (
     <View
       pointerEvents="none"
-      style={[StyleSheet.absoluteFillObject, styles.clip, style, { opacity }]}
+      style={[StyleSheet.absoluteFill, styles.clip, style, { opacity }]}
     >
       <Image
         source={source}
         style={focus === "top" ? styles.imgTop : styles.img}
         resizeMode="cover"
+        resizeMethod={Platform.OS === "android" ? "resize" : "auto"}
       />
     </View>
   );

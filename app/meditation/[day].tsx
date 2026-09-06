@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
+import { EmptyState } from "@/components/SlokaCard";
 import { MeditationPlayer } from "@/components/MeditationPlayer";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -26,7 +27,7 @@ export default function MeditationDayScreen() {
   if (!session) {
     return (
       <Screen atmosphere="soft" padded>
-        <Text variant="title">{t("notFoundTitle")}</Text>
+        <EmptyState title={t("notFoundTitle")} body={t("notFoundBody")} />
       </Screen>
     );
   }
@@ -48,26 +49,17 @@ export default function MeditationDayScreen() {
   ) {
     return (
       <Screen atmosphere="soft" padded>
-        <Text variant="eyebrow" color={colors.brassSoft}>
-          {t("medDayLocked")}
-        </Text>
-        <Text variant="title" style={{ marginTop: spacing.sm, fontSize: 22 }}>
-          {t("medLockedTitle")}
-        </Text>
-        <Text variant="soft" style={{ marginTop: spacing.sm }}>
-          {t("medLockedBody")}
-        </Text>
-        <Pressable
-          onPress={() => router.replace(`/meditation/${progress.currentDay}`)}
-          style={{ marginTop: spacing.lg }}
-        >
-          <Text color={colors.brassSoft}>
-            {t("medContinue").replace("{n}", String(progress.currentDay))} →
-          </Text>
-        </Pressable>
+        <EmptyState
+          title={t("medLockedTitle")}
+          body={t("medLockedBody")}
+          actionLabel={t("medContinue").replace("{n}", String(progress.currentDay))}
+          onAction={() => router.replace(`/meditation/${progress.currentDay}`)}
+        />
         <Pressable
           onPress={() => router.push("/meditation")}
-          style={{ marginTop: spacing.md }}
+          accessibilityRole="button"
+          accessibilityLabel={t("medBack")}
+          style={{ marginTop: spacing.md, alignItems: "center" }}
         >
           <Text color={colors.brassSoft}>{t("medBack")} →</Text>
         </Pressable>

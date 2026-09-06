@@ -160,6 +160,8 @@ type ChatRequestBase = {
   sessionId?: string;
   chatSessionId?: string;
   messages: ChatRequestMessage[];
+  /** When true the server skips creating a session and saving messages. */
+  incognito?: boolean;
 };
 
 export type ChatRequestContext =
@@ -198,6 +200,7 @@ export type ChatRequestInput = {
   memberId?: string | null;
   chartSessionId?: string | null;
   birth?: Record<string, unknown> | null;
+  incognito?: boolean;
 };
 
 /**
@@ -223,6 +226,7 @@ export function buildChatRequestBody(input: ChatRequestInput): ChatRequestBody {
     sessionId: input.sessionId ?? undefined,
     chatSessionId: input.sessionId ?? undefined,
     messages: input.messages,
+    ...(input.incognito ? { incognito: true } : {}),
   };
 
   if (input.slokaId != null) return { ...base, slokaId: input.slokaId };

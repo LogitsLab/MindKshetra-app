@@ -95,3 +95,16 @@ export const mantras: Mantra[] = [
 export function getMantraById(id: string): Mantra | undefined {
   return mantras.find((m) => m.id === id);
 }
+
+export const CUSTOM_MANTRA_ID = "custom";
+
+export function looksDevanagari(text: string): boolean {
+  return /[\u0900-\u097F]/.test(text);
+}
+
+export function chantLine(mantra: Mantra): string {
+  if (mantra.id === CUSTOM_MANTRA_ID) {
+    return mantra.devanagari.trim() || mantra.iast.trim();
+  }
+  return mantra.devanagari || mantra.iast;
+}

@@ -22,6 +22,7 @@ export default function FavoritesScreen() {
   const [slokas, setSlokas] = useState<Sloka[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useFocusRefresh(
     "favorites",
@@ -45,7 +46,7 @@ export default function FavoritesScreen() {
         if (isActive()) setLoading(false);
       }
     },
-    { enabled: !authLoading, resetKey: String(isSignedIn) }
+    { enabled: !authLoading, resetKey: `${isSignedIn}:${retryNonce}` }
   );
 
   if (!authLoading && !isSignedIn) {
@@ -75,7 +76,12 @@ export default function FavoritesScreen() {
       {loading ? (
         <ActivityIndicator color={colors.brass} style={{ marginTop: spacing.xl }} />
       ) : error ? (
-        <EmptyState title={lang === "hi" ? "त्रुटि" : "Couldn’t load"} body={error} />
+        <EmptyState
+          title={t("couldntLoad")}
+          body={error}
+          actionLabel={t("retry")}
+          onAction={() => setRetryNonce((n) => n + 1)}
+        />
       ) : (
         <FlatList
           data={slokas}

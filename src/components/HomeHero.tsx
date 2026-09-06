@@ -17,18 +17,16 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { BrandMark } from "@/components/BrandMark";
 import { BRAND_NAME } from "@/components/BrandWordmark";
 import { Text } from "@/components/Text";
-import { Button } from "@/components/Button";
-import { MoodIcon } from "@/components/MoodIcon";
 import { Rise } from "@/components/Rise";
 import {
   EMPTY_PERSONALIZATION,
   PERSONALIZATION_STORAGE_KEY,
   type PersonalizationDraft,
 } from "@/data/personalization";
-import { moods, previewMoodIds } from "@/data/moods";
+import { sittingProgram } from "@/data/meditation";
+import { useMeditationProgress } from "@/hooks/useMeditationProgress";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
-import { moodAccent } from "@/theme/assets";
 import { motion, radii, spacing } from "@/theme/tokens";
 
 const HOME_VISITED_KEY = "mindkshetra-home-visited";
@@ -56,6 +54,7 @@ type Props = {
   /** Safe-area top, brand floats on atmosphere, no solid header chrome. */
   topInset?: number;
   streak?: number;
+  bestStreak?: number;
 };
 
 function hourBucket(h: number): "dawn" | "day" | "dusk" | "night" {
@@ -122,11 +121,43 @@ function greetingFor(
       : "Ease into the night";
 }
 
-function PracticeIcon({ color }: { color: string }) {
+function ProgressRing({
+  pct,
+  size = 48,
+  color,
+  track,
+}: {
+  pct: number;
+  size?: number;
+  color: string;
+  track: string;
+}) {
+  const stroke = 3;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
   return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+    <Svg width={size} height={size}>
+      <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        stroke={color}
+        strokeWidth={stroke}
+        fill="none"
+        strokeDasharray={`${c * pct} ${c}`}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+    </Svg>
+  );
+}
+
+function DiyaIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M12 3c2.5 3 4 5.5 4 8a4 4 0 11-8 0c0-2.5 1.5-5 4-8z"
+        d="M12 4c2 2.4 3.2 4.3 3.2 6.2a3.2 3.2 0 11-6.4 0C8.8 8.3 10 6.4 12 4z"
         stroke={color}
         strokeWidth="1.6"
         strokeLinejoin="round"
@@ -135,21 +166,14 @@ function PracticeIcon({ color }: { color: string }) {
   );
 }
 
-function MadhavIcon({ color }: { color: string }) {
+function CareIcon({ color, size = 15 }: { color: string; size?: number }) {
   return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M5 18c1.5-4 4-6 7-6s5.5 2 7 6"
+        d="M12 20s-7-4.35-7-9a4 4 0 017-2.65A4 4 0 0119 11c0 4.65-7 9-7 9z"
         stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-      <Circle cx="12" cy="8" r="3.2" stroke={color} strokeWidth="1.5" />
-      <Path
-        d="M16 5.5c1.2-.8 2.4-.6 3 .4"
-        stroke={color}
-        strokeWidth="1.4"
-        strokeLinecap="round"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
       />
     </Svg>
   );
@@ -162,6 +186,7 @@ export function HomeHero({
   votdSanskrit,
   topInset = 0,
   streak = 0,
+  bestStreak = 0,
 }: Props) {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -169,7 +194,15 @@ export function HomeHero({
   const { t, lang } = useLanguage();
   const [returning, setReturning] = useState(false);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const med = useMeditationProgress();
   const breathe = useRef(new Animated.Value(0)).current;
+  const ctaPct = Math.min(
+    1,
+    Math.max(
+      0.12,
+      med.completedDays.length / (sittingProgram.days_count || 45)
+    )
+  );
   const now = new Date();
   const hour = now.getHours();
   const dayIndex = Math.floor(Date.now() / 86400000);
@@ -233,16 +266,6 @@ export function HomeHero({
     return () => loop.stop();
   }, [breathe]);
 
-  const heroMoods = useMemo(() => {
-    return previewMoodIds
-      .map(
-        (id, i) =>
-          moods.find((m) => m.id === id) ?? moods[(dayIndex + i) % moods.length]
-      )
-      .filter(Boolean)
-      .slice(0, 4);
-  }, [dayIndex]);
-
   const lines = lang === "hi" ? ROTATING_LINES_HI : ROTATING_LINES_EN;
   const rotating = lines[dayIndex % lines.length];
   const greetingLang = lang === "hi" ? "hi" : "en";
@@ -270,7 +293,7 @@ export function HomeHero({
     >
       <LinearGradient
         colors={[tintA, tintB]}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
 
@@ -326,6 +349,16 @@ export function HomeHero({
             {BRAND_NAME}
           </Text>
         </View>
+        <Pressable
+          onPress={() => router.push("/care")}
+          accessibilityRole="button"
+          accessibilityLabel={t("homeCareLabel")}
+          hitSlop={8}
+          style={[styles.careBtn, { borderColor: "rgba(224,138,146,0.5)" }]}
+        >
+          <CareIcon color="#e08a92" />
+          <View style={styles.careDot} />
+        </Pressable>
         {streak > 0 ? (
           <View style={[styles.streakPill, styles.textScrim]}>
             <View
@@ -339,9 +372,12 @@ export function HomeHero({
       </View>
 
       <Text
-        variant="title"
+        variant="display"
         color={colors.brassSoft}
-        style={styles.tagline}
+        style={styles.greeting}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
       >
         {returning ? greeting : t("homeWelcomeFirst")}
       </Text>
@@ -352,78 +388,40 @@ export function HomeHero({
       >
         {returning ? rotating : t("homeHeroBody")}
       </Text>
-
-      <View style={styles.ctaRow}>
-        <View style={{ flex: 1.2 }}>
-          <Button
-            label={t("homeCtaPractice")}
-            leading={<PracticeIcon color={colors.onBrass} />}
-            onPress={() => router.push("/sadhana")}
+      {/* Primary CTA — the single main action on Home */}
+      <Pressable
+        onPress={() => router.push("/sadhana")}
+        accessibilityRole="button"
+        accessibilityLabel={t("homeCtaPractice")}
+        style={({ pressed }) => [
+          styles.primaryCta,
+          {
+            borderColor: colors.brass,
+            opacity: pressed ? 0.92 : 1,
+            transform: [{ scale: pressed ? 0.99 : 1 }],
+          },
+        ]}
+      >
+        <View style={styles.ctaRing}>
+          <ProgressRing
+            pct={ctaPct}
+            size={48}
+            color={colors.brass}
+            track="rgba(255,255,255,0.12)"
           />
+          <View style={styles.ctaRingCenter}>
+            <DiyaIcon color={colors.brassSoft} size={18} />
+          </View>
         </View>
         <View style={{ flex: 1 }}>
-          <Button
-            label={t("homeCtaMadhav")}
-            variant="ghost"
-            leading={<MadhavIcon color={colors.text} />}
-            onPress={() => router.push("/madhav")}
-          />
-        </View>
-      </View>
-
-      <View style={styles.moodHead}>
-        <View style={styles.textScrim}>
-          <Text variant="eyebrow" color={colors.brassSoft}>
-            {t("homeMoodsEyebrow")}
+          <Text variant="body" color={colors.text} style={styles.ctaTitle}>
+            {t("homeCtaPractice")}
+          </Text>
+          <Text variant="muted" color={colors.textMuted} style={styles.ctaSub}>
+            {t("homeCtaPracticeSub")}
           </Text>
         </View>
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.moodRow}
-      >
-        {heroMoods.map((mood) => {
-          const accent = moodAccent[mood.id] ?? colors.brass;
-          return (
-            <Pressable
-              key={mood.id}
-              onPress={() => router.push(`/(tabs)/mood/${mood.id}`)}
-              style={({ pressed }) => [
-                styles.moodChip,
-                {
-                  borderColor: "rgba(201,162,39,0.28)",
-                  backgroundColor: pressed
-                    ? "rgba(7,9,15,0.72)"
-                    : "rgba(7,9,15,0.58)",
-                },
-              ]}
-            >
-              <MoodIcon id={mood.id} size={18} color={accent} />
-              <Text
-                variant="body"
-                color="rgba(232,228,220,0.96)"
-                style={{ fontSize: 13, fontFamily: "Sora_600SemiBold" }}
-              >
-                {lang === "hi" ? mood.labelHi : mood.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-      <Pressable
-        onPress={() => router.push("/(tabs)/mood")}
-        hitSlop={8}
-        accessibilityRole="link"
-        style={styles.moreFeelings}
-      >
-        <Text
-          variant="muted"
-          color={colors.brassSoft}
-          style={styles.allMoods}
-        >
-          {t("homeMoodsAll")}
-        </Text>
+        <Text style={{ color: colors.brass, fontSize: 22 }}>›</Text>
       </Pressable>
     </Rise>
   );
@@ -464,7 +462,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   ringWrap: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -504,6 +502,94 @@ const styles = StyleSheet.create({
     maxWidth: 320,
     fontSize: 14,
     lineHeight: 21,
+  },
+  greeting: {
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -0.4,
+  },
+  streakLine: {
+    marginTop: spacing.sm,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  careBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(7,9,15,0.4)",
+    position: "relative",
+    flexShrink: 0,
+  },
+  careDot: {
+    position: "absolute",
+    top: 4,
+    right: 5,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#e0555f",
+  },
+  primaryCta: {
+    marginTop: spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    backgroundColor: "rgba(201,162,39,0.12)",
+  },
+  ctaRing: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ctaRingCenter: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ctaTitle: {
+    fontSize: 15,
+    fontFamily: "Sora_600SemiBold",
+  },
+  ctaSub: {
+    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  quickRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  quickTile: {
+    flex: 1,
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+  },
+  quickIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(238,242,247,0.045)",
+  },
+  quickLabel: {
+    fontSize: 10.5,
   },
   ctaRow: {
     flexDirection: "row",

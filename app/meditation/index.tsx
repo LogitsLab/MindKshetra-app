@@ -87,13 +87,15 @@ export default function MeditationHubScreen() {
   }
 
   return (
-    <Screen atmosphere="soft" padded testID="screen-meditation">
+    <Screen atmosphere="soft" padded={false} edges={["left", "right"]} testID="screen-meditation">
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <Rise>
           <PageHero
+            fullBleed
+            backFallback="/(tabs)/home"
             image={images.krishnaGlade}
             eyebrow={t("medEyebrow")}
             title={t("medInnerTemple")}
@@ -177,6 +179,24 @@ export default function MeditationHubScreen() {
               );
             })}
           </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("pranaHubTitle")}
+            onPress={() => router.push("/pranayama")}
+            style={[
+              styles.breatheRow,
+              { borderColor: colors.line, backgroundColor: colors.panel },
+            ]}
+          >
+            <View style={{ flex: 1 }}>
+              <Text variant="title" color={colors.brassSoft} style={styles.sessionTitle}>
+                {t("pranaHubTitle")}
+              </Text>
+              <Text variant="muted">{t("pranaHubBody")}</Text>
+            </View>
+            <Text color={colors.brassSoft}>→</Text>
+          </Pressable>
         </Rise>
 
         {sections.map((section) => (
@@ -267,7 +287,7 @@ export default function MeditationHubScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingTop: spacing.md, paddingBottom: spacing.xxl },
+  content: { paddingTop: 0, paddingHorizontal: spacing.md, paddingBottom: spacing.xxl },
   pathTrack: {
     height: 4,
     borderRadius: 2,
@@ -293,6 +313,14 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   quickTitle: { marginTop: spacing.xs, textAlign: "center" },
+  breatheRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
+    padding: spacing.md,
+  },
   programSection: { marginTop: spacing.xl, gap: spacing.sm },
   sessionRow: {
     flexDirection: "row",

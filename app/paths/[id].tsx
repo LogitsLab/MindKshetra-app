@@ -6,6 +6,7 @@ import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { getPracticePath } from "@/data/paths";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -47,6 +48,7 @@ export default function PathDetailScreen() {
   if (!path) {
     return (
       <Screen atmosphere="soft" padded>
+        <ScreenHeader showBack showBrand={false} backFallback="/paths" />
         <Text variant="title">{t("notFoundTitle")}</Text>
         <Text variant="muted" style={{ marginTop: spacing.sm }}>
           {t("notFoundBody")}
@@ -60,13 +62,15 @@ export default function PathDetailScreen() {
   const pathDone = run.completedDays.length >= path.days_count;
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen atmosphere="soft" padded={false} edges={["left", "right"]}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: spacing.xxl }}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xxl }}
         showsVerticalScrollIndicator={false}
       >
         <Rise>
           <PageHero
+            fullBleed
+            backFallback="/paths"
             image={images.pathPaths}
             eyebrow={`${path.days_count} ${lang === "hi" ? "दिन" : "days"}`}
             title={title}

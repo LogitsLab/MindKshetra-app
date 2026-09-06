@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import {
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
+import { KeyboardFormScroll, fieldInputProps } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { BirthDetailsForm } from "@/components/astrology/BirthDetailsForm";
@@ -63,7 +63,7 @@ export default function NewAstrologyMemberScreen() {
 
   return (
     <Screen>
-      <ScrollView
+      <KeyboardFormScroll
         contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
         keyboardShouldPersistTaps="handled"
       >
@@ -82,6 +82,7 @@ export default function NewAstrologyMemberScreen() {
             onChangeText={setName}
             placeholder={t("astroNameOptionalPh")}
             placeholderTextColor={colors.textMuted}
+            {...fieldInputProps}
             style={inputStyle(colors)}
           />
 
@@ -132,7 +133,7 @@ export default function NewAstrologyMemberScreen() {
             </Text>
           ) : null}
         </View>
-      </ScrollView>
+      </KeyboardFormScroll>
     </Screen>
   );
 }

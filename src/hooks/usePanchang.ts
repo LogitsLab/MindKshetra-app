@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { panchangApi } from "@/api/endpoints";
 import {
   getStoredPanchang,
@@ -17,18 +17,26 @@ export function usePanchang(): {
   loading: boolean;
   error: string | null;
   stale: boolean;
+  reload: () => void;
 } {
   const [panchang, setPanchang] = useState<PanchangDay | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const reload = useCallback(() => {
+    setError(null);
+    setLoading(true);
+    setReloadKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       const todayIst = istDayStamp();
       const stored = await getStoredPanchang();
-      if (stored && stored.date === todayIst) {
+      if (reloadKey === 0 && stored && stored.date === todayIst) {
         if (alive) {
           setPanchang(stored.payload);
           setLoading(false);
@@ -38,7 +46,11 @@ export function usePanchang(): {
       try {
         const fresh = await panchangApi.today();
         await setStoredPanchang({ date: todayIst, payload: fresh });
-        if (alive) setPanchang(fresh);
+        if (alive) {
+          setPanchang(fresh);
+          setStale(false);
+          setError(null);
+        }
       } catch (e) {
         if (alive) {
           if (stored) {
@@ -54,7 +66,7 @@ export function usePanchang(): {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [reloadKey]);
 
-  return { panchang, loading, error, stale };
+  return { panchang, loading, error, stale, reload };
 }

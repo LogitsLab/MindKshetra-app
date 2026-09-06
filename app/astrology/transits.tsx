@@ -41,7 +41,7 @@ type TransitSnapshot = {
 export default function TransitsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const { user } = useAuth();
   const hi = lang === "hi";
   const signedIn = Boolean(user && !user.is_anonymous);
@@ -164,7 +164,14 @@ export default function TransitsScreen() {
   if (error && !chart) {
     return (
       <Screen>
-        <EmptyState title={hi ? "त्रुटि" : "Couldn’t load"} body={error} />
+        <EmptyState
+          title={t("couldntLoad")}
+          body={error}
+          actionLabel={t("retry")}
+          onAction={() => {
+            if (memberId) void loadMemberChart(memberId);
+          }}
+        />
       </Screen>
     );
   }

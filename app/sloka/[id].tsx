@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   Share,
   StyleSheet,
   Switch,
@@ -15,6 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import Svg, { Path } from "react-native-svg";
 import { Screen } from "@/components/Screen";
+import { KeyboardFormScroll, multilineInputProps } from "@/components/KeyboardForm";
+import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
@@ -88,7 +89,7 @@ export default function SlokaScreen() {
   const [progressNotice, setProgressNotice] = useState<string | null>(null);
   const [verseComplete, setVerseComplete] = useState(false);
   const [notifPromptVisible, setNotifPromptVisible] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
   const journalY = useRef(0);
   const pendingJournalScroll = useRef(false);
 
@@ -473,7 +474,7 @@ export default function SlokaScreen() {
         </View>
       ) : null}
 
-      <ScrollView
+      <KeyboardFormScroll
         ref={scrollRef}
         testID="sloka-scroll"
         showsVerticalScrollIndicator={false}
@@ -539,11 +540,8 @@ export default function SlokaScreen() {
             <View style={styles.listenBlock}>
               <SpeakButton
                 testID="sloka-narration"
-                text={sloka.sanskrit_devanagari}
-                lang={lang === "hi" ? "hi" : "en"}
                 chapter={sloka.chapter}
                 verseNumber={sloka.verse_number}
-                recitationOnly
                 listenLabel={t("verseListen")}
                 stopLabel={t("verseStop")}
                 unsupportedLabel={t("ttsUnsupported")}
@@ -782,16 +780,6 @@ export default function SlokaScreen() {
                   </Pressable>
                 ))}
               </View>
-              {story ? (
-                <SpeakButton
-                  testID="sloka-story-listen"
-                  text={story}
-                  lang={storyLang}
-                  listenLabel={t("verseListenStory")}
-                  stopLabel={t("verseStop")}
-                  unsupportedLabel={t("ttsUnsupported")}
-                />
-              ) : null}
             </View>
           </View>
           {storyLoading || storyGenerating ? (
@@ -858,6 +846,7 @@ export default function SlokaScreen() {
                 setShareHeld(false);
               }}
               multiline
+              {...multilineInputProps}
               accessibilityLabel={
                 lang === "hi" ? "आपका निजी चिन्तन" : "Your private reflection"
               }
@@ -1016,7 +1005,7 @@ export default function SlokaScreen() {
         ) : null}
 
         <VerseReflections slokaId={sloka.id} />
-      </ScrollView>
+      </KeyboardFormScroll>
 
       <NotificationPrompt
         visible={notifPromptVisible}

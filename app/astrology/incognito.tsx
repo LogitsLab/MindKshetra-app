@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
-  ScrollView,
   StyleSheet,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
+import { KeyboardFormScroll } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { BirthDetailsForm } from "@/components/astrology/BirthDetailsForm";
@@ -17,7 +16,7 @@ import {
   hasValidDob,
   type BirthDetails,
 } from "@/components/astrology/birthDetails";
-import { ChartOverviewPanel } from "@/components/astrology/ChartOverviewPanel";
+import { ChartDesk, type DeskTab } from "@/components/astrology/ChartDesk";
 import { DashaTimelinePanel } from "@/components/astrology/DashaTimelinePanel";
 import { PredictionsPanel } from "@/components/astrology/PredictionsPanel";
 import { PredictionsStatus } from "@/components/astrology/PredictionsStatus";
@@ -40,14 +39,14 @@ import {
   type LifeArea,
 } from "@/types/astrology";
 
-type Tab = "chart" | "dasha" | "predictions";
+type Tab = DeskTab;
 
 export default function IncognitoChartScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { lang, t } = useLanguage();
   const { isSignedIn } = useAuth();
-  const { ask, setChartSession } = useMadhav();
+  const { setChartSession } = useMadhav();
 
   const [details, setDetails] = useState<BirthDetails>(emptyBirthDetails);
   const [chart, setChart] = useState<Record<string, unknown> | null>(null);
@@ -89,7 +88,7 @@ export default function IncognitoChartScreen() {
       // chartSessionId is server-minted only; the client never generates one.
       const sid = res.chartSessionId ?? null;
       setLocalSession(sid);
-      if (sid) setChartSession(sid, birthBody);
+      if (sid) setChartSession(sid, birthBody, t("astroIncognito"));
       setTab("chart");
       predictions.reset();
       sessionRef.current = sid;
@@ -192,7 +191,7 @@ export default function IncognitoChartScreen() {
 
   return (
     <Screen>
-      <ScrollView
+      <KeyboardFormScroll
         contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
         keyboardShouldPersistTaps="handled"
       >
@@ -227,57 +226,17 @@ export default function IncognitoChartScreen() {
               { borderColor: colors.line, backgroundColor: colors.panel },
             ]}
           >
-            <View style={styles.tabs}>
-              {(
-                [
-                  ["chart", t("astroTabChart")],
-                  ["dasha", t("astroTabDasha")],
-                  ["predictions", t("astroTabPredictions")],
-                ] as const
-              ).map(([key, label]) => (
-                <Pressable
-                  key={key}
-                  onPress={() => setTab(key)}
-                  style={[
-                    styles.tab,
-                    {
-                      borderColor: colors.line,
-                      backgroundColor:
-                        tab === key ? colors.surfaceHover : colors.surface,
-                    },
-                  ]}
-                >
-                  <Text
-                    variant="muted"
-                    style={{
-                      color: tab === key ? colors.brassSoft : colors.textMuted,
-                    }}
-                  >
-                    {label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <View style={{ marginTop: spacing.md }}>
-              {tab === "chart" ? (
-                <ChartOverviewPanel
-                  overview={overview}
-                  planets={planets}
-                  tobUnknown={Boolean(chart.tobUnknown)}
-                  themeLine={themeLine}
-                  labels={{
-                    asc: t("astroAsc"),
-                    moon: t("astroMoon"),
-                    sun: t("astroSun"),
-                    dasha: t("astroCurrentDasha"),
-                    planet: t("astroPlanet"),
-                    tobUnknown: t("astroTobUnknown"),
-                    atAGlance: t("astroAtAGlance"),
-                  }}
-                />
-              ) : null}
-              {tab === "dasha" ? (
+            <ChartDesk
+              chart={chart}
+              title={t("astroIncognito")}
+              tab={tab}
+              onTab={setTab}
+              chartSessionId={chartSessionId ?? undefined}
+              birth={birthRef.current ?? birthBody}
+              overview={overview}
+              planets={planets}
+              themeLine={themeLine}
+              dashaNode={
                 <DashaTimelinePanel
                   tree={dashaTree}
                   currentMaha={overview?.currentMaha}
@@ -285,8 +244,8 @@ export default function IncognitoChartScreen() {
                   emptyLabel={lang === "hi" ? "दशा डेटा नहीं" : "No dasha data"}
                   currentLabel={t("astroCurrentDasha")}
                 />
-              ) : null}
-              {tab === "predictions" ? (
+              }
+              predictionsNode={
                 predictions.predictions ? (
                   <PredictionsPanel
                     predictions={predictions.predictions}
@@ -315,20 +274,17 @@ export default function IncognitoChartScreen() {
                     onRetry={() => void predictions.load()}
                   />
                 )
-              ) : null}
-            </View>
+              }
+            />
 
             <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
               <Button
-                label={t("askMadhavAbout")}
+                label={t("astroAskThisChart")}
                 onPress={() => {
-                  if (chartSessionId) setChartSession(chartSessionId, birthRef.current);
-                  ask(
-                    lang === "hi"
-                      ? "इस गुप्त कुंडली के आधार पर आज क्या चिंतन करूँ?"
-                      : "What does this session chart suggest I reflect on today?"
-                  );
-                  router.push("/madhav");
+                  if (chartSessionId) {
+                    setChartSession(chartSessionId, birthRef.current);
+                  }
+                  setTab("chat");
                 }}
               />
               <Button
@@ -355,7 +311,7 @@ export default function IncognitoChartScreen() {
         ) : busy ? (
           <ActivityIndicator color={colors.brass} style={{ marginTop: spacing.xl }} />
         ) : null}
-      </ScrollView>
+      </KeyboardFormScroll>
     </Screen>
   );
 }

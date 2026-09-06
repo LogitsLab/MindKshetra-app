@@ -18,7 +18,7 @@ type OrderMode = "static" | "loading" | "chart" | "unavailable";
 export default function MoodScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
   const { isSignedIn } = useAuth();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [orderMode, setOrderMode] = useState<OrderMode>("static");
@@ -60,12 +60,10 @@ export default function MoodScreen() {
     <Screen testID="screen-mood" atmosphere="soft">
       <View style={styles.heading}>
         <Text variant="display" style={styles.title}>
-          {lang === "hi" ? "आप कैसा महसूस कर रहे हैं?" : "How are you feeling?"}
+          {t("moodHowFeeling")}
         </Text>
         <Text variant="soft" style={styles.subtitle}>
-          {lang === "hi"
-            ? "जहाँ आप हैं, वहीं मिलने वाले श्लोक।"
-            : "Verses that meet you where you are."}
+          {t("moodMeetWhere")}
         </Text>
       </View>
 
@@ -125,6 +123,7 @@ export default function MoodScreen() {
             <Pressable
               testID={`mood-${item.id}`}
               accessibilityRole="button"
+              accessibilityLabel={`${item.label}. ${item.labelHi}`}
               accessibilityState={{ selected }}
               onPress={() => {
                 setSelectedId(item.id);

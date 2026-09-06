@@ -397,9 +397,10 @@ export function PracticeLifestyleGrid({
     ]
   );
 
-  const pairs = useMemo(() => {
+  // grid2: first tile is a full-width lead block, the rest fall into 2-col rows.
+  const restPairs = useMemo(() => {
     const rows: TileSpec[][] = [];
-    for (let i = 0; i < tiles.length; i += 2) {
+    for (let i = 1; i < tiles.length; i += 2) {
       rows.push(tiles.slice(i, i + 2));
     }
     return rows;
@@ -464,22 +465,34 @@ export function PracticeLifestyleGrid({
         style={styles.stack}
       >
         {layout === "grid2" ? (
-          pairs.map((pair) => (
-            <View key={pair.map((p) => p.key).join("-")} style={styles.row}>
-              {pair.map((tile) => (
-                <PracticeTile
-                  key={tile.key}
-                  image={tile.image}
-                  title={tile.title}
-                  body={tile.body}
-                  done={tile.done}
-                  onPress={tile.onPress}
-                  testID={`home-practice-${tile.key}`}
-                  style={pair.length === 1 ? styles.halfAlone : undefined}
-                />
-              ))}
-            </View>
-          ))
+          <>
+            <PracticeTile
+              wide
+              image={tiles[0].image}
+              title={tiles[0].title}
+              body={tiles[0].body}
+              done={tiles[0].done}
+              onPress={tiles[0].onPress}
+              testID={`home-practice-${tiles[0].key}`}
+              style={styles.leadTile}
+            />
+            {restPairs.map((pair) => (
+              <View key={pair.map((p) => p.key).join("-")} style={styles.row}>
+                {pair.map((tile) => (
+                  <PracticeTile
+                    key={tile.key}
+                    image={tile.image}
+                    title={tile.title}
+                    body={tile.body}
+                    done={tile.done}
+                    onPress={tile.onPress}
+                    testID={`home-practice-${tile.key}`}
+                    style={pair.length === 1 ? styles.halfAlone : undefined}
+                  />
+                ))}
+              </View>
+            ))}
+          </>
         ) : (
           <>
             <View style={styles.row}>
@@ -581,7 +594,7 @@ export function PracticeTile({
       <LinearGradient
         colors={["rgba(7,9,15,0.05)", "rgba(7,9,15,0.35)", "rgba(7,9,15,0.88)"]}
         locations={[0, 0.45, 1]}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
       <View style={styles.tileCopy}>
         <Text
@@ -667,6 +680,9 @@ const styles = StyleSheet.create({
   },
   halfAlone: {
     maxWidth: "48.5%",
+  },
+  leadTile: {
+    minHeight: 196,
   },
   tileThird: {
     flex: 1,

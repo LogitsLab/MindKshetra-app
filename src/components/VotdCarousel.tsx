@@ -14,7 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { CoverImage } from "@/components/CoverImage";
 import { Text } from "@/components/Text";
 import { resolveRecitationUrl } from "@/audio/manifest";
-import { playOrSpeak, stopNarration } from "@/audio/narration";
+import { playUrl, prefetchAudioUrl, stopNarration } from "@/audio/narration";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import type { FeaturedVerse } from "@/hooks/useFeaturedVerses";
@@ -137,9 +137,13 @@ export function VotdCarousel({ verses, error, stale }: Props) {
         // User stopped or switched while we were resolving.
         if (playingIdRef.current !== slokaId) return;
 
-        await playOrSpeak(verse.sloka.sanskrit_devanagari, {
-          lang,
-          url: recitation,
+        // File only — never TTS Devanagari (device voices often fail on Android).
+        if (!recitation) {
+          setPlaying(null);
+          return;
+        }
+        prefetchAudioUrl(recitation);
+        await playUrl(recitation, {
           onDone: () => {
             if (playingIdRef.current === slokaId) setPlaying(null);
           },
@@ -154,7 +158,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
         if (playingIdRef.current === slokaId) setPlaying(null);
       }
     },
-    [verses, lang]
+    [verses]
   );
 
   const pauseBriefly = () => {
@@ -168,7 +172,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
         <CoverImage source={images.krishnaGlade} opacity={0.75} />
         <LinearGradient
           colors={["rgba(7,9,15,0.55)", "rgba(7,9,15,0.82)", "rgba(7,9,15,0.94)"]}
-          style={StyleSheet.absoluteFillObject}
+          style={StyleSheet.absoluteFill}
         />
         <View style={styles.inner}>
           <Text variant="eyebrow" color={colors.brassSoft}>
@@ -284,7 +288,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
                   "rgba(7,9,15,0.94)",
                 ]}
                 locations={[0, 0.5, 1]}
-                style={StyleSheet.absoluteFillObject}
+                style={StyleSheet.absoluteFill}
               />
               <View style={styles.inner}>
                 <Pressable

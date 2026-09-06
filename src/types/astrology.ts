@@ -106,3 +106,17 @@ export function formatDashaLord(
     period.start && period.end ? ` (${period.start} → ${period.end})` : "";
   return `${period.lord}${range}`;
 }
+
+export type HouseReading = {
+  house: number;
+  strength: "weak" | "moderate" | "strong" | "complex";
+  why: string;
+  meaning: string;
+};
+
+export type HousesText = {
+  language: "en" | "hi";
+  houses: HouseReading[];
+  generatedAt: string;
+  source?: "llm" | "rules";
+};

@@ -220,7 +220,14 @@ export default function HoroscopeScreen() {
   if (error && !chart) {
     return (
       <Screen>
-        <EmptyState title={hi ? "त्रुटि" : "Couldn’t load"} body={error} />
+        <EmptyState
+          title={t("couldntLoad")}
+          body={error}
+          actionLabel={t("retry")}
+          onAction={() => {
+            if (memberId) void loadMemberChart(memberId);
+          }}
+        />
       </Screen>
     );
   }

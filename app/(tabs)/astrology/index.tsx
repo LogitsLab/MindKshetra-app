@@ -15,9 +15,10 @@ import type { AstrologyMember } from "@/types";
 export default function AstrologyHub() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
   const { isSignedIn } = useAuth();
-  const { panchang } = usePanchang();
+  const { panchang, loading: panchangLoading, error: panchangError, reload: reloadPanchang } =
+    usePanchang();
   const [members, setMembers] = useState<AstrologyMember[]>([]);
   const [hubError, setHubError] = useState<string | null>(null);
 
@@ -33,39 +34,75 @@ export default function AstrologyHub() {
   }, [isSignedIn]);
 
   const shortcuts = [
-    { id: "astro-panchang", label: "Panchang", symbol: "☼", onPress: () => router.push("/panchang") },
-    { id: "astro-muhurat", label: "Muhurats", symbol: "◷", onPress: () => router.push("/astrology/muhurat") },
-    { id: "astro-horoscope", label: "Horoscope", symbol: "⌖", onPress: () => router.push("/astrology/horoscope") },
-    { id: "astro-transits", label: "Transits", symbol: "↗", onPress: () => router.push("/astrology/transits") },
-    { id: "astro-charts", label: "Charts", symbol: "◇", onPress: () => router.push("/astrology/members") },
-    { id: "astro-milan", label: "Milan", symbol: "∞", onPress: () => router.push("/astrology/milan") },
+    {
+      id: "astro-panchang",
+      label: t("panchangTitle"),
+      symbol: "☼",
+      onPress: () => router.push("/panchang"),
+    },
+    {
+      id: "astro-muhurat",
+      label: t("astroShortcutMuhurat"),
+      symbol: "◷",
+      onPress: () => router.push("/astrology/muhurat"),
+    },
+    {
+      id: "astro-horoscope",
+      label: t("astroShortcutHoroscope"),
+      symbol: "⌖",
+      onPress: () => router.push("/astrology/horoscope"),
+    },
+    {
+      id: "astro-transits",
+      label: t("astroShortcutTransits"),
+      symbol: "↗",
+      onPress: () => router.push("/astrology/transits"),
+    },
+    {
+      id: "astro-charts",
+      label: t("astroShortcutCharts"),
+      symbol: "◇",
+      onPress: () => router.push("/astrology/members"),
+    },
+    {
+      id: "astro-milan",
+      label: t("milanTitle"),
+      symbol: "∞",
+      onPress: () => router.push("/astrology/milan"),
+    },
   ];
   const entries = [
     {
-      title: lang === "hi" ? "गुप्त कुंडली" : "Incognito Chart",
-      body: lang === "hi" ? "एक बार की गणना" : "Single-use lookup",
+      title: t("astroHubIncognitoTitle"),
+      body: t("astroHubIncognitoBody"),
       symbol: "◉",
       onPress: () => router.push("/astrology/incognito"),
     },
     {
-      title: lang === "hi" ? "सहेजे सदस्य" : "Saved Members",
-      body: lang === "hi" ? "आपका निकट वृत्त" : "Your inner circle",
+      title: t("astroHubMembersTitle"),
+      body: t("astroHubMembersBody"),
       symbol: "♙",
       onPress: () => router.push("/astrology/members"),
     },
     {
-      title: lang === "hi" ? "कुंडली मिलान" : "Kundli Milan",
-      body: lang === "hi" ? "अनुकूलता मिलान" : "Compatibility match",
+      title: t("milanTitle"),
+      body: t("astroHubMilanBody"),
       symbol: "∞",
       onPress: () => router.push("/astrology/milan"),
     },
     {
-      title: lang === "hi" ? "आज का पंचांग" : "Today's Panchang",
-      body: lang === "hi" ? "वैदिक पंचांग" : "Vedic almanac",
+      title: t("panchangTitle"),
+      body: t("astroHubPanchangBody"),
       symbol: "☾",
       onPress: () => router.push("/panchang"),
     },
   ];
+
+  const tithiValue = panchang?.tithi
+    ? panchang.tithi
+    : panchangError
+      ? t("panchangUnavailable")
+      : t("astroHubTithiLoading");
 
   return (
     <Screen testID="screen-astrology" atmosphere="strong">
@@ -75,7 +112,7 @@ export default function AstrologyHub() {
       >
         <View style={styles.titleRow}>
           <Text variant="display" style={styles.title}>
-            Astrology
+            {t("astroTitle")}
           </Text>
           <Text variant="sanskrit" style={{ color: colors.brass }}>
             ज्योतिष
@@ -83,7 +120,11 @@ export default function AstrologyHub() {
         </View>
 
         <Pressable
-          onPress={() => router.push("/panchang")}
+          onPress={() =>
+            panchangError && !panchang ? reloadPanchang() : router.push("/panchang")
+          }
+          accessibilityRole="button"
+          accessibilityLabel={`${t("astroHubTithi")}. ${tithiValue}`}
           style={({ pressed }) => [
             styles.tithi,
             {
@@ -97,10 +138,10 @@ export default function AstrologyHub() {
           </View>
           <View style={{ flex: 1 }}>
             <Text variant="eyebrow">
-              {lang === "hi" ? "आज की तिथि" : "Today's Tithi"}
+              {t("astroHubTithi")}
             </Text>
             <Text variant="body" style={styles.tithiValue} numberOfLines={1}>
-              {panchang?.tithi ?? (lang === "hi" ? "तिथि लोड हो रही है…" : "Loading today's sky…")}
+              {panchangLoading && !panchang ? t("astroHubTithiLoading") : tithiValue}
             </Text>
           </View>
           <Text style={{ color: colors.brass, fontSize: 24 }}>›</Text>
@@ -114,9 +155,11 @@ export default function AstrologyHub() {
         >
           {shortcuts.map((shortcut) => (
             <Pressable
-              key={shortcut.label}
+              key={shortcut.id}
               testID={shortcut.id}
               onPress={shortcut.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={shortcut.label}
               style={styles.shortcut}
             >
               <View
@@ -149,6 +192,8 @@ export default function AstrologyHub() {
             <Pressable
               key={entry.title}
               onPress={entry.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={`${entry.title}. ${entry.body}`}
               style={({ pressed }) => [
                 styles.entry,
                 {
@@ -170,21 +215,21 @@ export default function AstrologyHub() {
         {!isSignedIn ? (
           <Pressable onPress={() => router.push("/account")}>
             <Text variant="muted" style={styles.signIn}>
-              {lang === "hi"
-                ? "सदस्य सहेजने के लिए साइन इन करें"
-                : "Sign in to save members"}
+              {t("astroHubSignIn")}
             </Text>
           </Pressable>
         ) : null}
 
         {members.length > 0 ? (
           <View style={{ marginTop: spacing.xl }}>
-            <Text variant="eyebrow">{lang === "hi" ? "हाल के सदस्य" : "Recent members"}</Text>
+            <Text variant="eyebrow">{t("astroHubRecent")}</Text>
             <Panel style={{ marginTop: spacing.sm }} padded={false}>
               {members.slice(0, 3).map((m, i) => (
                 <Pressable
                   key={m.id}
                   onPress={() => router.push(`/astrology/members/${m.id}`)}
+                  accessibilityRole="button"
+                  accessibilityLabel={m.name}
                   style={[
                     styles.member,
                     {

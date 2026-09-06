@@ -28,6 +28,11 @@ const USER_CRISIS_PATTERNS: RegExp[] = [
   /\b(end|ending|take|taking)\s+my\s+(own\s+)?life\b/i,
   /\bend\s+it\s+all\b/i,
   /\b(want|wants|wanted|wanna|wish|wishing)\s+(to\s+)?(die|be\s+dead|not\s+wake\s+up)\b/i,
+  // First-person "I am going to die" / "I'm gonna die" / "I will die" — a stated
+  // intent the want/wish pattern above misses. Kept first-person and present so
+  // "we're all going to die someday" stays silent.
+  /\bi(['’]?m|\s+am)?\s+(going\s+to|gonna)\s+die\b/i,
+  /\bi\s+(will|['’]ll)\s+die\b/i,
   // "wish I was dead" / "wish I were dead" / "wish I had never been born" — the
   // subject clause sits between the verb and the object, so the pattern above misses it.
   /\bwish(ing|ed)?\s+(i\s+(was|were|had)\s+)?(dead|never\s+(been\s+)?born)\b/i,

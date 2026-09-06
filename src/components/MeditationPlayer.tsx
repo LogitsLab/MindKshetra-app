@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -8,8 +8,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
-import { playSoftBell, startAmbient, stopAmbient } from "@/audio/ambient";
-import { playOrSpeak, stopNarration } from "@/audio/narration";
+import { playSoftBell, releaseAmbientPlayers, startAmbient, stopAmbient, type AmbientBed } from "@/audio/ambient";
+import { playNarrationIfAvailable, stopNarration } from "@/audio/narration";
 import { useKeepAwake } from "expo-keep-awake";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -23,6 +23,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { sessionTranscript, type MeditationSession, type SittingMilestone } from "@/data/meditation";
 import { POST_MOOD_CHOICES } from "@/data/meditationCompletion";
+import { closingVerseFor } from "@/data/closingVerses";
 import {
   markSittingGuestDay,
   queueMeditationGuestCompletion,
@@ -39,6 +40,19 @@ function formatClock(sec: number) {
   const s = sec % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
+
+/**
+ * How long to hold a guidance cue on screen when there is no recorded voice —
+ * long enough to read calmly, capped so the sit keeps moving. Music-led sits
+ * use this instead of waiting on a speaking clock.
+ */
+function cueHoldMs(text: string): number {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  return Math.min(18000, Math.max(6000, words * 400));
+}
+
+type SitMode = "guided" | "silent";
+const BEDS: AmbientBed[] = ["off", "drone", "bowls", "rain"];
 
 function fill(template: string, vars: Record<string, string | number>) {
   return Object.entries(vars).reduce(
@@ -69,47 +83,69 @@ export function MeditationPlayer({
   const [saveError, setSaveError] = useState(false);
   const [guestSaved, setGuestSaved] = useState(false);
   const [milestone, setMilestone] = useState<SittingMilestone | null>(null);
-  const [rate, setRate] = useState(1);
-  const [ambientOn, setAmbientOn] = useState(true);
-  const [speaking, setSpeaking] = useState(false);
+  // The 45-day arc graduates toward unguided practice: deepening days default
+  // to a silent sit, earlier tiers to the cued, music-led sit.
+  const [sitMode, setSitMode] = useState<SitMode>(
+    session.tier === "deepening" ? "silent" : "guided"
+  );
+  const [bed, setBed] = useState<AmbientBed>("drone");
   const satSecRef = useRef(0);
   const autoAdvance = useRef(true);
   const phaseIdxRef = useRef(0);
 
-  const phase = session.phases[phaseIdx];
+  const playPhases = useMemo(
+    () =>
+      sitMode === "guided"
+        ? session.phases
+        : [
+            {
+              type: "silence" as const,
+              seconds: Math.max(60, session.duration_minutes * 60),
+            },
+          ],
+    [sitMode, session.phases, session.duration_minutes]
+  );
+  const phase = playPhases[phaseIdx];
   const title = lang === "hi" ? session.title_hi : session.title_en;
   const theme = lang === "hi" ? session.theme_hi : session.theme_en;
   const nextDay =
     session.tier !== "daily" && session.day_number < daysCount
       ? session.day_number + 1
       : null;
+  // A steadying verse to close on — deterministic per session so it feels
+  // chosen, and bundled so it appears even offline.
+  const closing = useMemo(
+    () => closingVerseFor(session.day_number > 0 ? session.day_number : session.id.length),
+    [session.day_number, session.id]
+  );
 
   useEffect(() => {
     return () => {
       stopNarration();
-      stopAmbient();
+      releaseAmbientPlayers();
     };
   }, []);
 
-  // Music rides with the silence countdown — auto-starts, user can stop/play.
+  // The soundscape leads the whole sit — start it once we enter play and keep
+  // it running continuously across cue and silence phases, so there is no gap
+  // between them. It only stops when the sit ends or the bed is set to "off".
   useEffect(() => {
-    const current = session.phases[phaseIdx];
-    if (stage !== "play" || current?.type !== "silence" || !ambientOn) {
+    if (stage !== "play" || bed === "off") {
       stopAmbient();
       return;
     }
-    void startAmbient(0.35);
+    void startAmbient(0.35, bed);
     return () => {
       stopAmbient();
     };
-  }, [stage, phaseIdx, ambientOn, session.phases]);
+  }, [stage, bed]);
 
   const advancePhase = () => {
     stopNarration();
     stopAmbient();
     setSilenceLeft(null);
     const next = phaseIdxRef.current + 1;
-    if (next >= session.phases.length) {
+    if (next >= playPhases.length) {
       void playSoftBell();
       setStage("moodAfter");
       return;
@@ -120,7 +156,7 @@ export function MeditationPlayer({
 
   useEffect(() => {
     if (stage !== "play") return;
-    const current = session.phases[phaseIdx];
+    const current = playPhases[phaseIdx];
     if (!current) return;
 
     if (current.type === "silence") {
@@ -138,52 +174,30 @@ export function MeditationPlayer({
       return () => clearInterval(id);
     }
 
+    // Music-led guidance: show the cue, play a recorded voice if the manifest
+    // has one for this line, otherwise just hold the cue on screen for a
+    // readable beat and move on. No synthetic voice is ever used.
     autoAdvance.current = true;
     const text = lang === "hi" ? current.text_hi : current.text_en;
-    void playOrSpeak(text, {
+    let cancelled = false;
+    let holdTimer: ReturnType<typeof setTimeout> | null = null;
+    const advanceIfActive = () => {
+      if (!cancelled && autoAdvance.current) advancePhase();
+    };
+    void playNarrationIfAvailable(text, {
       lang,
-      rate,
-      onStart: () => setSpeaking(true),
-      onDone: () => {
-        setSpeaking(false);
-        if (autoAdvance.current) advancePhase();
-      },
-      onStopped: () => setSpeaking(false),
-      onError: () => setSpeaking(false),
+      onDone: advanceIfActive,
+    }).then((played) => {
+      if (cancelled || played) return;
+      holdTimer = setTimeout(advanceIfActive, cueHoldMs(text));
     });
     return () => {
+      cancelled = true;
       autoAdvance.current = false;
-      setSpeaking(false);
+      if (holdTimer) clearTimeout(holdTimer);
       stopNarration();
     };
-    // Changing the rate restarts the current phase at the new speed, which is
-    // the only way expo-speech can apply it.
-  }, [stage, phaseIdx, lang, rate, session.phases]);
-
-  /** Re-read the current phase without advancing — the web's "Read aloud". */
-  const readAloud = () => {
-    const current = session.phases[phaseIdxRef.current];
-    if (!current || current.type !== "speak") return;
-    autoAdvance.current = true;
-    void playOrSpeak(lang === "hi" ? current.text_hi : current.text_en, {
-      lang,
-      rate,
-      onStart: () => setSpeaking(true),
-      onDone: () => {
-        setSpeaking(false);
-        if (autoAdvance.current) advancePhase();
-      },
-      onStopped: () => setSpeaking(false),
-      onError: () => setSpeaking(false),
-    });
-  };
-
-  /** Silence the voice but hold the phase — reading the transcript instead. */
-  const stopVoice = () => {
-    autoAdvance.current = false;
-    stopNarration();
-    setSpeaking(false);
-  };
+  }, [stage, phaseIdx, lang, playPhases]);
 
   const finish = async () => {
     setSaving(true);
@@ -289,6 +303,66 @@ export function MeditationPlayer({
                 </Pressable>
               ))}
             </View>
+            <Text variant="eyebrow" color={colors.brassSoft} style={{ marginTop: spacing.lg }}>
+              {t("medSitModeLabel")}
+            </Text>
+            <View style={styles.rateRow}>
+              {(["guided", "silent"] as const).map((m) => (
+                <Pressable
+                  key={m}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: sitMode === m }}
+                  onPress={() => setSitMode(m)}
+                  style={[
+                    styles.rateChip,
+                    {
+                      borderColor: sitMode === m ? colors.brass : colors.line,
+                      backgroundColor: sitMode === m ? colors.surface : "transparent",
+                    },
+                  ]}
+                >
+                  <Text color={sitMode === m ? colors.brassSoft : colors.textMuted}>
+                    {m === "guided" ? t("medSitGuided") : t("medSitSilent")}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text variant="muted" style={{ marginTop: spacing.xs }}>
+              {sitMode === "guided" ? t("medSitGuidedHint") : t("medSitSilentHint")}
+            </Text>
+            <Text variant="eyebrow" color={colors.brassSoft} style={{ marginTop: spacing.lg }}>
+              {t("medAmbientLabel")}
+            </Text>
+            <View style={styles.rateRow}>
+              {BEDS.map((b) => (
+                <Pressable
+                  key={b}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: bed === b }}
+                  onPress={() => setBed(b)}
+                  style={[
+                    styles.rateChip,
+                    {
+                      borderColor: bed === b ? colors.brass : colors.line,
+                      backgroundColor: bed === b ? colors.surface : "transparent",
+                    },
+                  ]}
+                >
+                  <Text color={bed === b ? colors.brassSoft : colors.textMuted}>
+                    {b === "off"
+                      ? t("medAmbientSilence")
+                      : b === "drone"
+                        ? t("medAmbientDrone")
+                        : b === "bowls"
+                          ? t("medAmbientBowls")
+                          : t("medAmbientRain")}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text variant="muted" style={{ marginTop: spacing.xs }}>
+              {t("medAmbientCredit")}
+            </Text>
             {/* The check-in used to start the sit on tap, so a mis-tap began a
                 guided session with no way back to correct it. */}
             <View style={{ marginTop: spacing.lg }}>
@@ -312,42 +386,38 @@ export function MeditationPlayer({
               {phase.type === "speak"
                 ? t("medPhaseSpeak")
                 : t("medPhaseSilence")}{" "}
-              · {phaseIdx + 1}/{session.phases.length}
+              · {phaseIdx + 1}/{playPhases.length}
             </Text>
             <View style={styles.rateRow}>
-              <Text variant="muted">{t("medRateLabel")}</Text>
-              {(
-                [
-                  [0.85, t("medRateSlow")],
-                  [1, t("medRateNormal")],
-                  [1.15, t("medRateFast")],
-                ] as const
-              ).map(([value, label]) => {
-                const active = rate === value;
-                return (
-                  <Pressable
-                    key={String(value)}
-                    accessibilityRole="radio"
-                    accessibilityLabel={`${t("medRateLabel")}: ${label}`}
-                    accessibilityState={{ selected: active }}
-                    onPress={() => setRate(value)}
-                    style={[
-                      styles.rateChip,
-                      {
-                        borderColor: active ? colors.brass : colors.line,
-                        backgroundColor: active ? colors.surface : "transparent",
-                      },
-                    ]}
+              <Text variant="muted">{t("medAmbientLabel")}</Text>
+              {BEDS.map((b) => (
+                <Pressable
+                  key={b}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: bed === b }}
+                  onPress={() => setBed(b)}
+                  style={[
+                    styles.rateChip,
+                    {
+                      borderColor: bed === b ? colors.brass : colors.line,
+                      backgroundColor: bed === b ? colors.surface : "transparent",
+                    },
+                  ]}
+                >
+                  <Text
+                    variant="muted"
+                    color={bed === b ? colors.brassSoft : colors.textMuted}
                   >
-                    <Text
-                      variant="muted"
-                      color={active ? colors.brassSoft : colors.textMuted}
-                    >
-                      {label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+                    {b === "off"
+                      ? t("medAmbientSilence")
+                      : b === "drone"
+                        ? t("medAmbientDrone")
+                        : b === "bowls"
+                          ? t("medAmbientBowls")
+                          : t("medAmbientRain")}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
             {phase.type === "speak" ? (
               <View style={[styles.breathRing, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -356,16 +426,6 @@ export function MeditationPlayer({
                   {lang === "hi" ? phase.text_hi : phase.text_en}
                 </Text>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={speaking ? t("medStopVoice") : t("medReadAloud")}
-                  onPress={speaking ? stopVoice : readAloud}
-                  style={styles.playerAction}
-                >
-                  <Text color={colors.brassSoft}>
-                    {speaking ? t("medStopVoice") : t("medReadAloud")}
-                  </Text>
-                </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t("medSkipSpeak")}
@@ -387,17 +447,9 @@ export function MeditationPlayer({
                   {formatClock(silenceLeft ?? phase.seconds)}
                 </Text>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={ambientOn ? t("medAmbientOn") : t("medAmbientOff")}
-                  accessibilityState={{ selected: ambientOn }}
-                  onPress={() => setAmbientOn((v) => !v)}
-                  style={styles.playerAction}
-                >
-                  <Text color={colors.brassSoft}>
-                    {ambientOn ? t("medAmbientOn") : t("medAmbientOff")}
-                  </Text>
-                </Pressable>
+                <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                  {t("medAmbientCredit")}
+                </Text>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t("medNextPhase")}
@@ -581,6 +633,31 @@ export function MeditationPlayer({
                 {t("medGuestSaved")}
               </Text>
             ) : null}
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={`${t("medClosingEyebrow")}: ${
+                lang === "hi" ? closing.hi : closing.en
+              }`}
+              onPress={() => router.push(`/(tabs)/explore/${closing.chapter}`)}
+              style={[
+                styles.closingCard,
+                { borderColor: colors.line, backgroundColor: colors.panel },
+              ]}
+            >
+              <Text variant="eyebrow" color={colors.brassSoft}>
+                {t("medClosingEyebrow")}
+              </Text>
+              <Text variant="soft" style={{ marginTop: spacing.xs }}>
+                “{lang === "hi" ? closing.hi : closing.en}”
+              </Text>
+              <Text
+                variant="muted"
+                color={colors.brassSoft}
+                style={{ marginTop: spacing.sm }}
+              >
+                Gītā {closing.ref} · {t("medClosingOpen")} →
+              </Text>
+            </Pressable>
             {nextDay && milestone !== 45 ? (
               <Pressable
                 accessibilityRole="button"
@@ -686,6 +763,13 @@ const styles = StyleSheet.create({
   playerAction: { marginTop: spacing.md },
   transcriptToggle: { marginTop: spacing.xl, alignSelf: "center" },
   completeStage: { marginTop: spacing.xl, alignItems: "center" },
+  closingCard: {
+    marginTop: spacing.lg,
+    alignSelf: "stretch",
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
+    padding: spacing.md,
+  },
   lotusMark: {
     width: 88,
     height: 88,

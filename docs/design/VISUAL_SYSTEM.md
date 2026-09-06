@@ -32,7 +32,8 @@ Fixed stack behind every `Screen` (unless `atmosphere="none"`):
 
 ## Navigation
 
-- Tabs: Home · Explore · Mood · Astrology with custom icons + blur tab bar
+- Tabs: Home · Practise · Path · Profile with custom icons + blur tab bar
+- Explore, Mood, and Astrology are stacked off-tab from Home
 - Madhav: brass FAB bottom-right with Madhav glyph + streaming pulse
 - Lists reserve `contentBottom` so FAB never covers the last row
 
