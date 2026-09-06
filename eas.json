@@ -33,6 +33,10 @@
     "production-ios": {
       "extends": "production",
       "credentialsSource": "remote"
+    },
+    "store": {
+      "extends": "production",
+      "credentialsSource": "remote"
     }
   },
   "submit": {

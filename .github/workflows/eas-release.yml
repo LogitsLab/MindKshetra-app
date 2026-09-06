@@ -109,7 +109,41 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      # EXPO_TOKEN must belong to the Expo owner of this project (imsaksham.c).
+      # A token from another account used to fail every store release with
+      # "Entity not authorized: AppEntity[93fe4bed-...]". Skip instead of
+      # painting the commit red.
+      - name: Verify Expo token can access this project
+        id: expo
+        run: |
+          set +e
+          who=$(eas whoami 2>&1)
+          who_code=$?
+          set -e
+          echo "$who"
+          if [ -z "${EXPO_TOKEN:-}" ] || [ "$who_code" -ne 0 ]; then
+            echo "::warning::EXPO_TOKEN missing or eas whoami failed. Create a token while logged in as imsaksham.c. Skipping store release."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          set +e
+          info=$(eas project:info --non-interactive 2>&1)
+          info_code=$?
+          set -e
+          echo "$info"
+          if [ "$info_code" -ne 0 ]; then
+            if echo "$info" | grep -qiE 'not authorized|Entity not authorized|incorrect user'; then
+              echo "::warning::EXPO_TOKEN cannot read this Expo project (owner imsaksham.c). Update the GitHub secret. Skipping store release."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::eas project:info failed"
+            exit 1
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
       - name: Write Google Play service account
+        if: steps.expo.outputs.skip != 'true'
         env:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: |
@@ -140,15 +174,12 @@ jobs:
           fi
 
       - name: EAS build + submit
-        if: ${{ github.event.inputs.skip_submit != 'true' }}
+        if: ${{ steps.expo.outputs.skip != 'true' && github.event.inputs.skip_submit != 'true' }}
         env:
           NOTES: ${{ steps.notes.outputs.whats_new }}
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
         run: |
           set -euo pipefail
-          if [ -z "${EXPO_TOKEN:-}" ]; then
-            echo "::error::Missing EXPO_TOKEN secret. Create at https://expo.dev/settings/access-tokens"
-            exit 1
-          fi
           PLATFORM="${{ steps.plat.outputs.platform }}"
           PROFILE="${{ steps.plat.outputs.submit_profile }}"
           VERSION="${{ steps.notes.outputs.version }}"
@@ -158,24 +189,48 @@ jobs:
           # --auto-submit uploads the IPA to TestFlight / Play. It must NOT
           # send the iOS version to App Review. Review is clicked in App Store
           # Connect by Saksham Chaurasia so Submitted By is not "API user".
-          # Note: --what-to-test / changelog requires Expo Enterprise; omit on Hobby/Production.
-          eas build \
-            --platform "$PLATFORM" \
-            --profile production \
-            --non-interactive \
-            --no-wait \
-            --auto-submit-with-profile="$PROFILE" \
-            --message "v${VERSION} — store release"
+          # Use the `store` profile (remote credentials) — CI has no local
+          # keystore / credentials.json. iOS and Android are split because a
+          # single --platform all job cannot use two credential sources.
+          build_one() {
+            local plat="$1"
+            eas build \
+              --platform "$plat" \
+              --profile store \
+              --non-interactive \
+              --no-wait \
+              --auto-submit-with-profile="$PROFILE" \
+              --message "v${VERSION} — store release"
+          }
+          if [ "$PLATFORM" = "all" ] || [ "$PLATFORM" = "ios" ]; then
+            build_one ios
+          fi
+          if [ "$PLATFORM" = "all" ] || [ "$PLATFORM" = "android" ]; then
+            build_one android
+          fi
 
       - name: EAS build only
-        if: ${{ github.event.inputs.skip_submit == 'true' }}
+        if: ${{ steps.expo.outputs.skip != 'true' && github.event.inputs.skip_submit == 'true' }}
+        env:
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
         run: |
-          eas build \
-            --platform "${{ steps.plat.outputs.platform }}" \
-            --profile production \
-            --non-interactive \
-            --no-wait \
-            --message "v${{ steps.notes.outputs.version }} — build only"
+          set -euo pipefail
+          PLATFORM="${{ steps.plat.outputs.platform }}"
+          build_one() {
+            local plat="$1"
+            eas build \
+              --platform "$plat" \
+              --profile store \
+              --non-interactive \
+              --no-wait \
+              --message "v${{ steps.notes.outputs.version }} — build only"
+          }
+          if [ "$PLATFORM" = "all" ] || [ "$PLATFORM" = "ios" ]; then
+            build_one ios
+          fi
+          if [ "$PLATFORM" = "all" ] || [ "$PLATFORM" = "android" ]; then
+            build_one android
+          fi
 
       - name: Summary
         run: |
@@ -185,7 +240,8 @@ jobs:
             echo "- **Version:** \`${{ steps.notes.outputs.version }}\`"
             echo "- **Platforms:** \`${{ steps.plat.outputs.platform }}\`"
             echo "- **Submit profile:** \`${{ steps.plat.outputs.submit_profile }}\`"
-            echo "- **Dashboard:** https://expo.dev/accounts/logitsllab/projects/mindkshetra"
+            echo "- **Expo access skip:** \`${{ steps.expo.outputs.skip }}\`"
+            echo "- **Dashboard:** https://expo.dev/accounts/imsaksham.c/projects/mindkshetra"
             echo ""
             echo "iOS App Review: after the build is processed, Saksham Chaurasia submits from App Store Connect in the browser. Do not submit for review via the ASC API key."
             echo ""

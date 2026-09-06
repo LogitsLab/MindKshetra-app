@@ -1,6 +1,6 @@
 {
   "name": "mindkshetra-app",
-  "version": "2.1.8",
+  "version": "2.1.9",
   "license": "AGPL-3.0-or-later",
   "main": "expo-router/entry",
   "engines": {
@@ -22,7 +22,7 @@
     "brand:assets": "node scripts/render-brand-assets.mjs",
     "release:notes": "node scripts/release-notes.mjs",
     "release:testflight": "eas build --platform ios --profile production-ios --auto-submit --non-interactive",
-    "release:stores": "eas build --platform all --profile production --auto-submit --non-interactive"
+    "release:stores": "eas build --platform ios --profile production-ios --auto-submit --non-interactive --no-wait && eas build --platform android --profile production --auto-submit-with-profile=production-play --non-interactive --no-wait"
   },
   "jest": {
     "preset": "jest-expo",
@@ -37,7 +37,6 @@
     "@expo-google-fonts/fraunces": "^0.4.1",
     "@expo-google-fonts/noto-serif-devanagari": "^0.4.1",
     "@expo-google-fonts/sora": "^0.4.1",
-    "@expo/config-plugins": "~57.0.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.1.0",
     "@supabase/supabase-js": "^2.110.7",
