@@ -1,0 +1,74 @@
+# Used by EAS Build instead of .gitignore when packing the upload.
+# Keep secrets out of the archive, but include google-services.json so
+# Android FCM / Gradle can run on the builder (that file is gitignored).
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS / OS
+.DS_Store
+*.pem
+.AppleDouble
+.LSOverride
+
+# local env / release scratch (keep .env.example)
+.env
+.env.*
+!.env.example
+.env.release
+
+# Google Play / EAS submit credentials (local-only)
+google-service-account.json
+*-service-account*.json
+credentials.json
+
+# typescript
+*.tsbuildinfo
+
+# IDE / agents
+.idea/
+.vscode/
+.cursor/
+.claude/
+*.swp
+*.swo
+*~
+
+# local / internal planning
+*.plan.md
+TODOS.md
+.gstack/
+design/
+
+# generated native folders
+/ios
+/android
+
+# Firebase admin (never upload)
+fcm-service-account.json
+*firebase-adminsdk*.json
+mindkshetra-upload.jks
+.tmp-screens/
