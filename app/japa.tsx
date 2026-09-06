@@ -4,7 +4,6 @@ import {
   Animated,
   Easing,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -12,13 +11,11 @@ import {
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
-import Svg, { Circle } from "react-native-svg";
+import Svg, { Circle, Path } from "react-native-svg";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
-import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
-import { ScreenHeader } from "@/components/ScreenHeader";
 import { Rise } from "@/components/Rise";
 import { MilestoneLine, takeNewMilestone } from "@/components/PracticeMarks";
 import {
@@ -35,14 +32,22 @@ import {
   mantras,
   type Mantra,
 } from "@/data/mantras";
-import { hasJapaChant, playJapaChant, stopJapaChant } from "@/audio/japa";
+import {
+  hasJapaChant,
+  japaChantDurationMs,
+  playJapaChant,
+  stopJapaChant,
+} from "@/audio/japa";
 import type { Milestone } from "@/data/milestones";
 import {
   appendSadhanaLog,
   getJapaPrefs,
+  getJapaStats,
   localDayStamp,
+  recordJapaBeads,
   setJapaPrefs,
   type JapaMode,
+  type JapaStats,
   type JapaTarget,
 } from "@/storage/local";
 import { uuidv4 } from "@/utils/uuid";
@@ -53,6 +58,7 @@ const RING_SIZE = 248;
 const BEAD_R = 2.6;
 const GURU_R = 4.5;
 const TARGETS: JapaTarget[] = [27, 54, 108];
+const DAILY_GOAL = 108;
 
 function customMantra(naam: string): Mantra {
   const trimmed = naam.trim();
@@ -74,7 +80,9 @@ export default function JapaScreen() {
   const { t, lang } = useLanguage();
   const { session } = useAuth();
 
-  const [stage, setStage] = useState<"setup" | "count">("setup");
+  // One continuous surface: land on the mala; the setup opens inline.
+  const [editing, setEditing] = useState(false);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [mantraId, setMantraId] = useState(mantras[0].id);
   const [customNaam, setCustomNaam] = useState("");
   const [target, setTarget] = useState<JapaTarget>(108);
@@ -83,10 +91,14 @@ export default function JapaScreen() {
   const [milestone, setMilestone] = useState<Milestone | null>(null);
   const [malaFlash, setMalaFlash] = useState(false);
   const [chantPlaying, setChantPlaying] = useState(false);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [stats, setStats] = useState<JapaStats | null>(null);
+  const statsBaseRef = useRef(0);
   const reduceMotion = useRef(false);
   const pulse = useRef(new Animated.Value(1)).current;
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chantTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const totalRef = useRef(0);
   const startedAtRef = useRef<number | null>(null);
@@ -124,6 +136,12 @@ export default function JapaScreen() {
       setCustomNaam(prefs.customNaam);
       setTarget(prefs.target);
       setMode(prefs.mode);
+      setPrefsLoaded(true);
+    });
+    void getJapaStats().then((s) => {
+      if (!alive) return;
+      setStats(s);
+      statsBaseRef.current = s.dayBeads;
     });
     void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
       if (alive) reduceMotion.current = enabled;
@@ -139,20 +157,41 @@ export default function JapaScreen() {
       sub.remove();
       if (flashTimer.current) clearTimeout(flashTimer.current);
       if (chantTimer.current) clearTimeout(chantTimer.current);
+      if (previewTimer.current) clearTimeout(previewTimer.current);
       stopJapaChant();
     };
   }, []);
 
-  const bead = total;
-  const complete = total >= target;
-  const litCount = malaFlash ? target : Math.min(bead, target);
+  // Persist the setup as it is edited — there is no explicit "begin" step now.
+  useEffect(() => {
+    if (!prefsLoaded) return;
+    void setJapaPrefs({ mantraId, customNaam, target, mode });
+  }, [prefsLoaded, mantraId, customNaam, target, mode]);
+
+  // Malas loop: counting past the target opens a fresh round rather than
+  // stopping. The ring shows the current round's position; the tally and round
+  // count carry the whole session.
+  const rounds = Math.floor(total / target);
+  const beadInRound = total % target;
+  const roundComplete = total > 0 && beadInRound === 0;
+  const displayBead = total === 0 ? 0 : roundComplete ? target : beadInRound;
+  const currentRound = total === 0 ? 1 : roundComplete ? rounds : rounds + 1;
+  const litCount = malaFlash || roundComplete ? target : beadInRound;
+  const todayBeads = statsBaseRef.current + total;
+  const goalMet = todayBeads >= DAILY_GOAL;
+  const meaning = lang === "hi" ? mantra.meaning_hi : mantra.meaning_en;
+  const hiEyebrow =
+    lang === "hi"
+      ? { letterSpacing: 0, textTransform: "none" as const }
+      : null;
+  const customEmpty = mantraId === CUSTOM_MANTRA_ID && !customNaam.trim();
 
   const playTapMotion = (nextTotal: number) => {
     if (reduceMotion.current) {
       pulse.setValue(1);
       return;
     }
-    const malaDone = nextTotal >= targetRef.current;
+    const malaDone = nextTotal % targetRef.current === 0;
     Animated.sequence([
       Animated.timing(pulse, {
         toValue: malaDone ? 1.12 : 1.05,
@@ -170,26 +209,51 @@ export default function JapaScreen() {
   };
 
   const chantAssisted = () => {
-    void playJapaChant(mantraRef.current.id).then((ok) => {
+    const id = mantraRef.current.id;
+    void playJapaChant(id).then((ok) => {
       if (!ok) {
         setChantPlaying(false);
         return;
       }
       setChantPlaying(true);
       if (chantTimer.current) clearTimeout(chantTimer.current);
-      chantTimer.current = setTimeout(() => setChantPlaying(false), 2200);
+      chantTimer.current = setTimeout(
+        () => setChantPlaying(false),
+        japaChantDurationMs(id)
+      );
+    });
+  };
+
+  const previewMantra = (id: string) => {
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    if (previewId === id) {
+      stopJapaChant();
+      setPreviewId(null);
+      return;
+    }
+    void playJapaChant(id, { interrupt: true }).then((ok) => {
+      if (!ok) {
+        setPreviewId(null);
+        return;
+      }
+      setPreviewId(id);
+      previewTimer.current = setTimeout(
+        () => setPreviewId(null),
+        japaChantDurationMs(id) + 150
+      );
     });
   };
 
   const onTap = () => {
-    if (totalRef.current >= targetRef.current) return;
+    if (editing) return;
     if (startedAtRef.current == null) startedAtRef.current = Date.now();
     if (modeRef.current === "assisted") chantAssisted();
     const next = totalRef.current + 1;
     totalRef.current = next;
     setTotal(next);
     playTapMotion(next);
-    if (next >= targetRef.current) {
+    if (next % targetRef.current === 0) {
+      // A round just closed — celebrate it, then keep counting into the next.
       setMalaFlash(true);
       if (flashTimer.current) clearTimeout(flashTimer.current);
       flashTimer.current = setTimeout(() => setMalaFlash(false), 420);
@@ -237,327 +301,434 @@ export default function JapaScreen() {
     } else {
       void appendSadhanaLog(entry);
     }
+    // Device-local tally for lifetime + daily-goal insight (independent of the
+    // server log so guests get stats too).
+    void recordJapaBeads(count).then(setStats);
   }, []);
 
   useEffect(() => () => logSession(), [logSession]);
 
-  const beginCount = () => {
-    const chosen =
-      mantraId === CUSTOM_MANTRA_ID && !customNaam.trim()
-        ? mantras[0].id
-        : mantraId;
-    setMantraId(chosen);
-    void setJapaPrefs({
-      mantraId: chosen,
-      customNaam,
-      target,
-      mode,
-    });
-    totalRef.current = 0;
-    startedAtRef.current = null;
-    loggedRef.current = false;
-    clientRefRef.current = uuidv4();
-    setTotal(0);
-    setMilestone(null);
-    setStage("count");
+  const openEditor = () => {
+    stopJapaChant();
+    setChantPlaying(false);
+    setEditing(true);
   };
 
-  const meaning = lang === "hi" ? mantra.meaning_hi : mantra.meaning_en;
-  const hiEyebrow =
-    lang === "hi"
-      ? { letterSpacing: 0, textTransform: "none" as const }
-      : null;
+  const closeEditor = () => {
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    stopJapaChant();
+    setPreviewId(null);
+    setEditing(false);
+  };
 
-  if (stage === "setup") {
-    const canBegin =
-      mantraId !== CUSTOM_MANTRA_ID || customNaam.trim().length > 0;
-    return (
-      <Screen atmosphere="soft" padded testID="screen-japa">
-        <KeyboardFormScroll
-          contentContainerStyle={{ paddingBottom: spacing.xxl }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Rise>
-            <PageHero
-              fullBleed
-              backFallback="/(tabs)/home"
-              image={images.krishnaCharan}
-              eyebrow={t("homeJapaTitle")}
-              title={t("japaSetupTitle")}
-              intro={t("japaSetupIntro")}
-            />
-          </Rise>
-
-          <Text
-            variant="eyebrow"
-            color={colors.brassSoft}
-            style={[{ marginTop: spacing.lg }, hiEyebrow]}
-          >
-            {t("japaPickTitle")}
-          </Text>
-          {mantras.map((m) => (
-            <Pressable
-              key={m.id}
-              onPress={() => setMantraId(m.id)}
-              style={[
-                styles.mantraRow,
-                {
-                  borderColor: colors.hairline,
-                  backgroundColor:
-                    m.id === mantraId ? colors.surfaceHover : "transparent",
-                },
-              ]}
-            >
-              <Text variant="sanskrit" style={{ fontSize: 17, lineHeight: 26 }}>
-                {m.devanagari}
-              </Text>
-              <Text
-                variant="muted"
-                numberOfLines={1}
-                style={{ marginTop: 2, fontStyle: "italic" }}
-              >
-                {m.iast}
-              </Text>
-            </Pressable>
-          ))}
-          <Pressable
-            onPress={() => setMantraId(CUSTOM_MANTRA_ID)}
-            style={[
-              styles.mantraRow,
-              {
-                borderColor: colors.hairline,
-                backgroundColor:
-                  mantraId === CUSTOM_MANTRA_ID
-                    ? colors.surfaceHover
-                    : "transparent",
-              },
-            ]}
-          >
-            <Text variant="body">{t("japaCustomNaam")}</Text>
-          </Pressable>
-          {mantraId === CUSTOM_MANTRA_ID ? (
-            <TextInput
-              value={customNaam}
-              onChangeText={setCustomNaam}
-              placeholder={t("japaCustomPlaceholder")}
-              placeholderTextColor={colors.textMuted}
-              accessibilityLabel={t("japaCustomNaam")}
-              {...fieldInputProps}
-              style={[
-                styles.customInput,
-                {
-                  color: colors.text,
-                  borderColor: colors.line,
-                  backgroundColor: colors.inputBg,
-                },
-              ]}
-            />
-          ) : null}
-
-          <Text
-            variant="eyebrow"
-            color={colors.brassSoft}
-            style={{ marginTop: spacing.lg }}
-          >
-            {t("japaTargetLabel")}
-          </Text>
-          <View style={styles.chipRow}>
-            {TARGETS.map((n) => (
-              <Pressable
-                key={n}
-                onPress={() => setTarget(n)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: target === n }}
-                style={[
-                  styles.chip,
-                  {
-                    borderColor: target === n ? colors.brass : colors.line,
-                    backgroundColor:
-                      target === n ? colors.surfaceHover : "transparent",
-                  },
-                ]}
-              >
-                <Text color={target === n ? colors.brassSoft : colors.text}>
-                  {n}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Text
-            variant="eyebrow"
-            color={colors.brassSoft}
-            style={{ marginTop: spacing.lg }}
-          >
-            {t("japaModeLabel")}
-          </Text>
-          <View style={styles.chipRow}>
-            {(["assisted", "self"] as const).map((m) => (
-              <Pressable
-                key={m}
-                onPress={() => setMode(m)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: mode === m }}
-                style={[
-                  styles.chip,
-                  {
-                    borderColor: mode === m ? colors.brass : colors.line,
-                    backgroundColor:
-                      mode === m ? colors.surfaceHover : "transparent",
-                  },
-                ]}
-              >
-                <Text color={mode === m ? colors.brassSoft : colors.text}>
-                  {m === "assisted" ? t("japaModeAssisted") : t("japaModeSelf")}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          <Text variant="muted" style={{ marginTop: spacing.sm }}>
-            {mode === "assisted"
-              ? hasJapaChant(mantraId)
-                ? t("japaModeAssistedHint")
-                : t("japaModeAssistedNoneHint")
-              : t("japaModeSelfHint")}
-          </Text>
-          {mode === "assisted" && hasJapaChant(mantraId) ? (
-            <Text variant="muted" style={{ marginTop: spacing.xs }}>
-              {t("japaChantCredit")}
-            </Text>
-          ) : null}
-
-          <Button
-            label={t("japaBegin")}
-            onPress={beginCount}
-            disabled={!canBegin}
-            style={{ marginTop: spacing.xl }}
-          />
-        </KeyboardFormScroll>
-      </Screen>
-    );
-  }
+  const summaryTitle = customEmpty
+    ? t("japaCustomNaam")
+    : mantra.devanagari || mantra.iast;
+  const modeLabel = mode === "assisted" ? t("japaModeAssisted") : t("japaModeSelf");
 
   return (
-    <Screen atmosphere="soft" padded testID="screen-japa">
-      <ScreenHeader showBack backFallback="/(tabs)/home" />
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: spacing.lg }}
+    <Screen atmosphere="soft" padded={false} edges={["left", "right"]} testID="screen-japa">
+      <KeyboardFormScroll
+        contentContainerStyle={{
+          paddingHorizontal: spacing.md,
+          paddingBottom: spacing.xxl,
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-      <Rise>
-        <PageHero
-          image={images.krishnaCharan}
-          eyebrow={t("homeJapaTitle")}
-          title={t("homeJapaTitle")}
-          intro={t("homeJapaBody")}
-          compact
-        />
-      </Rise>
-      <Pressable
-        style={styles.surface}
-        onPress={onTap}
-        accessibilityRole="button"
-        accessibilityLabel={t("japaTapHint")}
-      >
+        <Rise>
+          <PageHero
+            fullBleed
+            backFallback="/(tabs)/home"
+            image={images.krishnaCharan}
+            eyebrow={t("homeJapaTitle")}
+            title={t("japaSetupTitle")}
+            intro={t("japaSetupIntro")}
+          />
+        </Rise>
+
+        {/* Setup summary — one tap opens the inline editor. */}
         <Rise delay={40}>
           <Pressable
-            onPress={() => {
-              stopJapaChant();
-              setStage("setup");
-            }}
+            onPress={() => (editing ? closeEditor() : openEditor())}
+            accessibilityRole="button"
+            accessibilityLabel={t("japaChangeSetup")}
+            style={[
+              styles.summaryBar,
+              { borderColor: colors.line, backgroundColor: colors.panel },
+            ]}
           >
-            <Panel>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text variant="eyebrow" color={colors.brassSoft} style={hiEyebrow}>
+                {t("japaChangeSetup")}
+              </Text>
               <Text
                 variant="sanskrit"
-                style={{ fontSize: 20, lineHeight: 32 }}
-                numberOfLines={2}
+                style={{ fontSize: 17, lineHeight: 26, marginTop: 2 }}
+                numberOfLines={1}
               >
-                {mantra.devanagari || mantra.iast}
+                {summaryTitle}
               </Text>
-              {mantra.iast ? (
-                <Text
-                  variant="muted"
-                  style={{ marginTop: spacing.sm, fontStyle: "italic" }}
-                  numberOfLines={2}
-                >
-                  {mantra.iast}
-                </Text>
-              ) : null}
-              <Text variant="soft" style={{ marginTop: spacing.sm }}>
-                {meaning}
+              <Text variant="muted" numberOfLines={1} style={{ marginTop: 2 }}>
+                {target} · {modeLabel}
+                {mode === "assisted" && !hasJapaChant(mantraId)
+                  ? ` · ${t("japaNoChant")}`
+                  : ""}
               </Text>
-              <Text
-                variant="muted"
-                color={colors.brassSoft}
-                style={{ marginTop: spacing.md }}
-              >
-                {t("japaChangeSetup")} →
-              </Text>
-            </Panel>
+            </View>
+            <Chevron open={editing} color={colors.brassSoft} />
           </Pressable>
         </Rise>
 
-        <View style={styles.counter}>
-          <View style={styles.malaStage}>
-            <MalaRing
-              beadCount={target}
-              litCount={litCount}
-              colors={colors}
-            />
-            <Animated.View
-              style={[styles.countStack, { transform: [{ scale: pulse }] }]}
-            >
-              <Text style={[styles.bead, { color: colors.text }]}>{bead}</Text>
-              <Text variant="muted">
-                {t("japaOfTarget").replace("{n}", String(target))}
-              </Text>
-            </Animated.View>
-          </View>
-          {complete ? (
-            <Text
-              variant="soft"
-              color={colors.brassSoft}
-              style={{ marginTop: spacing.md }}
-            >
-              {t("japaTargetDone")}
-            </Text>
-          ) : null}
-          {milestone ? <MilestoneLine milestone={milestone} /> : null}
-        </View>
+        {editing ? (
+          <Rise delay={60} style={styles.editor}>
+            {stats && (stats.lifetimeBeads > 0 || stats.dayBeads > 0) ? (
+              <View style={{ marginTop: spacing.md }}>
+                {stats.lifetimeBeads > 0 ? (
+                  <Text variant="muted">
+                    {t("japaLifetime")
+                      .replace("{beads}", String(stats.lifetimeBeads))
+                      .replace(
+                        "{malas}",
+                        String(Math.floor(stats.lifetimeBeads / 108))
+                      )}
+                  </Text>
+                ) : null}
+                <Text
+                  variant="muted"
+                  color={colors.brassSoft}
+                  style={{ marginTop: spacing.xs }}
+                >
+                  {stats.dayBeads >= DAILY_GOAL
+                    ? t("japaDailyGoalMet").replace("{n}", String(stats.dayBeads))
+                    : t("japaDailyToday")
+                        .replace("{n}", String(stats.dayBeads))
+                        .replace("{goal}", String(DAILY_GOAL))}
+                </Text>
+              </View>
+            ) : null}
 
-        <View style={styles.footer}>
-          {mode === "assisted" ? (
             <Text
-              variant="muted"
+              variant="eyebrow"
               color={colors.brassSoft}
-              style={{ textAlign: "center", marginBottom: spacing.sm }}
+              style={[{ marginTop: spacing.lg }, hiEyebrow]}
             >
-              {hasJapaChant(mantraId)
-                ? chantPlaying
-                  ? t("japaAssistedPlaying")
-                  : t("japaAssistedReady")
-                : t("japaAssistedMuted")}
+              {t("japaPickTitle")}
             </Text>
-          ) : null}
-          <Text
-            variant="muted"
-            style={{ textAlign: "center", marginBottom: spacing.md }}
+            <View style={styles.pickGrid}>
+              {mantras.map((m) => {
+                const selected = m.id === mantraId;
+                const chant = hasJapaChant(m.id);
+                return (
+                  <Pressable
+                    key={m.id}
+                    onPress={() => setMantraId(m.id)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    style={[
+                      styles.pickCard,
+                      {
+                        borderColor: selected ? colors.brass : colors.line,
+                        backgroundColor: selected
+                          ? colors.surfaceHover
+                          : colors.panel,
+                      },
+                    ]}
+                  >
+                    <View style={styles.pickHead}>
+                      <Text
+                        variant="sanskrit"
+                        style={{ fontSize: 18, lineHeight: 28, flex: 1 }}
+                        numberOfLines={1}
+                      >
+                        {m.devanagari}
+                      </Text>
+                      {chant ? (
+                        <Pressable
+                          onPress={() => previewMantra(m.id)}
+                          hitSlop={10}
+                          accessibilityRole="button"
+                          accessibilityLabel={t("japaPreview")}
+                          style={[
+                            styles.previewBtn,
+                            {
+                              borderColor:
+                                previewId === m.id ? colors.brass : colors.line,
+                              backgroundColor:
+                                previewId === m.id
+                                  ? colors.surfaceHover
+                                  : "transparent",
+                            },
+                          ]}
+                        >
+                          {previewId === m.id ? (
+                            <StopIcon color={colors.brassSoft} />
+                          ) : (
+                            <PlayIcon color={colors.brassSoft} />
+                          )}
+                        </Pressable>
+                      ) : (
+                        <Text variant="muted" style={styles.noChantTag}>
+                          {t("japaNoChant")}
+                        </Text>
+                      )}
+                    </View>
+                    <Text
+                      variant="muted"
+                      numberOfLines={1}
+                      style={{ fontStyle: "italic" }}
+                    >
+                      {m.iast}
+                    </Text>
+                    <Text
+                      variant="muted"
+                      numberOfLines={2}
+                      style={{ marginTop: 4, fontSize: 12, lineHeight: 17 }}
+                    >
+                      {lang === "hi" ? m.meaning_hi : m.meaning_en}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+
+              <Pressable
+                onPress={() => setMantraId(CUSTOM_MANTRA_ID)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: mantraId === CUSTOM_MANTRA_ID }}
+                style={[
+                  styles.pickCard,
+                  {
+                    borderColor:
+                      mantraId === CUSTOM_MANTRA_ID ? colors.brass : colors.line,
+                    backgroundColor:
+                      mantraId === CUSTOM_MANTRA_ID
+                        ? colors.surfaceHover
+                        : colors.panel,
+                  },
+                ]}
+              >
+                <Text variant="body">{t("japaCustomNaam")}</Text>
+                {mantraId === CUSTOM_MANTRA_ID ? (
+                  <TextInput
+                    value={customNaam}
+                    onChangeText={setCustomNaam}
+                    placeholder={t("japaCustomPlaceholder")}
+                    placeholderTextColor={colors.textMuted}
+                    accessibilityLabel={t("japaCustomNaam")}
+                    {...fieldInputProps}
+                    style={[
+                      styles.customInput,
+                      {
+                        color: colors.text,
+                        borderColor: colors.line,
+                        backgroundColor: colors.inputBg,
+                      },
+                    ]}
+                  />
+                ) : null}
+              </Pressable>
+            </View>
+
+            <Text
+              variant="eyebrow"
+              color={colors.brassSoft}
+              style={{ marginTop: spacing.lg }}
+            >
+              {t("japaTargetLabel")}
+            </Text>
+            <View style={styles.chipRow}>
+              {TARGETS.map((n) => (
+                <Pressable
+                  key={n}
+                  onPress={() => setTarget(n)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: target === n }}
+                  style={[
+                    styles.chip,
+                    {
+                      borderColor: target === n ? colors.brass : colors.line,
+                      backgroundColor:
+                        target === n ? colors.surfaceHover : "transparent",
+                    },
+                  ]}
+                >
+                  <Text color={target === n ? colors.brassSoft : colors.text}>
+                    {n}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text
+              variant="eyebrow"
+              color={colors.brassSoft}
+              style={{ marginTop: spacing.lg }}
+            >
+              {t("japaModeLabel")}
+            </Text>
+            <View style={styles.chipRow}>
+              {(["assisted", "self"] as const).map((m) => (
+                <Pressable
+                  key={m}
+                  onPress={() => setMode(m)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: mode === m }}
+                  style={[
+                    styles.chip,
+                    {
+                      borderColor: mode === m ? colors.brass : colors.line,
+                      backgroundColor:
+                        mode === m ? colors.surfaceHover : "transparent",
+                    },
+                  ]}
+                >
+                  <Text color={mode === m ? colors.brassSoft : colors.text}>
+                    {m === "assisted" ? t("japaModeAssisted") : t("japaModeSelf")}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text variant="muted" style={{ marginTop: spacing.sm }}>
+              {mode === "assisted"
+                ? hasJapaChant(mantraId)
+                  ? t("japaModeAssistedHint")
+                  : t("japaModeAssistedNoneHint")
+                : t("japaModeSelfHint")}
+            </Text>
+            {mode === "assisted" && hasJapaChant(mantraId) ? (
+              <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                {t("japaChantCredit")}
+              </Text>
+            ) : null}
+
+            <Button
+              label={t("japaSetupDone")}
+              onPress={closeEditor}
+              disabled={customEmpty}
+              style={{ marginTop: spacing.xl }}
+            />
+          </Rise>
+        ) : (
+          <Pressable
+            style={styles.surface}
+            onPress={onTap}
+            accessibilityRole="button"
+            accessibilityLabel={t("japaTapHint")}
           >
-            {t("japaTapHint")}
-          </Text>
-          <Button
-            variant="ghost"
-            label={t("japaFinish")}
-            onPress={() => {
-              logSession();
-              router.back();
-            }}
-          />
-        </View>
-      </Pressable>
-      </ScrollView>
+            <View style={styles.counter}>
+              {!customEmpty ? (
+                <Text
+                  variant="sanskrit"
+                  style={styles.counterMantra}
+                  numberOfLines={2}
+                >
+                  {mantra.devanagari || mantra.iast}
+                </Text>
+              ) : null}
+              <View style={styles.malaStage}>
+                <MalaRing beadCount={target} litCount={litCount} colors={colors} />
+                <Animated.View
+                  style={[styles.countStack, { transform: [{ scale: pulse }] }]}
+                >
+                  <Text style={[styles.bead, { color: colors.text }]}>
+                    {displayBead}
+                  </Text>
+                  <Text variant="muted">
+                    {t("japaOfTarget").replace("{n}", String(target))}
+                  </Text>
+                </Animated.View>
+              </View>
+              {total > 0 ? (
+                <Text
+                  variant="muted"
+                  color={colors.brassSoft}
+                  style={{ marginTop: spacing.md }}
+                >
+                  {t("japaRound").replace("{n}", String(currentRound))}
+                </Text>
+              ) : null}
+              <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                {goalMet
+                  ? t("japaDailyGoalMet").replace("{n}", String(todayBeads))
+                  : t("japaDailyToday")
+                      .replace("{n}", String(todayBeads))
+                      .replace("{goal}", String(DAILY_GOAL))}
+              </Text>
+              {roundComplete ? (
+                <Text
+                  variant="soft"
+                  color={colors.brassSoft}
+                  style={{ marginTop: spacing.sm, textAlign: "center" }}
+                >
+                  {t("japaTargetDone")} {t("japaKeepGoing")}
+                </Text>
+              ) : null}
+              {milestone ? <MilestoneLine milestone={milestone} /> : null}
+            </View>
+
+            <View style={styles.footer}>
+              {mode === "assisted" ? (
+                <Text
+                  variant="muted"
+                  color={colors.brassSoft}
+                  style={{ textAlign: "center", marginBottom: spacing.sm }}
+                >
+                  {hasJapaChant(mantraId)
+                    ? chantPlaying
+                      ? t("japaAssistedPlaying")
+                      : t("japaAssistedReady")
+                    : t("japaAssistedMuted")}
+                </Text>
+              ) : null}
+              <Text
+                variant="muted"
+                style={{ textAlign: "center", marginBottom: spacing.md }}
+              >
+                {t("japaTapHint")}
+              </Text>
+              <Button
+                variant="ghost"
+                label={t("japaFinish")}
+                onPress={() => {
+                  logSession();
+                  router.back();
+                }}
+              />
+            </View>
+          </Pressable>
+        )}
+      </KeyboardFormScroll>
     </Screen>
+  );
+}
+
+function PlayIcon({ color }: { color: string }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+      <Path d="M8 5v14l11-7z" fill={color} />
+    </Svg>
+  );
+}
+
+function StopIcon({ color }: { color: string }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+      <Path d="M6 6h12v12H6z" fill={color} />
+    </Svg>
+  );
+}
+
+function Chevron({ open, color }: { open: boolean; color: string }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path
+        d={open ? "M6 15l6-6 6 6" : "M9 6l6 6-6 6"}
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
 
@@ -617,8 +788,48 @@ function MalaRing({
 }
 
 const styles = StyleSheet.create({
+  summaryBar: {
+    marginTop: spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.lg,
+  },
+  editor: {
+    marginTop: spacing.xs,
+  },
+  pickGrid: {
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  pickCard: {
+    padding: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.lg,
+  },
+  pickHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  previewBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  noChantTag: {
+    fontSize: 11,
+    flexShrink: 0,
+  },
   surface: {
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
     paddingBottom: spacing.lg,
     minHeight: 520,
   },
@@ -626,6 +837,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: spacing.lg,
+  },
+  counterMantra: {
+    fontSize: 22,
+    lineHeight: 34,
+    textAlign: "center",
+    marginBottom: spacing.lg,
+    maxWidth: 340,
   },
   malaStage: {
     width: RING_SIZE,
@@ -650,10 +868,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingBottom: spacing.sm,
-  },
-  mantraRow: {
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth * 2,
   },
   customInput: {
     marginTop: spacing.sm,

@@ -79,6 +79,8 @@ export const en = {
   medRateNormal: "Normal",
   medRateFast: "Faster",
   medBack: "Course home",
+  medClosingEyebrow: "A verse to carry",
+  medClosingOpen: "Read in the Gita",
   medGuestSaved: "Saved on this device for now.",
   medSaveFailedMember:
     "Your sit was not saved to your account. Check your connection and retry.",
@@ -179,6 +181,8 @@ export const hi: Record<keyof typeof en, string> = {
   medRateNormal: "सामान्य",
   medRateFast: "तेज़",
   medBack: "पाठ्यक्रम होम",
+  medClosingEyebrow: "साथ ले जाने योग्य श्लोक",
+  medClosingOpen: "गीता में पढ़ें",
   medGuestSaved: "अभी इसी डिवाइस पर सहेजा गया।",
   medSaveFailedMember:
     "आपकी बैठक खाते में सहेजी नहीं गई। कनेक्शन जाँचें और फिर कोशिश करें।",

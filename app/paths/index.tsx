@@ -49,9 +49,9 @@ export default function PathsScreen() {
     : 0;
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen atmosphere="soft" padded={false} edges={["left", "right"]}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: bottomPad }}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
       >
         <Rise>

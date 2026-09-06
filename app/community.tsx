@@ -40,9 +40,9 @@ export default function CommunityScreen() {
   }
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen atmosphere="soft" padded={false} edges={["left", "right"]}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: spacing.xxl }}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xxl }}
         showsVerticalScrollIndicator={false}
       >
         <Rise>

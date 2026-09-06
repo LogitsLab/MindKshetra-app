@@ -34,6 +34,7 @@ const KEYS = {
   /** Incognito chart birth payload awaiting createMember after sign-in. */
   pendingAstroSave: "mindkshetra-astro-pending-save",
   japaPrefs: "mindkshetra-japa-prefs",
+  japaStats: "mindkshetra-japa-stats",
   chartInviteDismissed: "mindkshetra-chart-invite-dismissed",
 } as const;
 
@@ -229,6 +230,7 @@ export async function clearUserLocalState(): Promise<void> {
     KEYS.meditationQueue,
     KEYS.meditationRun,
     KEYS.milestonesSeen,
+    KEYS.japaStats,
   ]);
   // Journey runs are one key per journey, so they are swept by prefix.
   await clearAllGuestJourneys();
@@ -641,6 +643,51 @@ export async function getJapaPrefs(): Promise<JapaPrefs> {
 
 export async function setJapaPrefs(prefs: JapaPrefs): Promise<void> {
   await AsyncStorage.setItem(KEYS.japaPrefs, JSON.stringify(prefs));
+}
+
+/**
+ * Device-local japa tally: lifetime beads (for milestones/insight) plus a
+ * per-day count that rolls over at the local midnight. Lifetime malas are
+ * derived as floor(beads / 108) rather than stored, so the two never drift.
+ */
+export type JapaStats = {
+  lifetimeBeads: number;
+  dayStamp: string;
+  dayBeads: number;
+};
+
+export async function getJapaStats(): Promise<JapaStats> {
+  const today = localDayStamp();
+  const raw = await AsyncStorage.getItem(KEYS.japaStats);
+  if (!raw) return { lifetimeBeads: 0, dayStamp: today, dayBeads: 0 };
+  try {
+    const p = JSON.parse(raw) as Partial<JapaStats>;
+    const lifetimeBeads =
+      typeof p.lifetimeBeads === "number" && p.lifetimeBeads >= 0
+        ? Math.floor(p.lifetimeBeads)
+        : 0;
+    const sameDay = p.dayStamp === today;
+    const dayBeads =
+      sameDay && typeof p.dayBeads === "number" && p.dayBeads >= 0
+        ? Math.floor(p.dayBeads)
+        : 0;
+    return { lifetimeBeads, dayStamp: today, dayBeads };
+  } catch {
+    return { lifetimeBeads: 0, dayStamp: today, dayBeads: 0 };
+  }
+}
+
+/** Add a completed session's beads to the lifetime + today tallies. */
+export async function recordJapaBeads(count: number): Promise<JapaStats> {
+  const cur = await getJapaStats();
+  if (!Number.isFinite(count) || count <= 0) return cur;
+  const next: JapaStats = {
+    lifetimeBeads: cur.lifetimeBeads + Math.floor(count),
+    dayStamp: localDayStamp(),
+    dayBeads: cur.dayBeads + Math.floor(count),
+  };
+  await AsyncStorage.setItem(KEYS.japaStats, JSON.stringify(next));
+  return next;
 }
 
 export async function getChartInviteDismissed(): Promise<boolean> {

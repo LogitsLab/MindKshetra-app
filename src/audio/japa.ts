@@ -3,9 +3,18 @@ import {
   setAudioModeAsync,
   type AudioPlayer,
 } from "expo-audio";
-import { hasJapaChant, type JapaChantId } from "@/audio/japaChants";
+import {
+  hasJapaChant,
+  japaChantDurationMs,
+  type JapaChantId,
+} from "@/audio/japaChants";
 
-export { hasJapaChant, JAPA_CHANT_IDS } from "@/audio/japaChants";
+export {
+  hasJapaChant,
+  japaChantDurationMs,
+  JAPA_CHANT_IDS,
+  JAPA_CHANT_DURATIONS_MS,
+} from "@/audio/japaChants";
 export type { JapaChantId } from "@/audio/japaChants";
 
 /**
@@ -23,6 +32,7 @@ const BUNDLED: Record<JapaChantId, number> = {
 };
 
 let player: AudioPlayer | null = null;
+let playingUntil = 0;
 let audioModeSet = false;
 
 async function ensureAudioMode(): Promise<void> {
@@ -57,17 +67,31 @@ function release(p: AudioPlayer | null): void {
 export function stopJapaChant(): void {
   release(player);
   player = null;
+  playingUntil = 0;
+}
+
+/** Whether a recitation is (still) within its clip length. */
+export function isJapaChantPlaying(): boolean {
+  return player != null && Date.now() < playingUntil;
 }
 
 /**
- * Restart the recitation for this mantra. Safe on a missing id (no-op).
- * A new tap cancels the previous clip so beads never overlap.
+ * Play the recitation for this mantra. Safe on a missing id (no-op).
+ *
+ * By default an assisted tap lets a still-playing clip finish instead of
+ * chopping it to the opening syllables — the long recitations (Gayatri,
+ * Mahamrityunjaya, Hare Krishna) never played fully before. Pass
+ * `{ interrupt: true }` (the picker's preview) to always restart.
  */
-export async function playJapaChant(mantraId: string): Promise<boolean> {
+export async function playJapaChant(
+  mantraId: string,
+  opts?: { interrupt?: boolean }
+): Promise<boolean> {
   if (!hasJapaChant(mantraId)) {
     stopJapaChant();
     return false;
   }
+  if (!opts?.interrupt && isJapaChantPlaying()) return true;
   stopJapaChant();
   try {
     await ensureAudioMode();
@@ -76,6 +100,7 @@ export async function playJapaChant(mantraId: string): Promise<boolean> {
     p.volume = 0.92;
     p.play();
     player = p;
+    playingUntil = Date.now() + japaChantDurationMs(mantraId);
     return true;
   } catch {
     stopJapaChant();

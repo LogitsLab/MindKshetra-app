@@ -19,7 +19,7 @@ export default function SupportScreen() {
   const { t } = useLanguage();
 
   return (
-    <Screen atmosphere="soft" padded>
+    <Screen atmosphere="soft" padded={false} edges={["left", "right"]}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -77,6 +77,7 @@ export default function SupportScreen() {
 
 const styles = StyleSheet.create({
   content: {
+    paddingHorizontal: spacing.md,
     paddingBottom: spacing.xxl,
   },
   section: {

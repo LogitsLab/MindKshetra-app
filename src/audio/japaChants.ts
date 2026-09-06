@@ -24,6 +24,25 @@ export const JAPA_CHANT_IDS = [
 
 export type JapaChantId = (typeof JAPA_CHANT_IDS)[number];
 
+/**
+ * Clip length in ms (measured from the bundled files). Used so an assisted tap
+ * lets the current recitation finish instead of chopping it to the opening
+ * syllables, and so the picker's preview knows when playback ends.
+ */
+export const JAPA_CHANT_DURATIONS_MS: Record<JapaChantId, number> = {
+  om: 1300,
+  "om-namo-bhagavate-vasudevaya": 3950,
+  "hare-krishna": 14000,
+  "so-ham": 1300,
+  "om-namah-shivaya": 5100,
+  gayatri: 21950,
+  mahamrityunjaya: 17550,
+};
+
 export function hasJapaChant(id: string): id is JapaChantId {
   return (JAPA_CHANT_IDS as readonly string[]).includes(id);
+}
+
+export function japaChantDurationMs(id: string): number {
+  return hasJapaChant(id) ? JAPA_CHANT_DURATIONS_MS[id] : 2500;
 }

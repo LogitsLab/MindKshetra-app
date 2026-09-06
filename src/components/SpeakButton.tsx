@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-nat
 import { resolveRecitationUrl } from "@/audio/manifest";
 import {
   getNarrationSession,
-  playOrSpeak,
   playUrl,
   prefetchAudioUrl,
   stopNarration,
@@ -14,53 +13,48 @@ import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 
 type Props = {
-  text: string;
-  lang: "en" | "hi";
+  chapter: number;
+  verseNumber: number;
   listenLabel: string;
   stopLabel: string;
   unsupportedLabel?: string;
-  chapter?: number;
-  verseNumber?: number;
-  /** When true, only play if a recitation file exists — no TTS fallback. */
-  recitationOnly?: boolean;
-  /** Smaller control for chat bubbles. */
+  /** Smaller control for tight layouts. */
   compact?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
 
 /**
- * Web-parity Speak control — Sanskrit recitation (file only) or story TTS.
- * Only stops global narration when this instance owns the active session, so a
- * late-mounting story Listen cannot kill Sanskrit playback mid-verse.
+ * Sanskrit recitation control — plays the real recorded recitation .m4a for a
+ * verse and nothing else. The app has no text-to-speech: when no recording
+ * exists for a verse the button is disabled. Stops global narration only when
+ * this instance owns the active session, so a late-mounting button cannot cut
+ * off recitation already playing elsewhere.
  */
 export function SpeakButton({
-  text,
-  lang,
+  chapter,
+  verseNumber,
   listenLabel,
   stopLabel,
   unsupportedLabel = "Audio isn’t available",
-  chapter,
-  verseNumber,
-  recitationOnly = false,
   compact = false,
   style,
   testID,
 }: Props) {
   const { colors } = useTheme();
   const [speaking, setSpeaking] = useState(false);
-  const [recitationReady, setRecitationReady] = useState(!recitationOnly);
+  const [recitationReady, setRecitationReady] = useState(false);
   const ownerSessionRef = useRef<number | null>(null);
   const genRef = useRef(0);
 
-  // When verse/lang/text changes: stop only if we own the player.
+  // When the verse changes: stop only if we own the player.
   useEffect(() => {
     if (ownerSessionRef.current != null) {
       stopNarrationIfOwner(ownerSessionRef.current);
       ownerSessionRef.current = null;
     }
     setSpeaking(false);
-  }, [text, lang, chapter, verseNumber]);
+  }, [chapter, verseNumber]);
 
   // Unmount: stop only our session (another SpeakButton may still be playing).
   useEffect(
@@ -74,10 +68,6 @@ export function SpeakButton({
   );
 
   useEffect(() => {
-    if (!recitationOnly || chapter == null || verseNumber == null) {
-      setRecitationReady(true);
-      return;
-    }
     let cancelled = false;
     void resolveRecitationUrl(chapter, verseNumber).then((url) => {
       if (cancelled) return;
@@ -88,7 +78,7 @@ export function SpeakButton({
     return () => {
       cancelled = true;
     };
-  }, [recitationOnly, chapter, verseNumber]);
+  }, [chapter, verseNumber]);
 
   const toggle = useCallback(async () => {
     if (speaking) {
@@ -103,54 +93,22 @@ export function SpeakButton({
     }
 
     const myGen = ++genRef.current;
-
-    const url =
-      chapter != null && verseNumber != null
-        ? await resolveRecitationUrl(chapter, verseNumber)
-        : null;
-
+    const url = await resolveRecitationUrl(chapter, verseNumber);
     if (myGen !== genRef.current) return;
+    if (!url) {
+      setSpeaking(false);
+      return;
+    }
 
     const bindOwner = () => {
       ownerSessionRef.current = getNarrationSession();
     };
-
     const clearOwner = () => {
       ownerSessionRef.current = null;
       setSpeaking(false);
     };
 
-    if (recitationOnly) {
-      if (!url) {
-        setSpeaking(false);
-        return;
-      }
-      const ok = await playUrl(url, {
-        onStart: () => {
-          if (myGen !== genRef.current) return;
-          bindOwner();
-          setSpeaking(true);
-        },
-        onDone: () => {
-          if (myGen !== genRef.current) return;
-          clearOwner();
-        },
-        onStopped: () => {
-          if (myGen !== genRef.current) return;
-          clearOwner();
-        },
-        onError: () => {
-          if (myGen !== genRef.current) return;
-          clearOwner();
-        },
-      });
-      if (!ok && myGen === genRef.current) clearOwner();
-      return;
-    }
-
-    const ok = await playOrSpeak(text, {
-      lang,
-      url,
+    const ok = await playUrl(url, {
       onStart: () => {
         if (myGen !== genRef.current) return;
         bindOwner();
@@ -170,20 +128,16 @@ export function SpeakButton({
       },
     });
     if (!ok && myGen === genRef.current) clearOwner();
-  }, [speaking, text, lang, chapter, verseNumber, recitationOnly]);
+  }, [speaking, chapter, verseNumber]);
 
-  const disabled = recitationOnly ? !recitationReady : !text.trim();
+  const disabled = !recitationReady;
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled, selected: speaking }}
       accessibilityLabel={
-        disabled && recitationOnly
-          ? unsupportedLabel
-          : speaking
-            ? stopLabel
-            : listenLabel
+        disabled ? unsupportedLabel : speaking ? stopLabel : listenLabel
       }
       testID={testID}
       disabled={disabled}

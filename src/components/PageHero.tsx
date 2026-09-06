@@ -30,8 +30,10 @@ type Props = {
   compact?: boolean;
   /**
    * Edge-to-edge hero that covers the complete top (under the status bar) with a
-   * floating back + brand. The screen must use `padded={false}` and drop the
-   * top safe-area edge, and hide the native header.
+   * floating back + brand pinned to the left. The screen must drop the top
+   * safe-area edge (`edges={["left", "right"]}`) so the ScrollView starts at
+   * y=0 and the image is not clipped, and hide the native header. The hero
+   * handles the top inset itself via the floating bar + copy padding.
    */
   fullBleed?: boolean;
   /** Where the floating back button goes if history is empty (fullBleed). */
@@ -124,7 +126,7 @@ export function PageHero({
   );
 
   const bandStyle = fullBleed
-    ? [styles.fullBleedBand, { marginTop: -insets.top, minHeight: 300 + insets.top }, style]
+    ? [styles.fullBleedBand, { minHeight: 340 + insets.top }, style]
     : [
         styles.band,
         compact ? styles.bandCompact : styles.bandTall,
@@ -178,7 +180,7 @@ const styles = StyleSheet.create({
     right: spacing.md,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: spacing.sm,
     zIndex: 2,
   },
   copy: {

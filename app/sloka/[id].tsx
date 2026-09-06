@@ -540,11 +540,8 @@ export default function SlokaScreen() {
             <View style={styles.listenBlock}>
               <SpeakButton
                 testID="sloka-narration"
-                text={sloka.sanskrit_devanagari}
-                lang={lang === "hi" ? "hi" : "en"}
                 chapter={sloka.chapter}
                 verseNumber={sloka.verse_number}
-                recitationOnly
                 listenLabel={t("verseListen")}
                 stopLabel={t("verseStop")}
                 unsupportedLabel={t("ttsUnsupported")}
@@ -783,16 +780,6 @@ export default function SlokaScreen() {
                   </Pressable>
                 ))}
               </View>
-              {story ? (
-                <SpeakButton
-                  testID="sloka-story-listen"
-                  text={story}
-                  lang={storyLang}
-                  listenLabel={t("verseListenStory")}
-                  stopLabel={t("verseStop")}
-                  unsupportedLabel={t("ttsUnsupported")}
-                />
-              ) : null}
             </View>
           </View>
           {storyLoading || storyGenerating ? (

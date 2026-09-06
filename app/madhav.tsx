@@ -736,9 +736,6 @@ export default function MadhavScreen() {
         colors={colors}
         onPressCitation={onPressCitation}
         onPracticeCitation={onPracticeCitation}
-        listenLabel={isUser ? undefined : t("ttsListen")}
-        stopLabel={isUser ? undefined : t("ttsStop")}
-        unsupportedLabel={isUser ? undefined : t("ttsUnsupported")}
       />
     );
   };

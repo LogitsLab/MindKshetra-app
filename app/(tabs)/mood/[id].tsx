@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { SlokaCard, EmptyState } from "@/components/SlokaCard";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { MoodIcon } from "@/components/MoodIcon";
+import { Text } from "@/components/Text";
 import { contentApi } from "@/api/endpoints";
 import { getMoodById } from "@/data/moods";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { moodAccent } from "@/theme/assets";
-import { spacing } from "@/theme/tokens";
+import { radii, spacing } from "@/theme/tokens";
 import type { Sloka } from "@/types";
 
 export default function MoodDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const mood = getMoodById(id);
+  const router = useRouter();
   const { lang, t } = useLanguage();
   const { colors } = useTheme();
   const [slokas, setSlokas] = useState<Sloka[]>([]);
@@ -53,6 +55,31 @@ export default function MoodDetailScreen() {
       {mood ? (
         <View style={{ alignItems: "center", marginTop: spacing.sm }}>
           <MoodIcon id={mood.id} size={40} color={accent} />
+          <Text variant="muted" style={{ marginTop: spacing.sm }}>
+            {t("moodPracticeIntro")}
+          </Text>
+          <View style={styles.practiceRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("moodSitCta")}
+              onPress={() => router.push("/meditation")}
+              style={[styles.practiceChip, { borderColor: colors.line }]}
+            >
+              <Text variant="muted" color={colors.brassSoft}>
+                {t("moodSitCta")}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("moodBreatheCta")}
+              onPress={() => router.push("/pranayama")}
+              style={[styles.practiceChip, { borderColor: colors.line }]}
+            >
+              <Text variant="muted" color={colors.brassSoft}>
+                {t("moodBreatheCta")}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       ) : null}
 
@@ -88,3 +115,19 @@ export default function MoodDetailScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  practiceRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  practiceChip: {
+    minHeight: 36,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radii.md,
+    justifyContent: "center",
+  },
+});

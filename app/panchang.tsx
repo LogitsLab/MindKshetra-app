@@ -135,9 +135,9 @@ export default function PanchangScreen() {
     festival && (lang === "hi" ? festival.storyHi : festival.storyEn);
 
   return (
-    <Screen atmosphere="soft" testID="screen-panchang">
+    <Screen atmosphere="soft" padded={false} edges={["left", "right"]} testID="screen-panchang">
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
         <Rise>
@@ -221,13 +221,10 @@ export default function PanchangScreen() {
             </Text>
             <View style={{ marginTop: spacing.md, flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
               <SpeakButton
-                text={votd.sanskrit_devanagari}
-                lang={lang}
                 listenLabel={t("verseListen")}
                 stopLabel={t("verseStop")}
                 chapter={votd.chapter}
                 verseNumber={votd.verse_number}
-                recitationOnly
               />
               <Pressable onPress={() => router.push(`/sloka/${votd.id}`)}>
                 <Text color={colors.brassSoft}>{t("homeFeaturedDetail")} →</Text>

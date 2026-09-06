@@ -446,9 +446,10 @@ export default function SadhanaScreen() {
   };
 
   return (
-    <Screen testID="screen-sadhana">
+    <Screen padded={false} edges={["left", "right"]} testID="screen-sadhana">
       <KeyboardFormScroll
         contentContainerStyle={{
+          paddingHorizontal: spacing.md,
           paddingBottom: spacing.contentBottom,
           paddingTop: 0,
         }}

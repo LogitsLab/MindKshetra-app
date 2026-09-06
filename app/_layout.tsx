@@ -95,6 +95,7 @@ function RootNavigator() {
         <Stack.Screen name="sloka/[id]" options={{ title: "Verse" }} />
         <Stack.Screen name="verse-of-the-day" options={{ title: "Verse of the Day" }} />
         <Stack.Screen name="japa" options={{ headerShown: false }} />
+        <Stack.Screen name="pranayama" options={{ headerShown: false }} />
         <Stack.Screen name="panchang" options={{ headerShown: false }} />
         <Stack.Screen
           name="panchang-calendar"
