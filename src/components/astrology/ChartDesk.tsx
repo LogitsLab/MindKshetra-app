@@ -11,9 +11,12 @@ import { NorthIndianChart } from "@/components/astrology/NorthIndianChart";
 import { SouthIndianChart } from "@/components/astrology/SouthIndianChart";
 import { PlanetSheet } from "@/components/astrology/PlanetSheet";
 import { ChartChatPanel } from "@/components/astrology/ChartChatPanel";
+import { HousesPanel } from "@/components/astrology/HousesPanel";
+import { planetStrength } from "@/components/astrology/houseStrength";
 import {
   deskChartFromBlob,
   formatDmsInSign,
+  glyphFor,
   vargaOf,
   type ChartStyle,
   type ChartSystem,
@@ -21,6 +24,7 @@ import {
   type VargaKind,
   type WheelMode,
 } from "@/components/astrology/chartModel";
+import { houseSignification } from "@/data/houseSignifications";
 import type { ChartOverview, ChartPlanet } from "@/types/astrology";
 
 const STYLE_KEY = "mindkshetra-astro-chart-style";
@@ -28,6 +32,7 @@ const SYSTEM_KEY = "mindkshetra-astro-chart-system";
 
 export type DeskTab =
   | "chart"
+  | "houses"
   | "dasha"
   | "vargas"
   | "kp"
@@ -170,6 +175,7 @@ export function ChartDesk({
 
   const tabs: Array<[DeskTab, string]> = [
     ["chart", t("astroTabChart")],
+    ["houses", t("astroTabHouses")],
     ["dasha", t("astroTabDasha")],
     ["vargas", t("astroTabVargas")],
     ["kp", t("astroTabKp")],
@@ -329,21 +335,46 @@ export function ChartDesk({
               atAGlance: t("astroAtAGlance"),
             }}
           />
-          <View style={{ marginTop: spacing.md, gap: spacing.xs }}>
+          <View style={{ marginTop: spacing.md, gap: 2 }}>
             <Text variant="eyebrow">{t("astroPlanet")}</Text>
             {(faceAsc ? [faceAsc, ...facePlanets] : facePlanets).map((p) => (
-              <Pressable key={p.id} onPress={() => setSelectedId(p.id)}>
-                <Text variant="muted" style={{ marginTop: 4 }}>
-                  {labelPlanet(p.id)}: {formatDmsInSign(p.degreeInSign, p.sign)}
-                  {p.house != null ? ` · H${p.house}` : ""} · {p.nakshatra}{" "}
-                  {t("astroPada")} {p.pada}
-                  {p.nakshatraLord ? ` · ${labelPlanet(p.nakshatraLord)}` : ""}
-                  {p.retrograde ? " · R" : ""}
+              <Pressable
+                key={p.id}
+                onPress={() => setSelectedId(p.id)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: spacing.sm,
+                  paddingVertical: 6,
+                }}
+              >
+                <Text
+                  variant="soft"
+                  style={{ color: colors.brassSoft, width: 104 }}
+                  numberOfLines={1}
+                >
+                  {glyphFor(p.id, p.retrograde)}  {labelPlanet(p.id)}
+                </Text>
+                <Text variant="muted" style={{ flex: 1 }} numberOfLines={1}>
+                  {labelSign(p.sign)}
+                  {p.house != null ? ` · H${p.house}` : ""}
+                </Text>
+                <Text variant="muted" style={{ color: colors.brass }}>
+                  ›
                 </Text>
               </Pressable>
             ))}
           </View>
         </View>
+      ) : null}
+
+      {tab === "houses" ? (
+        <HousesPanel
+          desk={desk}
+          labelPlanet={labelPlanet}
+          labelSign={labelSign}
+          onPlanetPress={setSelectedId}
+        />
       ) : null}
 
       {tab === "dasha" ? dashaNode : null}
@@ -456,12 +487,31 @@ export function ChartDesk({
         />
       ) : null}
 
-      <PlanetSheet
-        planet={selectedPlanet}
-        onClose={() => setSelectedId(null)}
-        labelPlanet={labelPlanet}
-        labelSign={labelSign}
-      />
+      {(() => {
+        const natal =
+          selectedId && selectedId !== "ascendant"
+            ? desk.planets.find((p) => p.id === selectedId) ?? null
+            : null;
+        const strength = natal
+          ? planetStrength(natal, {
+              dignity: desk.dignities[natal.id],
+              aspects: desk.aspects,
+              planets: desk.planets,
+            })
+          : null;
+        const sig = natal?.house != null ? houseSignification(natal.house) : undefined;
+        return (
+          <PlanetSheet
+            planet={selectedPlanet}
+            onClose={() => setSelectedId(null)}
+            labelPlanet={labelPlanet}
+            labelSign={labelSign}
+            strength={strength}
+            houseTitle={sig ? (lang === "hi" ? sig.title.hi : sig.title.en) : null}
+            houseMeaning={sig ? (lang === "hi" ? sig.meaning.hi : sig.meaning.en) : null}
+          />
+        );
+      })()}
     </View>
   );
 }

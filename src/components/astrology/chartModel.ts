@@ -78,6 +78,20 @@ export type DeskYoga = {
   detail: string;
 };
 
+/** exalted | debilitated | own | mooltrikona | neutral (from the engine). */
+export type DignityKind =
+  | "exalted"
+  | "debilitated"
+  | "own"
+  | "mooltrikona"
+  | "neutral";
+
+export type DeskAspect = {
+  from: string;
+  to: string;
+  kind: "full" | "special";
+};
+
 export type DeskChart = {
   tobUnknown: boolean;
   ephemerisMode?: string;
@@ -100,6 +114,10 @@ export type DeskChart = {
     d12?: DeskVarga | null;
   };
   yogas: DeskYoga[];
+  /** planet id → dignity kind (from the engine's `dignities`). */
+  dignities: Record<string, DignityKind>;
+  /** graha drishti (from the engine's `aspects`). */
+  aspects: DeskAspect[];
 };
 
 function num(v: unknown): number | undefined {
@@ -213,6 +231,29 @@ export function deskChartFromBlob(chart: Record<string, unknown> | null): DeskCh
         .filter((y): y is DeskYoga => y != null)
     : [];
 
+  const dignities: Record<string, DignityKind> = {};
+  if (Array.isArray(chart.dignities)) {
+    for (const d of chart.dignities) {
+      if (!d || typeof d !== "object") continue;
+      const o = d as Record<string, unknown>;
+      const planet = str(o.planet);
+      const kind = str(o.kind);
+      if (planet && kind) dignities[planet] = kind as DignityKind;
+    }
+  }
+  const aspects: DeskAspect[] = Array.isArray(chart.aspects)
+    ? chart.aspects
+        .map((a): DeskAspect | null => {
+          if (!a || typeof a !== "object") return null;
+          const o = a as Record<string, unknown>;
+          const from = str(o.from);
+          const to = str(o.to);
+          if (!from || !to) return null;
+          return { from, to, kind: o.kind === "special" ? "special" : "full" };
+        })
+        .filter((a): a is DeskAspect => a != null)
+    : [];
+
   return {
     tobUnknown: Boolean(chart.tobUnknown),
     ephemerisMode: str(chart.ephemerisMode),
@@ -257,6 +298,60 @@ export function deskChartFromBlob(chart: Record<string, unknown> | null): DeskCh
       d12: asVarga(vargasRaw.d12),
     },
     yogas,
+    dignities,
+    aspects,
+  };
+}
+
+/** Sign rulerships (ported from the engine's yogas.ts). */
+export const SIGN_LORDS: Record<string, string> = {
+  aries: "mars",
+  taurus: "venus",
+  gemini: "mercury",
+  cancer: "moon",
+  leo: "sun",
+  virgo: "mercury",
+  libra: "venus",
+  scorpio: "mars",
+  sagittarius: "jupiter",
+  capricorn: "saturn",
+  aquarius: "saturn",
+  pisces: "jupiter",
+};
+
+/** The whole-sign sign index (0..11) that a house falls in, given the ascendant. */
+export function houseSignIndex(house: number, ascSignIndex: number): number {
+  return (ascSignIndex + (house - 1)) % 12;
+}
+
+export type HouseLordPlacement = {
+  lord: string;
+  /** House the lord occupies, or null if unknown (e.g. birth-time unknown). */
+  inHouse: number | null;
+  /** Sign the lord occupies. */
+  inSign: string | null;
+};
+
+/**
+ * The lord of `house` and where it sits — the classic "9th lord in the 11th"
+ * reading. Returns null lord when the ascendant is unknown.
+ */
+export function houseLordPlacement(
+  desk: DeskChart,
+  house: number
+): HouseLordPlacement | null {
+  const asc = desk.ascendant;
+  if (!asc) return null;
+  const ascSignIndex = asc.signIndex;
+  const signIdx = houseSignIndex(house, ascSignIndex);
+  const sign = SIGNS[signIdx];
+  const lord = SIGN_LORDS[sign];
+  if (!lord) return null;
+  const lordPlanet = desk.planets.find((p) => p.id === lord);
+  return {
+    lord,
+    inHouse: lordPlanet?.house ?? null,
+    inSign: lordPlanet?.sign ?? null,
   };
 }
 

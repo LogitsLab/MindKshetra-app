@@ -1,22 +1,40 @@
-import React from "react";
+import React, { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import { Text } from "@/components/Text";
+import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 import {
   formatDmsInSign,
   type DeskPlanet,
 } from "@/components/astrology/chartModel";
+import { StrengthBadge, strengthWhy } from "@/components/astrology/StrengthMeter";
+import type { Strength } from "@/components/astrology/houseStrength";
 
 type Props = {
   planet: DeskPlanet | null;
   onClose: () => void;
   labelPlanet: (id: string) => string;
   labelSign: (s: string) => string;
+  /** Natal strength of this planet (omitted for varga/ascendant). */
+  strength?: Strength | null;
+  /** Plain-language house context for where the planet sits. */
+  houseTitle?: string | null;
+  houseMeaning?: string | null;
 };
 
-export function PlanetSheet({ planet, onClose, labelPlanet, labelSign }: Props) {
+export function PlanetSheet({
+  planet,
+  onClose,
+  labelPlanet,
+  labelSign,
+  strength,
+  houseTitle,
+  houseMeaning,
+}: Props) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
+  const [showDetails, setShowDetails] = useState(false);
   if (!planet) return null;
 
   const rows: Array<[string, string]> = [
@@ -35,6 +53,8 @@ export function PlanetSheet({ planet, onClose, labelPlanet, labelSign }: Props) 
   if (planet.subLord) {
     rows.push(["Sub lord", labelPlanet(planet.subLord)]);
   }
+
+  const why = strength ? strengthWhy(strength.reasons, t, labelPlanet) : "";
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
@@ -69,15 +89,48 @@ export function PlanetSheet({ planet, onClose, labelPlanet, labelSign }: Props) 
               <Text variant="muted">Close</Text>
             </Pressable>
           </View>
+
           <ScrollView style={{ marginTop: spacing.md }}>
-            {rows.map(([label, value]) => (
-              <View key={label} style={{ marginBottom: spacing.sm }}>
-                <Text variant="eyebrow">{label}</Text>
+            {strength ? (
+              <View style={{ marginBottom: spacing.md, gap: spacing.xs }}>
+                <StrengthBadge level={strength.level} />
+                {why ? (
+                  <Text variant="soft" style={{ color: colors.textSoft }}>
+                    {why}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+
+            {houseMeaning ? (
+              <View style={{ marginBottom: spacing.md }}>
+                <Text variant="eyebrow">
+                  {planet.house != null ? `H${planet.house}` : ""} {houseTitle ?? ""}
+                </Text>
                 <Text variant="soft" style={{ marginTop: 2 }}>
-                  {value}
+                  {houseMeaning}
                 </Text>
               </View>
-            ))}
+            ) : null}
+
+            <Pressable onPress={() => setShowDetails((v) => !v)} hitSlop={8}>
+              <Text variant="muted" style={{ color: colors.brassSoft }}>
+                {t("astroDetails")} {showDetails ? "▾" : "▸"}
+              </Text>
+            </Pressable>
+
+            {showDetails ? (
+              <View style={{ marginTop: spacing.sm }}>
+                {rows.map(([label, value]) => (
+                  <View key={label} style={{ marginBottom: spacing.sm }}>
+                    <Text variant="eyebrow">{label}</Text>
+                    <Text variant="soft" style={{ marginTop: 2 }}>
+                      {value}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </ScrollView>
         </Pressable>
       </Pressable>
