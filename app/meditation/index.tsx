@@ -94,6 +94,8 @@ export default function MeditationHubScreen() {
       >
         <Rise>
           <PageHero
+            fullBleed
+            backFallback="/(tabs)/home"
             image={images.krishnaGlade}
             eyebrow={t("medEyebrow")}
             title={t("medInnerTemple")}
@@ -267,7 +269,7 @@ export default function MeditationHubScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingTop: spacing.md, paddingBottom: spacing.xxl },
+  content: { paddingTop: 0, paddingBottom: spacing.xxl },
   pathTrack: {
     height: 4,
     borderRadius: 2,

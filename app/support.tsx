@@ -26,11 +26,12 @@ export default function SupportScreen() {
       >
         <Rise>
           <PageHero
+            fullBleed
+            backFallback="/(tabs)/home"
             image={images.pathPaths}
             eyebrow={t("supportEyebrow")}
             title={t("homeBlockSupportTitle")}
             intro={t("supportHeroBody")}
-            compact
           />
         </Rise>
 

@@ -56,6 +56,8 @@ export default function PathsScreen() {
       >
         <Rise>
           <PageHero
+            fullBleed
+            backFallback="/(tabs)/home"
             image={images.pathPaths}
             eyebrow={t("homeLifestyleEyebrow")}
             title={t("homeBlockPathsTitle")}

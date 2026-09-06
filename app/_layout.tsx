@@ -94,32 +94,23 @@ function RootNavigator() {
         />
         <Stack.Screen name="sloka/[id]" options={{ title: "Verse" }} />
         <Stack.Screen name="verse-of-the-day" options={{ title: "Verse of the Day" }} />
-        <Stack.Screen name="japa" options={{ title: "Japa" }} />
-        <Stack.Screen name="panchang" options={{ title: "Panchang" }} />
+        <Stack.Screen name="japa" options={{ headerShown: false }} />
+        <Stack.Screen name="panchang" options={{ headerShown: false }} />
         <Stack.Screen
           name="panchang-calendar"
           options={{ title: "Month calendar" }}
         />
         <Stack.Screen name="sadhana" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="community"
-          options={{ title: t("homeBlockSanghaTitle") }}
-        />
-        <Stack.Screen
-          name="care"
-          options={{ title: t("homeBlockCareTitle") }}
-        />
-        <Stack.Screen
-          name="support"
-          options={{ title: t("homeBlockSupportTitle") }}
-        />
-        <Stack.Screen name="paths/index" options={{ title: "Paths" }} />
-        <Stack.Screen name="paths/[id]" options={{ title: "Path" }} />
+        <Stack.Screen name="community" options={{ headerShown: false }} />
+        <Stack.Screen name="care" options={{ headerShown: false }} />
+        <Stack.Screen name="support" options={{ headerShown: false }} />
+        <Stack.Screen name="paths/index" options={{ headerShown: false }} />
+        <Stack.Screen name="paths/[id]" options={{ headerShown: false }} />
         {/* Unregistered until now, so all three fell back to expo-router's
             default header instead of the app's. */}
         <Stack.Screen
           name="meditation/index"
-          options={{ title: t("medEyebrow") }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen name="meditation/[day]" options={{ title: "Day" }} />
         <Stack.Screen

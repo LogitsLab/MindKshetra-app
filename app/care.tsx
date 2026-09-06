@@ -33,11 +33,12 @@ export default function CareScreen() {
       >
         <Rise>
           <PageHero
+            fullBleed
+            backFallback="/(tabs)/home"
             image={images.pathMood}
             eyebrow={t("careEyebrow")}
             title={t("homeBlockCareTitle")}
             intro={t("careHeroBody")}
-            compact
           />
         </Rise>
 

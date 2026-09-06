@@ -47,6 +47,8 @@ export default function CommunityScreen() {
       >
         <Rise>
           <PageHero
+            fullBleed
+            backFallback="/(tabs)/home"
             image={images.pathCommunity}
             eyebrow={t("homeBlockSanghaTitle")}
             title={t("homeTogetherTitle")}

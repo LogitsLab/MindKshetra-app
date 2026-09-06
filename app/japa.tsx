@@ -273,18 +273,18 @@ export default function JapaScreen() {
       mantraId !== CUSTOM_MANTRA_ID || customNaam.trim().length > 0;
     return (
       <Screen atmosphere="soft" padded testID="screen-japa">
-        <ScreenHeader showBack backFallback="/(tabs)/home" />
         <KeyboardFormScroll
           contentContainerStyle={{ paddingBottom: spacing.xxl }}
           keyboardShouldPersistTaps="handled"
         >
           <Rise>
             <PageHero
+              fullBleed
+              backFallback="/(tabs)/home"
               image={images.krishnaCharan}
               eyebrow={t("homeJapaTitle")}
               title={t("japaSetupTitle")}
               intro={t("japaSetupIntro")}
-              compact
             />
           </Rise>
 

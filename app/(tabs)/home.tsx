@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Circle, Path } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -99,8 +100,12 @@ export default function HomeScreen() {
 
   const medProgress = Math.min(1, med.completedDays.length / (sittingProgram.days_count || 45));
 
-  // Paths — the original "Paths into" set, its own tile images, minus Madhav (FAB).
-  const pathsRail: RailItem[] = HOME_PATHS.filter((p) => p.mark !== "madhav").map((p) => ({
+  // Paths — the original "Paths into" set, its own tile images. Madhav lives in
+  // the FAB, and Meditation lives in the Practice rail below — drop both here so
+  // nothing is offered twice.
+  const pathsRail: RailItem[] = HOME_PATHS.filter(
+    (p) => p.mark !== "madhav" && p.mark !== "meditation"
+  ).map((p) => ({
     key: p.mark,
     image: p.image,
     imageFocus: p.imageFocus,
@@ -179,9 +184,9 @@ export default function HomeScreen() {
             {t("homeCommunityEyebrow")}
           </Text>
           <View style={styles.chipRow}>
-            <CommunityChip glyph="☸" label={t("homeCommunityCommunity")} onPress={() => router.push("/community")} />
-            <CommunityChip glyph="♥" label={t("homeCommunityCare")} onPress={() => router.push("/care")} />
-            <CommunityChip glyph="✦" label={t("homeCommunityDana")} onPress={() => router.push("/support")} />
+            <CommunityChip icon={<WheelIcon />} label={t("homeCommunityCommunity")} onPress={() => router.push("/community")} />
+            <CommunityChip icon={<HeartIcon />} label={t("homeCommunityCare")} onPress={() => router.push("/care")} />
+            <CommunityChip icon={<LotusIcon />} label={t("homeCommunityDana")} onPress={() => router.push("/support")} />
           </View>
         </Rise>
       </ScrollView>
@@ -316,12 +321,69 @@ function Rail({ items, onPress }: { items: RailItem[]; onPress: (href: Href) => 
   );
 }
 
+/** Sangha — an eight-spoke dharma wheel, matching the PathMark line style. */
+function WheelIcon({ size = 18 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="8.5" stroke="#c9a227" strokeWidth="1.25" opacity={0.6} />
+      <Circle cx="12" cy="12" r="2.6" stroke="#e2c45a" strokeWidth="1.25" />
+      <Path
+        d="M12 8.4V4.2 M12 15.6V19.8 M15.6 12H19.8 M8.4 12H4.2 M14.55 9.45L17.52 6.48 M14.55 14.55L17.52 17.52 M9.45 14.55L6.48 17.52 M9.45 9.45L6.48 6.48"
+        stroke="#e2c45a"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+/** Care — a soft heart outline. */
+function HeartIcon({ size = 18 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 20.5C12 20.5 4 15 4 9.2A4 4 0 0 1 12 7.6 4 4 0 0 1 20 9.2C20 15 12 20.5 12 20.5Z"
+        stroke="#e2c45a"
+        strokeWidth="1.25"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** Dāna — a lotus, the giving-hand of the offering. */
+function LotusIcon({ size = 18 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 5.5C13.7 8 13.7 11 12 13.6C10.3 11 10.3 8 12 5.5Z"
+        stroke="#e2c45a"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M12 13.6C9.4 12.7 7 10.6 6.4 8C9 8 11 10.6 12 13.6Z M12 13.6C14.6 12.7 17 10.6 17.6 8C15 8 13 10.6 12 13.6Z"
+        stroke="#c9a227"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M5.5 15.5C7.5 17.6 16.5 17.6 18.5 15.5"
+        stroke="#c9a227"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+        opacity={0.7}
+      />
+    </Svg>
+  );
+}
+
 function CommunityChip({
-  glyph,
+  icon,
   label,
   onPress,
 }: {
-  glyph: string;
+  icon: React.ReactNode;
   label: string;
   onPress: () => void;
 }) {
@@ -336,7 +398,7 @@ function CommunityChip({
         { borderColor: colors.line, backgroundColor: colors.surface, opacity: pressed ? 0.85 : 1 },
       ]}
     >
-      <Text style={{ color: colors.brassSoft, fontSize: 15 }}>{glyph}</Text>
+      {icon}
       <Text variant="muted" color={colors.textSoft} style={{ fontSize: 12.5 }} numberOfLines={1}>
         {label}
       </Text>

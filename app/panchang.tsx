@@ -12,6 +12,7 @@ import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { EmptyState } from "@/components/SlokaCard";
 import { SpeakButton } from "@/components/SpeakButton";
 import { useLanguage } from "@/context/LanguageContext";
@@ -97,7 +98,8 @@ export default function PanchangScreen() {
 
   if (loading) {
     return (
-      <Screen atmosphere="soft">
+      <Screen atmosphere="soft" padded>
+        <ScreenHeader showBack showBrand={false} backFallback="/(tabs)/home" />
         <ActivityIndicator color={colors.brass} style={{ marginTop: spacing.xl }} />
       </Screen>
     );
@@ -105,7 +107,8 @@ export default function PanchangScreen() {
 
   if (error || !panchang) {
     return (
-      <Screen>
+      <Screen padded>
+        <ScreenHeader showBack showBrand={false} backFallback="/(tabs)/home" />
         <EmptyState
           title={t("panchangUnavailable")}
           body={t("panchangUnavailableBody")}
@@ -134,11 +137,13 @@ export default function PanchangScreen() {
   return (
     <Screen atmosphere="soft" testID="screen-panchang">
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
         <Rise>
           <PageHero
+            fullBleed
+            backFallback="/(tabs)/home"
             image={images.pathPanchangRing}
             eyebrow={t("panchangTitle")}
             title={formatDay(panchang.date, locale)}
