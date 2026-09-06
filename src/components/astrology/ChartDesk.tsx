@@ -374,6 +374,9 @@ export function ChartDesk({
           labelPlanet={labelPlanet}
           labelSign={labelSign}
           onPlanetPress={setSelectedId}
+          memberId={memberId}
+          chartSessionId={chartSessionId}
+          birth={birth ?? null}
         />
       ) : null}
 

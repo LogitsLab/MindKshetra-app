@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "@/components/Text";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
+import { astrologyApi } from "@/api/endpoints";
+import type { HouseReading } from "@/types/astrology";
 import {
   formatDmsInSign,
   glyphFor,
@@ -24,13 +26,55 @@ type Props = {
   labelPlanet: (id: string) => string;
   labelSign: (s: string) => string;
   onPlanetPress: (id: string) => void;
+  /** Chart context so the panel can fetch the LLM-reasoned reading. */
+  memberId?: string;
+  chartSessionId?: string;
+  birth?: Record<string, unknown> | null;
 };
 
-export function HousesPanel({ desk, labelPlanet, labelSign, onPlanetPress }: Props) {
-  const { t } = useLanguage();
-  const { colors } = useTheme();
+export function HousesPanel({
+  desk,
+  labelPlanet,
+  labelSign,
+  onPlanetPress,
+  memberId,
+  chartSessionId,
+  birth,
+}: Props) {
+  const { t, lang } = useLanguage();
+  const gated = desk.tobUnknown || !desk.ascendant;
 
-  if (desk.tobUnknown || !desk.ascendant) {
+  // LLM reading (grounded, cached server-side). While it loads — or if the
+  // backend is older and has no /houses route — the deterministic view shows.
+  const [readings, setReadings] = useState<Record<number, HouseReading> | null>(null);
+
+  useEffect(() => {
+    if (gated) return;
+    const hasContext = Boolean(memberId || chartSessionId || birth);
+    if (!hasContext) return;
+    const controller = new AbortController();
+    const body: Record<string, unknown> = { language: lang };
+    if (memberId) body.memberId = memberId;
+    else if (chartSessionId) {
+      body.chartSessionId = chartSessionId;
+      if (birth) body.birth = birth;
+    } else if (birth) body.birth = birth;
+
+    astrologyApi
+      .houses(body, controller.signal)
+      .then((res) => {
+        if (!res.housesText?.houses) return;
+        const map: Record<number, HouseReading> = {};
+        for (const h of res.housesText.houses) map[h.house] = h;
+        setReadings(map);
+      })
+      .catch(() => {
+        /* stale backend / offline → keep deterministic view */
+      });
+    return () => controller.abort();
+  }, [gated, memberId, chartSessionId, birth, lang]);
+
+  if (gated) {
     return <Text variant="muted">{t("astroTobBanner")}</Text>;
   }
 
@@ -54,6 +98,7 @@ export function HousesPanel({ desk, labelPlanet, labelSign, onPlanetPress }: Pro
             lord={lord}
             level={strength.level}
             reasons={strength.reasons}
+            reading={readings?.[house]}
             labelPlanet={labelPlanet}
             labelSign={labelSign}
             onPlanetPress={onPlanetPress}
@@ -70,6 +115,7 @@ function HouseCard({
   lord,
   level,
   reasons,
+  reading,
   labelPlanet,
   labelSign,
   onPlanetPress,
@@ -79,6 +125,7 @@ function HouseCard({
   lord: ReturnType<typeof houseLordPlacement>;
   level: StrengthLevel;
   reasons: StrengthReason[];
+  reading?: HouseReading;
   labelPlanet: (id: string) => string;
   labelSign: (s: string) => string;
   onPlanetPress: (id: string) => void;
@@ -88,9 +135,12 @@ function HouseCard({
   const [open, setOpen] = useState(false);
   const sig = houseSignification(house);
   const title = sig ? (lang === "hi" ? sig.title.hi : sig.title.en) : `House ${house}`;
-  const meaning = sig ? (lang === "hi" ? sig.meaning.hi : sig.meaning.en) : "";
 
-  const why = strengthWhy(reasons, t, labelPlanet);
+  // Prefer the LLM reading; fall back to the deterministic model.
+  const effectiveLevel: StrengthLevel = reading?.strength ?? level;
+  const meaning =
+    reading?.meaning || (sig ? (lang === "hi" ? sig.meaning.hi : sig.meaning.en) : "");
+  const why = reading?.why || strengthWhy(reasons, t, labelPlanet);
 
   return (
     <View style={[styles.card, { borderColor: colors.line, backgroundColor: colors.panel }]}>
@@ -102,7 +152,7 @@ function HouseCard({
           {title}
         </Text>
         <View style={{ flex: 1 }} />
-        <StrengthBadge level={level} />
+        <StrengthBadge level={effectiveLevel} />
       </View>
 
       <Text variant="muted" style={{ marginTop: 2 }}>
