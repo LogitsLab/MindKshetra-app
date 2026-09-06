@@ -17,19 +17,16 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { BrandMark } from "@/components/BrandMark";
 import { BRAND_NAME } from "@/components/BrandWordmark";
 import { Text } from "@/components/Text";
-import { MoodIcon } from "@/components/MoodIcon";
 import { Rise } from "@/components/Rise";
 import {
   EMPTY_PERSONALIZATION,
   PERSONALIZATION_STORAGE_KEY,
   type PersonalizationDraft,
 } from "@/data/personalization";
-import { moods, previewMoodIds } from "@/data/moods";
 import { sittingProgram } from "@/data/meditation";
 import { useMeditationProgress } from "@/hooks/useMeditationProgress";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
-import { moodAccent } from "@/theme/assets";
 import { motion, radii, spacing } from "@/theme/tokens";
 
 const HOME_VISITED_KEY = "mindkshetra-home-visited";
@@ -269,16 +266,6 @@ export function HomeHero({
     return () => loop.stop();
   }, [breathe]);
 
-  const heroMoods = useMemo(() => {
-    return previewMoodIds
-      .map(
-        (id, i) =>
-          moods.find((m) => m.id === id) ?? moods[(dayIndex + i) % moods.length]
-      )
-      .filter(Boolean)
-      .slice(0, 4);
-  }, [dayIndex]);
-
   const lines = lang === "hi" ? ROTATING_LINES_HI : ROTATING_LINES_EN;
   const rotating = lines[dayIndex % lines.length];
   const greetingLang = lang === "hi" ? "hi" : "en";
@@ -401,14 +388,6 @@ export function HomeHero({
       >
         {returning ? rotating : t("homeHeroBody")}
       </Text>
-      {streak > 0 ? (
-        <Text variant="muted" color={colors.textMuted} style={styles.streakLine}>
-          {t("homeStreakDetail")
-            .replace("{current}", String(streak))
-            .replace("{best}", String(Math.max(streak, bestStreak)))}
-        </Text>
-      ) : null}
-
       {/* Primary CTA — the single main action on Home */}
       <Pressable
         onPress={() => router.push("/sadhana")}
@@ -443,88 +422,6 @@ export function HomeHero({
           </Text>
         </View>
         <Text style={{ color: colors.brass, fontSize: 22 }}>›</Text>
-      </Pressable>
-
-      {/* Quick actions */}
-      <View style={styles.quickRow}>
-        {(
-          [
-            { key: "japa", glyph: "ॐ", label: t("homeQuickJapa"), href: "/japa" },
-            { key: "panchang", glyph: "☾", label: t("homeQuickPanchang"), href: "/panchang" },
-            { key: "meditate", glyph: "❁", label: t("homeQuickMeditate"), href: "/meditation" },
-            { key: "reminders", glyph: "🔔", label: t("homeQuickReminders"), href: "/(tabs)/profile" },
-          ] as const
-        ).map((q) => (
-          <Pressable
-            key={q.key}
-            onPress={() => router.push(q.href)}
-            accessibilityRole="button"
-            accessibilityLabel={q.label}
-            style={styles.quickTile}
-          >
-            <View style={[styles.quickIcon, { borderColor: colors.line }]}>
-              <Text style={{ color: colors.brassSoft, fontSize: 18 }}>{q.glyph}</Text>
-            </View>
-            <Text variant="muted" color={colors.textSoft} style={styles.quickLabel}>
-              {q.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <View style={styles.moodHead}>
-        <View style={styles.textScrim}>
-          <Text variant="eyebrow" color={colors.brassSoft}>
-            {t("homeMoodsEyebrow")}
-          </Text>
-        </View>
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.moodRow}
-      >
-        {heroMoods.map((mood) => {
-          const accent = moodAccent[mood.id] ?? colors.brass;
-          return (
-            <Pressable
-              key={mood.id}
-              onPress={() => router.push(`/(tabs)/mood/${mood.id}`)}
-              style={({ pressed }) => [
-                styles.moodChip,
-                {
-                  borderColor: "rgba(201,162,39,0.28)",
-                  backgroundColor: pressed
-                    ? "rgba(7,9,15,0.72)"
-                    : "rgba(7,9,15,0.58)",
-                },
-              ]}
-            >
-              <MoodIcon id={mood.id} size={18} color={accent} />
-              <Text
-                variant="body"
-                color="rgba(232,228,220,0.96)"
-                style={{ fontSize: 13, fontFamily: "Sora_600SemiBold" }}
-              >
-                {lang === "hi" ? mood.labelHi : mood.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-      <Pressable
-        onPress={() => router.push("/(tabs)/mood")}
-        hitSlop={8}
-        accessibilityRole="link"
-        style={styles.moreFeelings}
-      >
-        <Text
-          variant="muted"
-          color={colors.brassSoft}
-          style={styles.allMoods}
-        >
-          {t("homeMoodsAll")}
-        </Text>
       </Pressable>
     </Rise>
   );

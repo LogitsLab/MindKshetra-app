@@ -1,5 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type ImageSourcePropType,
+} from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,8 +14,12 @@ import { Text } from "@/components/Text";
 import { Rise } from "@/components/Rise";
 import { HomeHero } from "@/components/HomeHero";
 import { VotdCarousel } from "@/components/VotdCarousel";
+import { CoverImage, type CoverImageFocus } from "@/components/CoverImage";
+import { MoodIcon } from "@/components/MoodIcon";
 import { ApiError } from "@/api/client";
 import { astrologyApi, userApi } from "@/api/endpoints";
+import { HOME_PATHS } from "@/data/homePaths";
+import { moods, previewMoodIds } from "@/data/moods";
 import { sittingProgram } from "@/data/meditation";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -17,20 +27,14 @@ import { useTheme } from "@/context/ThemeContext";
 import { useFeaturedVerses } from "@/hooks/useFeaturedVerses";
 import { useMeditationProgress } from "@/hooks/useMeditationProgress";
 import { usePanchang } from "@/hooks/usePanchang";
+import { images, moodAccent } from "@/theme/assets";
 import { motion, radii, spacing } from "@/theme/tokens";
 import { truncateAtWord } from "@/utils/text";
 
-/** Warm-to-dark gradient variants so rail cards aren't identical photo tiles. */
-const TINTS: [string, string][] = [
-  ["#3a2b1c", "#141a26"],
-  ["#243b3a", "#141a26"],
-  ["#2c2540", "#141a26"],
-  ["#3a2436", "#141a26"],
-];
-
 type RailItem = {
   key: string;
-  glyph: string;
+  image: ImageSourcePropType;
+  imageFocus?: CoverImageFocus;
   titleKey: string;
   descKey: string;
   href: Href;
@@ -95,19 +99,23 @@ export default function HomeScreen() {
 
   const medProgress = Math.min(1, med.completedDays.length / (sittingProgram.days_count || 45));
 
-  // Continue (learn / browse) — each destination appears once.
-  const continueRail: RailItem[] = [
-    { key: "explore", glyph: "☸", titleKey: "homeExploreTitle", descKey: "homeExploreBlurb", href: "/(tabs)/explore" },
-    { key: "mood", glyph: "☺", titleKey: "homeMoodTitle", descKey: "homeMoodBlurb", href: "/(tabs)/mood" },
-    { key: "astrology", glyph: "✦", titleKey: "homeAstroTitle", descKey: "homeAstroBlurb", href: "/(tabs)/astrology" },
-    { key: "paths", glyph: "✿", titleKey: "homeBlockPathsTitle", descKey: "homeBlockPathsBody", href: "/paths" },
-  ];
-  // Practice (do) — distinct set; meditation carries live progress.
+  // Paths — the original "Paths into" set, its own tile images, minus Madhav (FAB).
+  const pathsRail: RailItem[] = HOME_PATHS.filter((p) => p.mark !== "madhav").map((p) => ({
+    key: p.mark,
+    image: p.image,
+    imageFocus: p.imageFocus,
+    titleKey: p.titleKey,
+    descKey: p.blurbKey,
+    href: p.href,
+  }));
+
+  // Practice — the lifestyle set, same tile images as before.
   const practiceRail: RailItem[] = [
-    { key: "meditation", glyph: "❁", titleKey: "homeMeditationTitle", descKey: "homeMeditationBlurb", href: "/meditation", progress: medProgress },
-    { key: "sadhana", glyph: "🪔", titleKey: "homeSadhanaTitle", descKey: "homeSadhanaBody", href: "/sadhana" },
-    { key: "japa", glyph: "ॐ", titleKey: "homeJapaTitle", descKey: "homeJapaBody", href: "/japa" },
-    { key: "panchang", glyph: "☾", titleKey: "homeBlockPanchangTitle", descKey: "homeBlockPanchangBody", href: "/panchang" },
+    { key: "sadhana", image: images.pathSadhana, titleKey: "homeSadhanaTitle", descKey: "homeSadhanaBody", href: "/sadhana" },
+    { key: "meditation", image: images.pathMeditation, titleKey: "homeMeditationTitle", descKey: "homeMeditationBlurb", href: "/meditation", progress: medProgress },
+    { key: "japa", image: images.pathPaths, titleKey: "homeJapaTitle", descKey: "homeJapaBody", href: "/japa" },
+    { key: "panchang", image: images.pathPanchangRing, titleKey: "homeBlockPanchangTitle", descKey: "homeBlockPanchangBody", href: "/panchang" },
+    { key: "reminders", image: images.pathAstrology, titleKey: "homeBlockNotifTitle", descKey: "homeBlockNotifBody", href: "/(tabs)/profile" },
   ];
 
   return (
@@ -124,9 +132,14 @@ export default function HomeScreen() {
           bestStreak={best}
         />
 
-        {/* Info bar — timing cue, a single quiet row (not a card) */}
+        {/* Daily verse — the signature daily content, kept high */}
+        <Rise delay={motion.staggerMs * 2} style={{ marginTop: spacing.md }}>
+          <VotdCarousel verses={verses} error={votdError} stale={votdStale} />
+        </Rise>
+
+        {/* Panchang — sits above Today's feeling */}
         {muhurat || panchang?.tithi ? (
-          <Rise delay={motion.staggerMs * 2} style={{ marginTop: spacing.md }}>
+          <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.lg }}>
             <Pressable
               onPress={() => router.push("/panchang")}
               accessibilityRole="link"
@@ -134,7 +147,7 @@ export default function HomeScreen() {
             >
               <Text style={{ color: colors.brassSoft, fontSize: 15 }}>◷</Text>
               <Text variant="muted" color={colors.textSoft} style={styles.infoText} numberOfLines={1}>
-                {muhurat ? `${t("homeMuhuratCue").replace("{window}", muhurat)}` : ""}
+                {muhurat ? t("homeMuhuratCue").replace("{window}", muhurat) : ""}
                 {muhurat && panchang?.tithi ? " · " : ""}
                 {panchang?.tithi ?? ""}
               </Text>
@@ -143,44 +156,85 @@ export default function HomeScreen() {
           </Rise>
         ) : null}
 
-        {/* Daily verse — the one carousel */}
-        <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.lg }}>
-          <VotdCarousel verses={verses} error={votdError} stale={votdStale} />
+        {/* Today's feeling */}
+        <Rise delay={motion.staggerMs * 4} style={{ marginTop: spacing.lg }}>
+          <MoodSection />
         </Rise>
 
-        {/* Continue your path */}
-        <Rise delay={motion.staggerMs * 4} style={{ marginTop: spacing.xl }}>
-          <SectionHead
-            eyebrow={t("homeContinueEyebrow")}
-            actionLabel={t("homeSeeAll")}
-            onAction={() => router.push("/path")}
-          />
-          <Rail items={continueRail} onPress={(h) => router.push(h)} />
-        </Rise>
-
-        {/* Practice paths */}
+        {/* Paths */}
         <Rise delay={motion.staggerMs * 5} style={{ marginTop: spacing.xl }}>
-          <SectionHead
-            eyebrow={t("homePracticePathsEyebrow")}
-            actionLabel={t("homeSeeAll")}
-            onAction={() => router.push("/(tabs)/practise")}
-          />
+          <SectionHead eyebrow={t("homePaths")} onAction={() => router.push("/path")} actionLabel={t("homeSeeAll")} />
+          <Rail items={pathsRail} onPress={(h) => router.push(h)} />
+        </Rise>
+
+        {/* Practice */}
+        <Rise delay={motion.staggerMs * 6} style={{ marginTop: spacing.xl }}>
+          <SectionHead eyebrow={t("homePracticePathsEyebrow")} onAction={() => router.push("/(tabs)/practise")} actionLabel={t("homeSeeAll")} />
           <Rail items={practiceRail} onPress={(h) => router.push(h)} />
         </Rise>
 
-        {/* Community & support — compact chips, not tall cards */}
-        <Rise delay={motion.staggerMs * 6} style={{ marginTop: spacing.xl }}>
+        {/* Community & support — 3 consistent chips */}
+        <Rise delay={motion.staggerMs * 7} style={{ marginTop: spacing.xl }}>
           <Text variant="eyebrow" color={colors.brassSoft}>
             {t("homeCommunityEyebrow")}
           </Text>
           <View style={styles.chipRow}>
-            <CommunityChip label={t("homeCommunityCommunity")} onPress={() => router.push("/community")} />
-            <CommunityChip label={t("homeCommunityCare")} care onPress={() => router.push("/care")} />
-            <CommunityChip label={t("homeCommunityDana")} onPress={() => router.push("/support")} />
+            <CommunityChip glyph="☸" label={t("homeCommunityCommunity")} onPress={() => router.push("/community")} />
+            <CommunityChip glyph="♥" label={t("homeCommunityCare")} onPress={() => router.push("/care")} />
+            <CommunityChip glyph="✦" label={t("homeCommunityDana")} onPress={() => router.push("/support")} />
           </View>
         </Rise>
       </ScrollView>
     </Screen>
+  );
+}
+
+function MoodSection() {
+  const router = useRouter();
+  const { colors } = useTheme();
+  const { t, lang } = useLanguage();
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  const heroMoods = useMemo(
+    () =>
+      previewMoodIds
+        .map((id, i) => moods.find((m) => m.id === id) ?? moods[(dayIndex + i) % moods.length])
+        .filter(Boolean)
+        .slice(0, 5),
+    [dayIndex]
+  );
+  return (
+    <View>
+      <Text variant="eyebrow" color={colors.brassSoft}>
+        {t("homeMoodsEyebrow")}
+      </Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.moodRow}
+        style={{ marginHorizontal: -spacing.md }}
+      >
+        {heroMoods.map((mood) => {
+          const accent = moodAccent[mood.id] ?? colors.brass;
+          return (
+            <Pressable
+              key={mood.id}
+              onPress={() => router.push(`/(tabs)/mood/${mood.id}`)}
+              style={[styles.moodChip, { borderColor: colors.line, backgroundColor: colors.surface }]}
+            >
+              <MoodIcon id={mood.id} size={18} color={accent} />
+              <Text variant="muted" color={colors.textSoft} style={styles.moodLabel}>
+                {lang === "hi" ? mood.labelHi : mood.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+      <Pressable onPress={() => router.push("/(tabs)/mood")} hitSlop={8} style={styles.moreFeelings}>
+        <Text variant="muted" color={colors.brassSoft} style={{ fontSize: 12 }}>
+          {t("homeMoodsAll")}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -208,13 +262,7 @@ function SectionHead({
   );
 }
 
-function Rail({
-  items,
-  onPress,
-}: {
-  items: RailItem[];
-  onPress: (href: Href) => void;
-}) {
+function Rail({ items, onPress }: { items: RailItem[]; onPress: (href: Href) => void }) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   return (
@@ -224,26 +272,32 @@ function Rail({
       contentContainerStyle={styles.rail}
       style={{ marginHorizontal: -spacing.md }}
     >
-      {items.map((item, i) => (
+      {items.map((item) => (
         <Pressable
           key={item.key}
           testID={`home-rail-${item.key}`}
           onPress={() => onPress(item.href)}
           accessibilityRole="button"
           accessibilityLabel={t(item.titleKey as never)}
-          style={[styles.railCard, { borderColor: colors.hairline }]}
+          style={[styles.railCard, { borderColor: colors.line }]}
         >
-          <LinearGradient colors={TINTS[i % TINTS.length]} style={styles.railArt}>
-            <View style={[styles.railBadge, { borderColor: colors.line }]}>
-              <Text style={{ color: colors.brassSoft, fontSize: 15 }}>{item.glyph}</Text>
-            </View>
-          </LinearGradient>
-          <View style={styles.railBody}>
-            <Text variant="body" color={colors.text} style={styles.railTitle} numberOfLines={1}>
+          <CoverImage source={item.image} opacity={0.85} focus={item.imageFocus} />
+          <LinearGradient
+            colors={["rgba(7,9,15,0.1)", "rgba(7,9,15,0.45)", "rgba(7,9,15,0.9)"]}
+            locations={[0, 0.5, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.railCopy}>
+            <Text variant="title" color={colors.onMedia} numberOfLines={1} style={styles.railTitle}>
               {t(item.titleKey as never)}
             </Text>
-            <Text variant="muted" color={colors.textMuted} style={styles.railDesc} numberOfLines={2}>
-              {truncateAtWord(t(item.descKey as never), 48)}
+            <Text
+              variant="muted"
+              color={colors.onMediaMuted}
+              numberOfLines={2}
+              style={styles.railDesc}
+            >
+              {truncateAtWord(t(item.descKey as never), 46)}
             </Text>
             {item.progress != null ? (
               <View style={styles.railBarTrack}>
@@ -263,13 +317,13 @@ function Rail({
 }
 
 function CommunityChip({
+  glyph,
   label,
   onPress,
-  care,
 }: {
+  glyph: string;
   label: string;
   onPress: () => void;
-  care?: boolean;
 }) {
   const { colors } = useTheme();
   return (
@@ -279,15 +333,11 @@ function CommunityChip({
       accessibilityLabel={label}
       style={({ pressed }) => [
         styles.chip,
-        {
-          borderColor: care ? "rgba(224,138,146,0.45)" : colors.line,
-          backgroundColor: care ? "rgba(224,138,146,0.08)" : colors.surface,
-          opacity: pressed ? 0.85 : 1,
-        },
+        { borderColor: colors.line, backgroundColor: colors.surface, opacity: pressed ? 0.85 : 1 },
       ]}
     >
-      <Text variant="muted" color={care ? "#e08a92" : colors.textSoft} style={{ fontSize: 13 }}>
-        {care ? "♥ " : ""}
+      <Text style={{ color: colors.brassSoft, fontSize: 15 }}>{glyph}</Text>
+      <Text variant="muted" color={colors.textSoft} style={{ fontSize: 12.5 }} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>
@@ -304,58 +354,59 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   infoText: { flex: 1, fontSize: 12.5, lineHeight: 16 },
+  moodRow: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
+  },
+  moodChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  moodLabel: { fontSize: 13, fontFamily: "Sora_600SemiBold" },
+  moreFeelings: { alignSelf: "flex-end", marginTop: spacing.sm, paddingVertical: spacing.xs },
   sectionHead: {
     flexDirection: "row",
     alignItems: "baseline",
     justifyContent: "space-between",
     marginBottom: spacing.md,
   },
-  rail: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
+  rail: { paddingHorizontal: spacing.md, gap: spacing.sm },
   railCard: {
-    width: 148,
+    width: 150,
+    height: 172,
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth * 2,
     overflow: "hidden",
-    backgroundColor: "rgba(238,242,247,0.045)",
-  },
-  railArt: {
-    height: 74,
     justifyContent: "flex-end",
-    padding: spacing.sm,
+    backgroundColor: "#0e1420",
+    position: "relative",
   },
-  railBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    backgroundColor: "rgba(7,9,15,0.55)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  railBody: { padding: spacing.sm + 2 },
-  railTitle: { fontSize: 14, fontFamily: "Sora_600SemiBold" },
+  railCopy: { padding: spacing.sm + 2, zIndex: 1 },
+  railTitle: { fontSize: 15, lineHeight: 19 },
   railDesc: { marginTop: 3, fontSize: 11, lineHeight: 15 },
   railBarTrack: {
     height: 5,
     borderRadius: 5,
     marginTop: 8,
-    backgroundColor: "rgba(255,255,255,0.09)",
+    backgroundColor: "rgba(255,255,255,0.14)",
     overflow: "hidden",
   },
   railBarFill: { height: "100%", borderRadius: 5 },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
+  chipRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
   chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 999,
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
     borderWidth: StyleSheet.hairlineWidth * 2,
   },
 });
