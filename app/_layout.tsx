@@ -100,7 +100,7 @@ function RootNavigator() {
           name="panchang-calendar"
           options={{ title: "Month calendar" }}
         />
-        <Stack.Screen name="sadhana" options={{ title: "Sādhana" }} />
+        <Stack.Screen name="sadhana" options={{ headerShown: false }} />
         <Stack.Screen
           name="community"
           options={{ title: t("homeBlockSanghaTitle") }}

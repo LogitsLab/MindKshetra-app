@@ -12,7 +12,6 @@ import { Screen } from "@/components/Screen";
 import { KeyboardFormScroll, fieldInputProps } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
-import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -157,7 +156,6 @@ export default function PersonalizeSettingsScreen() {
 
   return (
     <Screen>
-      <ScreenHeader showBack title={t("personalizeTitle")} />
       <KeyboardFormScroll
         contentContainerStyle={styles.pad}
         showsVerticalScrollIndicator={false}

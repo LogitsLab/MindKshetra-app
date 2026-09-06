@@ -8,8 +8,10 @@ import {
   type ViewStyle,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CoverImage } from "@/components/CoverImage";
 import { Text } from "@/components/Text";
+import { BackButton, HeaderBrandRight } from "@/components/ScreenHeader";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
@@ -26,6 +28,14 @@ type Props = {
   children?: ReactNode;
   /** Slightly shorter, for quiet pages like Care. */
   compact?: boolean;
+  /**
+   * Edge-to-edge hero that covers the complete top (under the status bar) with a
+   * floating back + brand. The screen must use `padded={false}` and drop the
+   * top safe-area edge, and hide the native header.
+   */
+  fullBleed?: boolean;
+  /** Where the floating back button goes if history is empty (fullBleed). */
+  backFallback?: string;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 };
@@ -47,11 +57,14 @@ export function PageHero({
   actions,
   children,
   compact = false,
+  fullBleed = false,
+  backFallback,
   onPress,
   style,
 }: Props) {
   const { colors } = useTheme();
   const { lang } = useLanguage();
+  const insets = useSafeAreaInsets();
   const blurb = intro ?? body;
   const hiEyebrow =
     lang === "hi"
@@ -70,7 +83,18 @@ export function PageHero({
         locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
-      <View style={styles.copy}>
+      {fullBleed ? (
+        <View style={[styles.floatBar, { top: insets.top + spacing.sm }]}>
+          <BackButton fallback={backFallback} />
+          <HeaderBrandRight />
+        </View>
+      ) : null}
+      <View
+        style={[
+          styles.copy,
+          fullBleed && { paddingTop: insets.top + 72, paddingBottom: spacing.xl },
+        ]}
+      >
         {eyebrow ? (
           <Text variant="eyebrow" color={colors.brassSoft} style={hiEyebrow}>
             {eyebrow}
@@ -99,12 +123,14 @@ export function PageHero({
     </>
   );
 
-  const bandStyle = [
-    styles.band,
-    compact ? styles.bandCompact : styles.bandTall,
-    { borderColor: colors.line },
-    style,
-  ];
+  const bandStyle = fullBleed
+    ? [styles.fullBleedBand, { marginTop: -insets.top, minHeight: 300 + insets.top }, style]
+    : [
+        styles.band,
+        compact ? styles.bandCompact : styles.bandTall,
+        { borderColor: colors.line },
+        style,
+      ];
 
   if (onPress) {
     return (
@@ -137,6 +163,23 @@ const styles = StyleSheet.create({
   },
   bandCompact: {
     minHeight: 196,
+  },
+  fullBleedBand: {
+    // Break out of the Screen's horizontal padding so the image reaches both edges.
+    marginHorizontal: -spacing.md,
+    overflow: "hidden",
+    justifyContent: "flex-end",
+    position: "relative",
+    backgroundColor: "#0e1420",
+  },
+  floatBar: {
+    position: "absolute",
+    left: spacing.md,
+    right: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    zIndex: 2,
   },
   copy: {
     paddingHorizontal: spacing.lg,

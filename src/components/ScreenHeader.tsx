@@ -3,16 +3,18 @@ import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { BrandNavLabel } from "@/components/BrandWordmark";
+import { BrandMark } from "@/components/BrandMark";
 import { Text } from "@/components/Text";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 
-/** Stack `headerRight` lockup — brand credit. */
+/** Stack `headerRight` lockup — mark + name, once (credit lives on Home/boot). */
 export function HeaderBrandRight() {
   return (
     <View style={styles.brandRight}>
-      <BrandNavLabel showCredit />
+      <BrandMark size={16} />
+      <BrandNavLabel showCredit={false} />
     </View>
   );
 }
@@ -120,11 +122,7 @@ export function ScreenHeader({
           </View>
         ) : null}
       </View>
-      {showBrand ? (
-        <View style={styles.brandRight}>
-          <BrandNavLabel showCredit />
-        </View>
-      ) : null}
+      {showBrand ? <HeaderBrandRight /> : null}
     </View>
   );
 }

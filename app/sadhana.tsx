@@ -16,7 +16,6 @@ import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
-import { ScreenHeader } from "@/components/ScreenHeader";
 import { MilestoneLine, takeNewMilestone } from "@/components/PracticeMarks";
 import { Rise } from "@/components/Rise";
 import { MoodIcon } from "@/components/MoodIcon";
@@ -448,11 +447,10 @@ export default function SadhanaScreen() {
 
   return (
     <Screen testID="screen-sadhana">
-      <ScreenHeader showBack backFallback="/(tabs)/home" />
       <KeyboardFormScroll
         contentContainerStyle={{
           paddingBottom: spacing.contentBottom,
-          paddingTop: spacing.sm,
+          paddingTop: 0,
         }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -464,6 +462,8 @@ export default function SadhanaScreen() {
             eyebrow={t("homeSadhanaEyebrow")}
             title={t("sadhanaMoodTitle")}
             intro={t("homeSadhanaBody")}
+            fullBleed
+            backFallback="/(tabs)/home"
           />
           {pathContext ? (
             <Text variant="muted" color={colors.brassSoft} style={{ marginTop: spacing.sm }}>
