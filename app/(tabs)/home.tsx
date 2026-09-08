@@ -15,6 +15,7 @@ import { Text } from "@/components/Text";
 import { Rise } from "@/components/Rise";
 import { HomeHero } from "@/components/HomeHero";
 import { VotdCarousel } from "@/components/VotdCarousel";
+import { SadhanaCard } from "@/components/SadhanaCard";
 import { CoverImage, type CoverImageFocus } from "@/components/CoverImage";
 import { MoodIcon } from "@/components/MoodIcon";
 import { ApiError } from "@/api/client";
@@ -28,7 +29,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useFeaturedVerses } from "@/hooks/useFeaturedVerses";
 import { useMeditationProgress } from "@/hooks/useMeditationProgress";
 import { usePanchang } from "@/hooks/usePanchang";
-import { images, moodAccent } from "@/theme/assets";
+import { images } from "@/theme/assets";
 import { motion, radii, spacing } from "@/theme/tokens";
 import { truncateAtWord } from "@/utils/text";
 
@@ -142,16 +143,22 @@ export default function HomeScreen() {
           <VotdCarousel verses={verses} error={votdError} stale={votdStale} />
         </Rise>
 
+        {/* Begin today's sādhana — the primary action, in the verse-card idiom
+            (replaces the hero ring-CTA) */}
+        <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.lg }}>
+          <SadhanaCard streak={streak} />
+        </Rise>
+
         {/* Panchang — sits above Today's feeling */}
         {muhurat || panchang?.tithi ? (
           <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.lg }}>
             <Pressable
               onPress={() => router.push("/panchang")}
               accessibilityRole="link"
-              style={[styles.infoBar, { borderColor: colors.hairline }]}
+              style={[styles.infoBar, { borderColor: colors.line, backgroundColor: colors.surface }]}
             >
               <Text style={{ color: colors.brassSoft, fontSize: 15 }}>◷</Text>
-              <Text variant="muted" color={colors.textSoft} style={styles.infoText} numberOfLines={1}>
+              <Text variant="muted" color={colors.text} style={styles.infoText} numberOfLines={1}>
                 {muhurat ? t("homeMuhuratCue").replace("{window}", muhurat) : ""}
                 {muhurat && panchang?.tithi ? " · " : ""}
                 {panchang?.tithi ?? ""}
@@ -218,21 +225,21 @@ function MoodSection() {
         contentContainerStyle={styles.moodRow}
         style={{ marginHorizontal: -spacing.md }}
       >
-        {heroMoods.map((mood) => {
-          const accent = moodAccent[mood.id] ?? colors.brass;
-          return (
-            <Pressable
-              key={mood.id}
-              onPress={() => router.push(`/(tabs)/mood/${mood.id}`)}
-              style={[styles.moodChip, { borderColor: colors.line, backgroundColor: colors.surface }]}
-            >
-              <MoodIcon id={mood.id} size={18} color={accent} />
-              <Text variant="muted" color={colors.textSoft} style={styles.moodLabel}>
-                {lang === "hi" ? mood.labelHi : mood.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {heroMoods.map((mood) => (
+          <Pressable
+            key={mood.id}
+            onPress={() => router.push(`/(tabs)/mood/${mood.id}`)}
+            style={[
+              styles.moodChip,
+              { borderColor: "rgba(201,162,39,0.45)", backgroundColor: colors.surfaceHover },
+            ]}
+          >
+            <MoodIcon id={mood.id} size={22} color={colors.brassSoft} />
+            <Text variant="muted" color={colors.text} style={styles.moodLabel}>
+              {lang === "hi" ? mood.labelHi : mood.label}
+            </Text>
+          </Pressable>
+        ))}
       </ScrollView>
       <Pressable onPress={() => router.push("/(tabs)/mood")} hitSlop={8} style={styles.moreFeelings}>
         <Text variant="muted" color={colors.brassSoft} style={{ fontSize: 12 }}>
@@ -267,15 +274,26 @@ function SectionHead({
   );
 }
 
+const RAIL_CARD_WIDTH = 150;
+
 function Rail({ items, onPress }: { items: RailItem[]; onPress: (href: Href) => void }) {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const [index, setIndex] = useState(0);
+  const stride = RAIL_CARD_WIDTH + spacing.sm;
   return (
+    <View>
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.rail}
       style={{ marginHorizontal: -spacing.md }}
+      scrollEventThrottle={16}
+      onScroll={(e) => {
+        const i = Math.round(e.nativeEvent.contentOffset.x / stride);
+        const clamped = Math.max(0, Math.min(items.length - 1, i));
+        setIndex((prev) => (prev === clamped ? prev : clamped));
+      }}
     >
       {items.map((item) => (
         <Pressable
@@ -318,6 +336,21 @@ function Rail({ items, onPress }: { items: RailItem[]; onPress: (href: Href) => 
         </Pressable>
       ))}
     </ScrollView>
+      {items.length > 1 ? (
+        <View style={styles.railDots}>
+          {items.map((item, i) => (
+            <View
+              key={item.key}
+              style={
+                i === index
+                  ? [styles.railDotActive, { backgroundColor: colors.brass }]
+                  : [styles.railDot, { backgroundColor: colors.textMuted }]
+              }
+            />
+          ))}
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -395,11 +428,15 @@ function CommunityChip({
       accessibilityLabel={label}
       style={({ pressed }) => [
         styles.chip,
-        { borderColor: colors.line, backgroundColor: colors.surface, opacity: pressed ? 0.85 : 1 },
+        {
+          borderColor: "rgba(201,162,39,0.38)",
+          backgroundColor: colors.surfaceHover,
+          opacity: pressed ? 0.85 : 1,
+        },
       ]}
     >
       {icon}
-      <Text variant="muted" color={colors.textSoft} style={{ fontSize: 12.5 }} numberOfLines={1}>
+      <Text variant="muted" color={colors.text} style={{ fontSize: 12.5 }} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>
@@ -412,8 +449,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
     paddingVertical: spacing.sm + 2,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
   },
   infoText: { flex: 1, fontSize: 12.5, lineHeight: 16 },
   moodRow: {
@@ -440,7 +478,7 @@ const styles = StyleSheet.create({
   },
   rail: { paddingHorizontal: spacing.md, gap: spacing.sm },
   railCard: {
-    width: 150,
+    width: RAIL_CARD_WIDTH,
     height: 172,
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth * 2,
@@ -460,6 +498,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   railBarFill: { height: "100%", borderRadius: 5 },
+  railDots: {
+    flexDirection: "row",
+    alignSelf: "center",
+    alignItems: "center",
+    gap: 5,
+    marginTop: spacing.sm,
+  },
+  railDotActive: { width: 16, height: 5, borderRadius: 3 },
+  railDot: { width: 5, height: 5, borderRadius: 3, opacity: 0.4 },
   chipRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
   chip: {
     flex: 1,

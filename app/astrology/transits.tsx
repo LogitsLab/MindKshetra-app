@@ -18,6 +18,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
 import type { AstrologyMember } from "@/types";
 import type { ChartPlanet } from "@/types/astrology";
+import { planetLabel, signLabel } from "@/components/astrology/chartModel";
 
 type TransitHit = {
   transitPlanet?: string;
@@ -242,10 +243,10 @@ export default function TransitsScreen() {
                 style={[styles.row, { borderBottomColor: colors.hairline }]}
               >
                 <Text variant="body" style={{ flex: 1 }}>
-                  {p.id ?? "—"}
+                  {p.id ? planetLabel(p.id, lang) : "—"}
                 </Text>
                 <Text variant="soft" style={{ flex: 1 }}>
-                  {p.sign ?? "—"}
+                  {signLabel(p.sign)}
                   {p.degreeInSign != null
                     ? ` ${p.degreeInSign.toFixed(1)}°`
                     : ""}
@@ -263,8 +264,8 @@ export default function TransitsScreen() {
               <View style={{ gap: spacing.xs }}>
                 {(transits.hits ?? []).map((h, i) => (
                   <Text key={`${h.transitPlanet}-${h.natalPlanet}-${i}`} variant="soft">
-                    {hi ? "गोचर" : "Transit"}: {h.transitPlanet} ≈{" "}
-                    {h.natalPlanet}
+                    {hi ? "गोचर" : "Transit"}: {planetLabel(h.transitPlanet, lang)} ≈{" "}
+                    {planetLabel(h.natalPlanet, lang)}
                     {h.orb != null ? ` (${h.orb}°)` : ""}
                   </Text>
                 ))}

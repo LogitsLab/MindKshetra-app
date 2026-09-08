@@ -38,20 +38,20 @@ export function PlanetSheet({
   if (!planet) return null;
 
   const rows: Array<[string, string]> = [
-    ["Longitude", `${planet.longitude.toFixed(2)}°`],
-    ["Sign", formatDmsInSign(planet.degreeInSign, labelSign(planet.sign))],
-    ["Nakshatra", `${planet.nakshatra} · pada ${planet.pada}`],
+    [t("astroLongitude"), `${planet.longitude.toFixed(2)}°`],
+    [t("astroSign"), formatDmsInSign(planet.degreeInSign, labelSign(planet.sign))],
+    [t("astroNakshatra"), `${planet.nakshatra} · ${t("astroPada")} ${planet.pada}`],
     [
-      "Nakshatra lord",
+      t("astroNakshatraLord"),
       planet.nakshatraLord ? labelPlanet(planet.nakshatraLord) : "—",
     ],
-    ["House", planet.house != null ? String(planet.house) : "—"],
+    [t("astroHouse"), planet.house != null ? String(planet.house) : "—"],
   ];
   if (planet.starLord) {
-    rows.push(["Star lord", labelPlanet(planet.starLord)]);
+    rows.push([t("astroStarLord"), labelPlanet(planet.starLord)]);
   }
   if (planet.subLord) {
-    rows.push(["Sub lord", labelPlanet(planet.subLord)]);
+    rows.push([t("astroSubLord"), labelPlanet(planet.subLord)]);
   }
 
   const why = strength ? strengthWhy(strength.reasons, t, labelPlanet) : "";
@@ -86,7 +86,7 @@ export function PlanetSheet({
               {planet.retrograde ? "  R" : ""}
             </Text>
             <Pressable onPress={onClose} hitSlop={12}>
-              <Text variant="muted">Close</Text>
+              <Text variant="muted">{t("astroClose")}</Text>
             </Pressable>
           </View>
 

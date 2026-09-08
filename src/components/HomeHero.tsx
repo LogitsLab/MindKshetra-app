@@ -13,7 +13,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Circle, Path } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 import { BrandMark } from "@/components/BrandMark";
 import { BRAND_NAME } from "@/components/BrandWordmark";
 import { Text } from "@/components/Text";
@@ -23,8 +23,6 @@ import {
   PERSONALIZATION_STORAGE_KEY,
   type PersonalizationDraft,
 } from "@/data/personalization";
-import { sittingProgram } from "@/data/meditation";
-import { useMeditationProgress } from "@/hooks/useMeditationProgress";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { motion, radii, spacing } from "@/theme/tokens";
@@ -121,51 +119,6 @@ function greetingFor(
       : "Ease into the night";
 }
 
-function ProgressRing({
-  pct,
-  size = 48,
-  color,
-  track,
-}: {
-  pct: number;
-  size?: number;
-  color: string;
-  track: string;
-}) {
-  const stroke = 3;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  return (
-    <Svg width={size} height={size}>
-      <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
-      <Circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke={color}
-        strokeWidth={stroke}
-        fill="none"
-        strokeDasharray={`${c * pct} ${c}`}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
-    </Svg>
-  );
-}
-
-function DiyaIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 4c2 2.4 3.2 4.3 3.2 6.2a3.2 3.2 0 11-6.4 0C8.8 8.3 10 6.4 12 4z"
-        stroke={color}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
 function CareIcon({ color, size = 15 }: { color: string; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -194,15 +147,7 @@ export function HomeHero({
   const { t, lang } = useLanguage();
   const [returning, setReturning] = useState(false);
   const [displayName, setDisplayName] = useState<string | null>(null);
-  const med = useMeditationProgress();
   const breathe = useRef(new Animated.Value(0)).current;
-  const ctaPct = Math.min(
-    1,
-    Math.max(
-      0.12,
-      med.completedDays.length / (sittingProgram.days_count || 45)
-    )
-  );
   const now = new Date();
   const hour = now.getHours();
   const dayIndex = Math.floor(Date.now() / 86400000);
@@ -354,21 +299,10 @@ export function HomeHero({
           accessibilityRole="button"
           accessibilityLabel={t("homeCareLabel")}
           hitSlop={8}
-          style={[styles.careBtn, { borderColor: "rgba(224,138,146,0.5)" }]}
+          style={styles.careBtn}
         >
           <CareIcon color="#e08a92" />
-          <View style={styles.careDot} />
         </Pressable>
-        {streak > 0 ? (
-          <View style={[styles.streakPill, styles.textScrim]}>
-            <View
-              style={[styles.brandDot, { backgroundColor: colors.brass }]}
-            />
-            <Text variant="muted" color={colors.brassSoft}>
-              {streak} {t("homeStreakLabel")}
-            </Text>
-          </View>
-        ) : null}
       </View>
 
       <Text
@@ -388,41 +322,14 @@ export function HomeHero({
       >
         {returning ? rotating : t("homeHeroBody")}
       </Text>
-      {/* Primary CTA — the single main action on Home */}
-      <Pressable
-        onPress={() => router.push("/sadhana")}
-        accessibilityRole="button"
-        accessibilityLabel={t("homeCtaPractice")}
-        style={({ pressed }) => [
-          styles.primaryCta,
-          {
-            borderColor: colors.brass,
-            opacity: pressed ? 0.92 : 1,
-            transform: [{ scale: pressed ? 0.99 : 1 }],
-          },
-        ]}
-      >
-        <View style={styles.ctaRing}>
-          <ProgressRing
-            pct={ctaPct}
-            size={48}
-            color={colors.brass}
-            track="rgba(255,255,255,0.12)"
-          />
-          <View style={styles.ctaRingCenter}>
-            <DiyaIcon color={colors.brassSoft} size={18} />
-          </View>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text variant="body" color={colors.text} style={styles.ctaTitle}>
-            {t("homeCtaPractice")}
-          </Text>
-          <Text variant="muted" color={colors.textMuted} style={styles.ctaSub}>
-            {t("homeCtaPracticeSub")}
+      {streak > 0 ? (
+        <View style={styles.heroStreak}>
+          <View style={[styles.brandDot, { backgroundColor: colors.brass }]} />
+          <Text variant="muted" color={colors.brassSoft}>
+            {streak} {t("homeStreakLabel")}
           </Text>
         </View>
-        <Text style={{ color: colors.brass, fontSize: 22 }}>›</Text>
-      </Pressable>
+      ) : null}
     </Rise>
   );
 }
@@ -448,12 +355,23 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     flexShrink: 1,
   },
-  streakPill: {
+  brandActions: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
     flexShrink: 0,
-    maxWidth: "28%",
+    height: 30,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    backgroundColor: "rgba(7,9,15,0.55)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(232,224,208,0.28)",
+  },
+  brandDivider: {
+    width: StyleSheet.hairlineWidth * 2,
+    height: 15,
+    backgroundColor: "rgba(232,224,208,0.25)",
+    marginHorizontal: 1,
   },
   brandDot: {
     width: 3,
@@ -517,55 +435,18 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(232,224,208,0.24)",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(7,9,15,0.4)",
-    position: "relative",
+    backgroundColor: "rgba(7,9,15,0.45)",
     flexShrink: 0,
   },
-  careDot: {
-    position: "absolute",
-    top: 4,
-    right: 5,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "#e0555f",
-  },
-  primaryCta: {
-    marginTop: spacing.lg,
+  heroStreak: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radii.lg,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    backgroundColor: "rgba(201,162,39,0.12)",
-  },
-  ctaRing: {
-    width: 48,
-    height: 48,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ctaRingCenter: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ctaTitle: {
-    fontSize: 15,
-    fontFamily: "Sora_600SemiBold",
-  },
-  ctaSub: {
-    marginTop: 3,
-    fontSize: 12,
-    lineHeight: 16,
+    gap: spacing.xs,
+    marginTop: spacing.md,
   },
   quickRow: {
     flexDirection: "row",

@@ -23,6 +23,12 @@ type Props = {
   starters: string[];
   pendingPrompt?: string | null;
   onPendingConsumed?: () => void;
+  /**
+   * The panel renders into the parent screen's ScrollView, so it can't scroll
+   * itself. The parent passes this and scrolls to end; the panel calls it after
+   * each streamed chunk and whenever the message list changes.
+   */
+  onStreamUpdate?: () => void;
 };
 
 export function ChartChatPanel({
@@ -33,6 +39,7 @@ export function ChartChatPanel({
   starters,
   pendingPrompt,
   onPendingConsumed,
+  onStreamUpdate,
 }: Props) {
   const { colors } = useTheme();
   const { lang, t } = useLanguage();
@@ -40,7 +47,17 @@ export function ChartChatPanel({
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
   const busyRef = useRef(false);
+  const onStreamUpdateRef = useRef(onStreamUpdate);
+  onStreamUpdateRef.current = onStreamUpdate;
+
+  // Follow the streaming reply to the bottom of the parent scroll. Kept in an
+  // effect keyed on the growing message content so it fires per painted chunk.
+  const lastMessage = messages[messages.length - 1];
+  useEffect(() => {
+    onStreamUpdateRef.current?.();
+  }, [messages.length, lastMessage?.content, busy]);
 
   async function send(text: string) {
     const content = text.trim();
@@ -181,12 +198,14 @@ export function ChartChatPanel({
           placeholderTextColor={colors.textMuted}
           multiline
           editable={!busy}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           style={{
             flex: 1,
             minHeight: 44,
             maxHeight: 120,
-            borderWidth: 1,
-            borderColor: colors.line,
+            borderWidth: 1.5,
+            borderColor: focused ? colors.brass : colors.brassSoft,
             borderRadius: radii.md,
             paddingHorizontal: spacing.sm,
             paddingVertical: spacing.sm,

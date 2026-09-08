@@ -5,6 +5,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
 import { Screen } from "@/components/Screen";
 import { KeyboardFormScroll } from "@/components/KeyboardForm";
 import { Text } from "@/components/Text";
@@ -62,6 +63,7 @@ export default function IncognitoChartScreen() {
   // session id / birth payload before React state has re-rendered.
   const sessionRef = useRef<string | null>(null);
   const birthRef = useRef<Record<string, unknown> | null>(null);
+  const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
 
   const predictions = usePredictions({
     language: lang,
@@ -192,6 +194,7 @@ export default function IncognitoChartScreen() {
   return (
     <Screen>
       <KeyboardFormScroll
+        ref={scrollRef}
         contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
         keyboardShouldPersistTaps="handled"
       >
@@ -236,6 +239,9 @@ export default function IncognitoChartScreen() {
               overview={overview}
               planets={planets}
               themeLine={themeLine}
+              onChatStreamUpdate={() =>
+                scrollRef.current?.scrollToEnd({ animated: true })
+              }
               dashaNode={
                 <DashaTimelinePanel
                   tree={dashaTree}

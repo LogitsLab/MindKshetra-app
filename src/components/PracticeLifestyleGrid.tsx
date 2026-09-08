@@ -341,17 +341,6 @@ export function PracticeLifestyleGrid({
   const tiles: TileSpec[] = useMemo(
     () => [
       {
-        key: "sadhana",
-        image: images.pathSadhana,
-        title: sadhanaDone ? t("homeSadhanaDone") : t("homeSadhanaTitle"),
-        body:
-          sadhanaDone && streak > 0
-            ? `${streak} ${t("homeStreakLabel")}`
-            : t("homeSadhanaBody"),
-        done: sadhanaDone,
-        onPress: () => router.push("/sadhana"),
-      },
-      {
         key: "meditation",
         image: images.pathMeditation,
         title: med.loading
@@ -362,6 +351,17 @@ export function PracticeLifestyleGrid({
         body: t("homeMeditationBlurb"),
         onPress: () =>
           router.push(med.loading ? "/meditation" : `/meditation/${sitDay}`),
+      },
+      {
+        key: "sadhana",
+        image: images.pathSadhana,
+        title: t("homeSadhanaName"),
+        body:
+          sadhanaDone && streak > 0
+            ? `${streak} ${t("homeStreakLabel")}`
+            : t("homeSadhanaBody"),
+        done: sadhanaDone,
+        onPress: () => router.push("/sadhana"),
       },
       {
         key: "japa",

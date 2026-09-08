@@ -26,6 +26,31 @@ export const SIGN_ABBR: Record<string, string> = {
   pisces: "Pi",
 };
 
+export const PLANET_LABELS: Record<string, { en: string; hi: string }> = {
+  sun: { en: "Sun", hi: "सूर्य" },
+  moon: { en: "Moon", hi: "चन्द्र" },
+  mars: { en: "Mars", hi: "मंगल" },
+  mercury: { en: "Mercury", hi: "बुध" },
+  jupiter: { en: "Jupiter", hi: "गुरु" },
+  venus: { en: "Venus", hi: "शुक्र" },
+  saturn: { en: "Saturn", hi: "शनि" },
+  rahu: { en: "Rahu", hi: "राहु" },
+  ketu: { en: "Ketu", hi: "केतु" },
+  ascendant: { en: "Ascendant", hi: "लग्न" },
+};
+
+/** Localised planet name, e.g. "sun" → "Sun" / "सूर्य". Falls back to the id. */
+export function planetLabel(id: string | null | undefined, lang: string): string {
+  if (!id) return "—";
+  const row = PLANET_LABELS[id];
+  return row ? (lang === "hi" ? row.hi : row.en) : id;
+}
+
+/** Capitalised sign name, e.g. "leo" → "Leo". */
+export function signLabel(s: string | null | undefined): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "—";
+}
+
 export const SIGNS = [
   "aries",
   "taurus",

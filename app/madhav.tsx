@@ -183,7 +183,6 @@ export default function MadhavScreen() {
     birthPayload,
     slokaId,
     chartExplicitlyCleared,
-    attachMemberChart,
     clearChartGrounding,
     clearPending,
     setStreaming,
@@ -299,8 +298,17 @@ export default function MadhavScreen() {
     };
   }, []);
 
-  // Chart-grounded default: when opening Madhav without verse/session context,
-  // quietly attach the self member chart if one exists. Fail soft.
+  // Ask Madhav is the *general* companion — it must answer from the Gita and
+  // everyday reflection, not turn into an astrologer. The chat API treats any
+  // request carrying a chart (member / session / birth) as chart-linked and
+  // replies astrology-only, with a hard ban on scripture (see ARCHITECTURE.md
+  // §7 and the web app's lib/astrology/predictions.ts). So we must NOT
+  // auto-attach the user's self chart here: doing so silently made every
+  // general question a chart reading. A chart is attached only when the user
+  // explicitly asks about one (askAboutChart / the Astrology chart panel).
+  //
+  // We still fetch members, but only to decide whether to show the "add your
+  // chart" invite. Fail soft.
   useEffect(() => {
     if (!isSignedIn) {
       setHasSavedCharts(null);
@@ -314,14 +322,7 @@ export default function MadhavScreen() {
       .members()
       .then((res) => {
         if (!alive) return;
-        const members = res.members ?? [];
-        setHasSavedCharts(members.length > 0);
-        if (!members.length) return;
-        const self =
-          members.find(
-            (m) => (m.relationship ?? "").toLowerCase() === "self"
-          ) ?? members[0];
-        if (self?.id) attachMemberChart(self.id, self.name);
+        setHasSavedCharts((res.members ?? []).length > 0);
       })
       .catch(() => {
         if (alive) setHasSavedCharts(null);
@@ -329,14 +330,7 @@ export default function MadhavScreen() {
     return () => {
       alive = false;
     };
-  }, [
-    isSignedIn,
-    slokaId,
-    memberId,
-    chartSessionId,
-    chartExplicitlyCleared,
-    attachMemberChart,
-  ]);
+  }, [isSignedIn, slokaId, memberId, chartSessionId, chartExplicitlyCleared]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next) => {

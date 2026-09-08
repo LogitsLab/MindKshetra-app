@@ -8,12 +8,14 @@ import {
   type ChartOverview,
   type ChartPlanet,
 } from "@/types/astrology";
+import { planetLabel, signLabel } from "@/components/astrology/chartModel";
 
 type Props = {
   overview?: ChartOverview | null;
   planets?: ChartPlanet[];
   tobUnknown?: boolean;
   themeLine?: string | null;
+  lang: string;
   labels: {
     asc: string;
     moon: string;
@@ -30,6 +32,7 @@ export function ChartOverviewPanel({
   planets = [],
   tobUnknown,
   themeLine,
+  lang,
   labels,
 }: Props) {
   const { colors } = useTheme();
@@ -50,13 +53,13 @@ export function ChartOverviewPanel({
       {overview ? (
         <View style={{ gap: 4, marginTop: spacing.xs }}>
           <Text variant="soft">
-            {labels.asc}: {String(overview.ascendantSign ?? "—")}
+            {labels.asc}: {signLabel(overview.ascendantSign)}
           </Text>
           <Text variant="soft">
-            {labels.moon}: {String(overview.moonSign ?? "—")}
+            {labels.moon}: {signLabel(overview.moonSign)}
           </Text>
           <Text variant="soft">
-            {labels.sun}: {String(overview.sunSign ?? "—")}
+            {labels.sun}: {signLabel(overview.sunSign)}
           </Text>
           <Text variant="soft">
             {labels.dasha}: {formatDashaLord(overview.currentMaha)}
@@ -73,7 +76,7 @@ export function ChartOverviewPanel({
           <Text variant="eyebrow">{labels.planet}</Text>
           {planets.slice(0, 14).map((row, i) => (
             <Text key={i} variant="muted" style={{ marginTop: 4 }}>
-              {String(row.id ?? row.name ?? "p")}: {String(row.sign ?? "—")}
+              {planetLabel(String(row.id ?? row.name ?? ""), lang)}: {signLabel(row.sign)}
               {row.house != null ? ` · H${row.house}` : ""}
               {row.nakshatra ? ` · ${row.nakshatra}` : ""}
               {row.retrograde ? " · R" : ""}

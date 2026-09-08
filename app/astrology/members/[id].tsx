@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -46,6 +46,7 @@ export default function AstrologyMemberDetailScreen() {
   const [tab, setTab] = useState<Tab>("chart");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const predictions = usePredictions({
     language: lang,
@@ -179,6 +180,7 @@ export default function AstrologyMemberDetailScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -208,6 +210,9 @@ export default function AstrologyMemberDetailScreen() {
               overview={overview}
               planets={planets}
               themeLine={themeLine}
+              onChatStreamUpdate={() =>
+                scrollRef.current?.scrollToEnd({ animated: true })
+              }
               dashaNode={
                 <DashaTimelinePanel
                   tree={dashaTree}

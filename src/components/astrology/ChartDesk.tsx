@@ -53,6 +53,8 @@ type Props = {
   themeLine?: string | null;
   dashaNode?: React.ReactNode;
   predictionsNode?: React.ReactNode;
+  /** Threaded to the chat panel so the parent scroll follows streamed replies. */
+  onChatStreamUpdate?: () => void;
 };
 
 function Chip({
@@ -100,6 +102,7 @@ export function ChartDesk({
   themeLine,
   dashaNode,
   predictionsNode,
+  onChatStreamUpdate,
 }: Props) {
   const { colors } = useTheme();
   const { lang, t } = useLanguage();
@@ -325,6 +328,7 @@ export function ChartDesk({
             planets={planets}
             tobUnknown={Boolean(chart.tobUnknown)}
             themeLine={themeLine}
+            lang={lang}
             labels={{
               asc: t("astroAsc"),
               moon: t("astroMoon"),
@@ -487,6 +491,7 @@ export function ChartDesk({
           starters={viewStarters}
           pendingPrompt={pendingChat}
           onPendingConsumed={() => setPendingChat(null)}
+          onStreamUpdate={onChatStreamUpdate}
         />
       ) : null}
 

@@ -79,6 +79,9 @@ export const en = {
   astroPlanet: "Planet",
   astroSign: "Sign",
   astroDegree: "Degree",
+  astroLongitude: "Longitude",
+  astroNakshatraLord: "Nakshatra lord",
+  astroClose: "Close",
   astroNakshatra: "Nakshatra",
   astroHouse: "House",
   astroNow: "now",
@@ -351,6 +354,16 @@ export const en = {
   astroStarterVarga: "What does this varga add to the Lagna chart?",
   astroTabVargas: "Vargas",
   astroTabKp: "KP",
+  astroMuhuratTitle: "Muhurats",
+  astroMuhuratApprox: "Timing windows are approximate.",
+  astroChoghadiya: "Choghadiya",
+  astroMuhuratUnavailable: "Muhurats are resting right now.",
+  astroMuhuratUnavailableBody:
+    "The windows couldn’t be loaded. Nothing you have saved is affected, trying again is usually enough.",
+  astroMuhuratRetry: "Try again",
+  astroChoghQualityGood: "good",
+  astroChoghQualityNeutral: "neutral",
+  astroChoghQualityAvoid: "avoid",
 } as const;
 
 export const hi: Record<keyof typeof en, string> = {
@@ -427,6 +440,9 @@ export const hi: Record<keyof typeof en, string> = {
   astroPlanet: "ग्रह",
   astroSign: "राशि",
   astroDegree: "अंश",
+  astroLongitude: "देशांतर",
+  astroNakshatraLord: "नक्षत्र स्वामी",
+  astroClose: "बंद करें",
   astroNakshatra: "नक्षत्र",
   astroHouse: "भाव",
   astroNow: "अभी",
@@ -699,4 +715,14 @@ export const hi: Record<keyof typeof en, string> = {
   astroStarterVarga: "यह वर्ग लग्न कुंडली में क्या जोड़ता है?",
   astroTabVargas: "वर्ग",
   astroTabKp: "के.पी.",
+  astroMuhuratTitle: "मुहूर्त",
+  astroMuhuratApprox: "समय की खिड़कियाँ अनुमानित हैं।",
+  astroChoghadiya: "चौघड़िया",
+  astroMuhuratUnavailable: "मुहूर्त अभी विश्राम में हैं।",
+  astroMuhuratUnavailableBody:
+    "मुहूर्त लोड नहीं हो सके। आपका सहेजा हुआ कुछ भी प्रभावित नहीं हुआ, प्रायः फिर से प्रयास पर्याप्त होता है।",
+  astroMuhuratRetry: "फिर कोशिश करें",
+  astroChoghQualityGood: "शुभ",
+  astroChoghQualityNeutral: "सामान्य",
+  astroChoghQualityAvoid: "त्याज्य",
 };

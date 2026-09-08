@@ -104,6 +104,25 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * A dropped connection makes `fetch()` reject with a raw
+ * "Network request failed" TypeError. Only the SSE chat path used to translate
+ * that; every astrology/members/REST screen surfaced the raw string in its
+ * "Couldn't load" banner. Map network failures to one friendly line.
+ */
+function offlineMessage(e: unknown): string {
+  const msg = (e as Error)?.message ?? "";
+  if (
+    !msg ||
+    /network request failed|network connection was lost|timed out|failed to fetch|could not connect/i.test(
+      msg
+    )
+  ) {
+    return "Couldn't reach the server. Check your connection and try again.";
+  }
+  return msg;
+}
+
 export async function apiFetch<T>(
   path: string,
   init: RequestInit = {}
@@ -119,12 +138,21 @@ export async function apiFetch<T>(
     };
   };
 
-  let { res, hadAuth } = await request();
+  // status 0 = never reached the server (offline / DNS / transport failure).
+  const safeRequest = async () => {
+    try {
+      return await request();
+    } catch (e) {
+      throw new ApiError(0, offlineMessage(e));
+    }
+  };
+
+  let { res, hadAuth } = await safeRequest();
   if (res.status === 401 && hadAuth) {
     // The cached token can outlive its session (revocation, clock drift).
     // Re-read the session once and retry; a second 401 surfaces normally.
     invalidateAccessToken();
-    ({ res } = await request());
+    ({ res } = await safeRequest());
   }
   if (!res.ok) {
     let message = res.statusText;
