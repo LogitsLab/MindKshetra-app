@@ -77,7 +77,8 @@
         {
           "microphonePermission": false,
           "recordAudioAndroid": false,
-          "enableBackgroundRecording": false
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
         }
       ],
       "./plugins/withStripAudioFgsAndBootCompleted",
