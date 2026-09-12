@@ -231,7 +231,7 @@ function MoodSection() {
             onPress={() => router.push(`/(tabs)/mood/${mood.id}`)}
             style={[
               styles.moodChip,
-              { borderColor: "rgba(201,162,39,0.45)", backgroundColor: colors.surfaceHover },
+              { borderColor: "rgba(201,162,39,0.7)", backgroundColor: colors.surfaceHover },
             ]}
           >
             <MoodIcon id={mood.id} size={22} color={colors.brassSoft} />
@@ -266,7 +266,11 @@ function SectionHead({
         {eyebrow}
       </Text>
       <Pressable onPress={onAction} hitSlop={8} accessibilityRole="link">
-        <Text variant="muted" color={colors.brass} style={{ fontSize: 12 }}>
+        <Text
+          variant="muted"
+          color={colors.brassSoft}
+          style={{ fontSize: 12.5, fontFamily: "Sora_600SemiBold" }}
+        >
           {actionLabel}
         </Text>
       </Pressable>
@@ -280,7 +284,6 @@ function Rail({ items, onPress }: { items: RailItem[]; onPress: (href: Href) => 
   const { colors } = useTheme();
   const { t } = useLanguage();
   const [index, setIndex] = useState(0);
-  const stride = RAIL_CARD_WIDTH + spacing.sm;
   return (
     <View>
     <ScrollView
@@ -290,7 +293,13 @@ function Rail({ items, onPress }: { items: RailItem[]; onPress: (href: Href) => 
       style={{ marginHorizontal: -spacing.md }}
       scrollEventThrottle={16}
       onScroll={(e) => {
-        const i = Math.round(e.nativeEvent.contentOffset.x / stride);
+        // Map the dot index to scroll *progress*, not raw offset / card stride:
+        // at the end the offset only reaches contentWidth − viewport, so a
+        // stride-based round can never light the last dots.
+        const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+        const maxOffset = contentSize.width - layoutMeasurement.width;
+        const progress = maxOffset > 0 ? contentOffset.x / maxOffset : 0;
+        const i = Math.round(progress * (items.length - 1));
         const clamped = Math.max(0, Math.min(items.length - 1, i));
         setIndex((prev) => (prev === clamped ? prev : clamped));
       }}

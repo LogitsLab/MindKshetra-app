@@ -1,5 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import { resolveRecitationUrl } from "@/audio/manifest";
 import {
   getNarrationSession,
@@ -43,6 +49,8 @@ export function SpeakButton({
 }: Props) {
   const { colors } = useTheme();
   const [speaking, setSpeaking] = useState(false);
+  /** True between tap and first audio frame — shows a spinner on the button. */
+  const [resolving, setResolving] = useState(false);
   const [recitationReady, setRecitationReady] = useState(false);
   const ownerSessionRef = useRef<number | null>(null);
   const genRef = useRef(0);
@@ -54,6 +62,7 @@ export function SpeakButton({
       ownerSessionRef.current = null;
     }
     setSpeaking(false);
+    setResolving(false);
   }, [chapter, verseNumber]);
 
   // Unmount: stop only our session (another SpeakButton may still be playing).
@@ -93,9 +102,11 @@ export function SpeakButton({
     }
 
     const myGen = ++genRef.current;
+    setResolving(true);
     const url = await resolveRecitationUrl(chapter, verseNumber);
     if (myGen !== genRef.current) return;
     if (!url) {
+      setResolving(false);
       setSpeaking(false);
       return;
     }
@@ -106,6 +117,7 @@ export function SpeakButton({
     const clearOwner = () => {
       ownerSessionRef.current = null;
       setSpeaking(false);
+      setResolving(false);
     };
 
     const ok = await playUrl(url, {
@@ -113,6 +125,7 @@ export function SpeakButton({
         if (myGen !== genRef.current) return;
         bindOwner();
         setSpeaking(true);
+        setResolving(false);
       },
       onDone: () => {
         if (myGen !== genRef.current) return;
@@ -135,12 +148,12 @@ export function SpeakButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled, selected: speaking }}
+      accessibilityState={{ disabled, selected: speaking, busy: resolving }}
       accessibilityLabel={
         disabled ? unsupportedLabel : speaking ? stopLabel : listenLabel
       }
       testID={testID}
-      disabled={disabled}
+      disabled={disabled || resolving}
       onPress={() => void toggle()}
       style={({ pressed }) => [
         styles.btn,
@@ -153,13 +166,17 @@ export function SpeakButton({
         style,
       ]}
     >
-      <Text
-        variant="eyebrow"
-        color={colors.brassSoft}
-        style={compact ? styles.compactLabel : undefined}
-      >
-        {speaking ? stopLabel : listenLabel}
-      </Text>
+      {resolving ? (
+        <ActivityIndicator size="small" color={colors.brassSoft} />
+      ) : (
+        <Text
+          variant="eyebrow"
+          color={colors.brassSoft}
+          style={compact ? styles.compactLabel : undefined}
+        >
+          {speaking ? stopLabel : listenLabel}
+        </Text>
+      )}
     </Pressable>
   );
 }

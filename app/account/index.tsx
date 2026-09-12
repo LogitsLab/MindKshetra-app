@@ -653,8 +653,16 @@ export default function AccountScreen() {
         ) : null}
 
         {isSignedIn && !isAnonymous ? (
-          <Panel style={{ marginTop: spacing.lg }}>
-            <Text variant="eyebrow">{t("profileSectionTitle")}</Text>
+          <Panel
+            style={{
+              marginTop: spacing.lg,
+              backgroundColor: "rgba(201,162,39,0.14)",
+              borderColor: "rgba(201,162,39,0.4)",
+            }}
+          >
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {t("profileSectionTitle")}
+            </Text>
             <Text variant="muted" style={{ marginTop: spacing.xs }}>
               {t("profileSectionBody")}
             </Text>

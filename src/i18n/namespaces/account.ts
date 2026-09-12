@@ -19,7 +19,7 @@ export const en = {
   profileBlurb: "A few details so the field knows you.",
   profileSectionTitle: "Public profile",
   profileSectionBody:
-    "Handle appears on /u/your_handle when reflections are public. Keep it kind.",
+    "Your optional public page lives at /u/your_handle — it shows your name, bio, and any reflections you choose to make public. Leave the handle blank to stay private.",
   profileHandle: "Handle",
   profileDisplayName: "Display name",
   profileBio: "Short bio",
@@ -179,7 +179,7 @@ export const hi: Record<keyof typeof en, string> = {
   profileBlurb: "कुछ विवरण ताकि क्षेत्र आपको जान सके।",
   profileSectionTitle: "सार्वजनिक प्रोफ़ाइल",
   profileSectionBody:
-    "जब चिंतन सार्वजनिक हों तो हैंडल /u/your_handle पर दिखेगा। कोमल रखें।",
+    "आपका वैकल्पिक सार्वजनिक पृष्ठ /u/your_handle पर होता है — इसमें आपका नाम, परिचय और वे चिंतन दिखते हैं जिन्हें आप सार्वजनिक करना चुनते हैं। निजी रहने के लिए हैंडल खाली छोड़ें।",
   profileHandle: "हैंडल",
   profileDisplayName: "प्रदर्शित नाम",
   profileBio: "संक्षिप्त परिचय",

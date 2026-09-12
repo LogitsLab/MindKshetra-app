@@ -19,7 +19,7 @@ export const moodSvgXml: Record<string, string> = {
   guilty:
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="14" stroke="currentColor" stroke-width="1.25"/><path d="M24 16v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="24" cy="32" r="1.3" fill="currentColor"/></svg>',
   jealous:
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none"><path d="M24 12l3.5 8h8.5l-7 5.5 2.5 8.5L24 29l-7.5 5 2.5-8.5-7-5.5h8.5L24 12z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none"><path d="M8 24c4-7 10-10.5 16-10.5S36 17 40 24c-4 7-10 10.5-16 10.5S12 31 8 24z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/><circle cx="24" cy="24" r="4.6" stroke="currentColor" stroke-width="1.25"/><circle cx="24" cy="24" r="1.5" fill="currentColor"/></svg>',
   unmotivated:
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="14" stroke="currentColor" stroke-width="1.25"/><path d="M17 22h3M28 22h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18 32h12" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>',
   fearful:

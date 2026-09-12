@@ -134,9 +134,13 @@ export default function MoodScreen() {
               style={({ pressed }) => [
                 styles.tile,
                 {
+                  // Clean, opaque "lifted" card (mist is lighter than the near-
+                  // black panel and theme-safe) with the mood colour carried by
+                  // the accent border + icon well — bright/positive, not black,
+                  // and opaque so the atmosphere photo can't wash it out.
                   backgroundColor:
-                    selected || pressed ? colors.panelStrong : colors.panel,
-                  borderColor: selected ? accent : colors.line,
+                    selected || pressed ? `${accent}59` : colors.mist,
+                  borderColor: selected ? accent : `${accent}66`,
                   transform: [{ scale: pressed ? 0.98 : 1 }],
                 },
               ]}

@@ -69,7 +69,7 @@ export const moodAccent: Record<string, string> = {
   angry: "#c45a3a",
   confused: "#9a8450",
   grieving: "#7a6a90",
-  lonely: "#4a6a8a",
+  lonely: "#6b8fc9",
   overwhelmed: "#3d8a7a",
   guilty: "#9a5a6a",
   jealous: "#b08a2a",

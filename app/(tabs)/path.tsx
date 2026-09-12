@@ -4,11 +4,10 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/Screen";
 import { PathTile } from "@/components/SlokaCard";
-import { Rise } from "@/components/Rise";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { HOME_PATHS } from "@/data/homePaths";
 import { useLanguage } from "@/context/LanguageContext";
-import { motion, spacing } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 
 /**
  * Path tab — equal 2-column grid of path intros.
@@ -31,7 +30,7 @@ export default function PathTabScreen() {
         contentContainerStyle={{ paddingBottom: bottomPad, paddingTop: spacing.xs }}
         showsVerticalScrollIndicator={false}
       >
-        <Rise delay={motion.staggerMs} style={styles.grid}>
+        <View style={styles.grid}>
           {pairs.map((pair, row) => (
             <View key={row} style={styles.row}>
               {pair.map((path) => (
@@ -49,7 +48,7 @@ export default function PathTabScreen() {
               ))}
             </View>
           ))}
-        </Rise>
+        </View>
       </ScrollView>
     </Screen>
   );

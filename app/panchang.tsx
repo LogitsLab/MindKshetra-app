@@ -219,14 +219,26 @@ export default function PanchangScreen() {
                 ? votd.hindi_translation
                 : votd.english_translation}
             </Text>
-            <View style={{ marginTop: spacing.md, flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
+            <View
+              style={{
+                marginTop: spacing.md,
+                flexDirection: "row",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: spacing.md,
+              }}
+            >
               <SpeakButton
                 listenLabel={t("verseListen")}
                 stopLabel={t("verseStop")}
                 chapter={votd.chapter}
                 verseNumber={votd.verse_number}
               />
-              <Pressable onPress={() => router.push(`/sloka/${votd.id}`)}>
+              <Pressable
+                onPress={() => router.push(`/sloka/${votd.id}`)}
+                hitSlop={10}
+                style={{ minHeight: 40, justifyContent: "center" }}
+              >
                 <Text color={colors.brassSoft}>{t("homeFeaturedDetail")} →</Text>
               </Pressable>
             </View>

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Pressable,
@@ -38,6 +39,8 @@ export function VotdCarousel({ verses, error, stale }: Props) {
   const [index, setIndex] = useState(0);
   /** Which sloka id is currently narrating — null = idle. */
   const [playingId, setPlayingId] = useState<number | null>(null);
+  /** Which sloka id is resolving/buffering audio — shows a spinner on Listen. */
+  const [loadingId, setLoadingId] = useState<number | null>(null);
   const [paused, setPaused] = useState(false);
   const indexRef = useRef(0);
   const playingIdRef = useRef<number | null>(null);
@@ -51,6 +54,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
   const setPlaying = (id: number | null) => {
     playingIdRef.current = id;
     setPlayingId(id);
+    if (id == null) setLoadingId(null);
   };
 
   useEffect(() => () => stopNarration(), []);
@@ -81,8 +85,14 @@ export function VotdCarousel({ verses, error, stale }: Props) {
 
   const dayLabel = (offset: number) => {
     if (offset === 0) return t("homeVotdToday");
-    if (offset === -1) return t("homeVotdYesterday");
-    return t("homeVotdEarlier");
+    // Yesterday/Earlier get the real date so the heading is accurate, not vague.
+    const base = offset === -1 ? t("homeVotdYesterday") : t("homeVotdEarlier");
+    const d = new Date(Date.now() + offset * 86400000);
+    const date = d.toLocaleDateString(lang === "hi" ? "hi-IN" : "en-IN", {
+      day: "numeric",
+      month: "short",
+    });
+    return `${base} · ${date}`;
   };
 
   const goToIndex = useCallback((next: number) => {
@@ -90,8 +100,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
     if (clamped === indexRef.current) return;
     // Changing slides must kill any in-flight / playing audio.
     stopNarration();
-    playingIdRef.current = null;
-    setPlayingId(null);
+    setPlaying(null);
     setIndex(clamped);
     listRef.current?.scrollToIndex({ index: clamped, animated: true });
   }, [verses.length]);
@@ -104,8 +113,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
       // User (or autoplay) landed on a new slide — stop audio so Listen/Stop
       // stays honest and we never stack players.
       stopNarration();
-      playingIdRef.current = null;
-      setPlayingId(null);
+      setPlaying(null);
       setIndex(first.index);
     }
   ).current;
@@ -125,16 +133,19 @@ export function VotdCarousel({ verses, error, stale }: Props) {
       const verse = verses.find((v) => v.sloka.id === slokaId);
       if (!verse) return;
 
-      // Claim the UI immediately so autoplay cannot advance mid-resolve.
+      // Claim the UI immediately so autoplay cannot advance mid-resolve, and
+      // show a spinner while we resolve/buffer so the tap never feels dead.
       stopNarration();
       setPlaying(slokaId);
+      setLoadingId(slokaId);
 
       try {
         const recitation = await resolveRecitationUrl(
           verse.sloka.chapter,
           verse.sloka.verse_number
         );
-        // User stopped or switched while we were resolving.
+        // User stopped or switched while we were resolving (setPlaying(null)
+        // already cleared the spinner).
         if (playingIdRef.current !== slokaId) return;
 
         // File only — never TTS Devanagari (device voices often fail on Android).
@@ -144,6 +155,9 @@ export function VotdCarousel({ verses, error, stale }: Props) {
         }
         prefetchAudioUrl(recitation);
         await playUrl(recitation, {
+          onStart: () => {
+            if (playingIdRef.current === slokaId) setLoadingId(null);
+          },
           onDone: () => {
             if (playingIdRef.current === slokaId) setPlaying(null);
           },
@@ -246,8 +260,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
           // Finger moved the carousel — stop so Stop never lies.
           if (playingIdRef.current != null) {
             stopNarration();
-            playingIdRef.current = null;
-            setPlayingId(null);
+            setPlaying(null);
           }
         }}
         onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -255,8 +268,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
           const clamped = Math.max(0, Math.min(verses.length - 1, next));
           if (clamped !== indexRef.current) {
             stopNarration();
-            playingIdRef.current = null;
-            setPlayingId(null);
+            setPlaying(null);
             setIndex(clamped);
           }
         }}
@@ -275,6 +287,7 @@ export function VotdCarousel({ verses, error, stale }: Props) {
           const translation = raw ? truncateAtWord(raw, 120) : null;
           const openVerse = () => router.push(`/sloka/${item.sloka.id}`);
           const isPlaying = playingId === item.sloka.id;
+          const isLoading = loadingId === item.sloka.id;
 
           return (
             <View
@@ -339,8 +352,14 @@ export function VotdCarousel({ verses, error, stale }: Props) {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={
-                      isPlaying ? t("verseStop") : t("verseListen")
+                      isLoading
+                        ? t("loading")
+                        : isPlaying
+                          ? t("verseStop")
+                          : t("verseListen")
                     }
+                    accessibilityState={{ busy: isLoading }}
+                    disabled={isLoading}
                     onPress={() => void toggleListen(item.sloka.id)}
                     style={({ pressed }) => [
                       styles.listenBtn,
@@ -353,9 +372,13 @@ export function VotdCarousel({ verses, error, stale }: Props) {
                       },
                     ]}
                   >
-                    <Text variant="eyebrow" color={colors.brassSoft}>
-                      {isPlaying ? t("verseStop") : t("verseListen")}
-                    </Text>
+                    {isLoading ? (
+                      <ActivityIndicator size="small" color={colors.brassSoft} />
+                    ) : (
+                      <Text variant="eyebrow" color={colors.brassSoft}>
+                        {isPlaying ? t("verseStop") : t("verseListen")}
+                      </Text>
+                    )}
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"

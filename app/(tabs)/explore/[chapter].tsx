@@ -159,7 +159,7 @@ export default function ChapterScreen() {
       </View>
       {showJump ? (
         <View style={{ marginBottom: spacing.md }}>
-          <Text variant="eyebrow" color={colors.textMuted}>
+          <Text variant="eyebrow" color={colors.brassSoft}>
             {t("jumpToVerse")}
           </Text>
           <ScrollView
@@ -184,18 +184,18 @@ export default function ChapterScreen() {
                     justifyContent: "center",
                     borderRadius: radii.md,
                     borderWidth: 1.5,
-                    borderColor: done ? colors.brass : colors.line,
+                    borderColor: done ? colors.brass : "rgba(201,162,39,0.4)",
                     backgroundColor: pressed
                       ? colors.surfaceHover
                       : done
-                        ? colors.surface
-                        : "transparent",
+                        ? "rgba(201,162,39,0.16)"
+                        : colors.surfaceHover,
                     paddingHorizontal: spacing.sm,
                   })}
                 >
                   <Text
                     style={{
-                      color: done ? colors.brassSoft : colors.textMuted,
+                      color: done ? colors.brassSoft : colors.text,
                       fontFamily: "Sora_600SemiBold",
                       fontSize: 12,
                     }}

@@ -7,6 +7,7 @@ import {
   Image,
   ImageBackground,
   Keyboard,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -16,6 +17,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import Svg, { Path } from "react-native-svg";
 import { KeyboardProvider, KeyboardStickyView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MessageBubble } from "@/components/chat/MessageBubble";
@@ -109,56 +111,6 @@ function ChartContextChip({
   );
 }
 
-function IncognitoToggle({
-  on,
-  label,
-  onToggle,
-  onMedia = false,
-}: {
-  on: boolean;
-  label: string;
-  onToggle: () => void;
-  onMedia?: boolean;
-}) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      testID="madhav-incognito"
-      accessibilityRole="switch"
-      accessibilityState={{ checked: on }}
-      accessibilityLabel={label}
-      onPress={onToggle}
-      hitSlop={8}
-      style={[
-        styles.incognitoToggle,
-        {
-          borderColor: on
-            ? colors.brass
-            : onMedia
-              ? mediaOverlay.ivoryHairline
-              : colors.line,
-          backgroundColor: on
-            ? colors.surfaceHover
-            : onMedia
-              ? mediaOverlay.voidSoft
-              : colors.surface,
-        },
-      ]}
-    >
-      <Text
-        variant="muted"
-        color={
-          on ? colors.brassSoft : onMedia ? colors.onMedia : colors.textMuted
-        }
-        numberOfLines={1}
-        style={{ fontSize: 11 }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 export default function MadhavScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -201,6 +153,8 @@ export default function MadhavScreen() {
     []
   );
   const [showSessions, setShowSessions] = useState(false);
+  // Overflow menu (⋯) — tucks New chat / Chat history / Incognito off the header.
+  const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [crisisBanner, setCrisisBanner] = useState<string | null>(null);
@@ -806,12 +760,23 @@ export default function MadhavScreen() {
                 </Text>
               ) : null}
             </View>
-            <IncognitoToggle
-              on={incognito}
-              label={incognito ? t("incognitoOn") : t("incognito")}
-              onToggle={toggleIncognito}
-              onMedia
-            />
+            <Pressable
+              testID="madhav-menu"
+              accessibilityRole="button"
+              accessibilityLabel={lang === "hi" ? "अधिक विकल्प" : "More options"}
+              onPress={() => setMenuOpen(true)}
+              style={({ pressed }) => [
+                styles.close,
+                {
+                  borderColor: mediaOverlay.ivoryHairline,
+                  opacity: pressed ? 0.55 : 1,
+                },
+              ]}
+            >
+              <Text style={{ color: colors.onMedia, fontSize: 22, lineHeight: 24 }}>
+                ⋯
+              </Text>
+            </Pressable>
             <Pressable
               testID="madhav-close"
               accessibilityRole="button"
@@ -845,55 +810,6 @@ export default function MadhavScreen() {
               {incognito ? t("incognitoHint") : t("madhavCompanionLine")}
             </Text>
           </View>
-          {!incognito && isSignedIn && recentSessions.length > 0 ? (
-            <View style={styles.sessionBar}>
-              <Pressable
-                onPress={() => setShowSessions((v) => !v)}
-                accessibilityRole="button"
-                accessibilityLabel={t("openChatHistory")}
-                style={[
-                  styles.sessionChip,
-                  {
-                    borderColor: mediaOverlay.ivoryHairline,
-                    backgroundColor: showSessions
-                      ? mediaOverlay.brassFill
-                      : mediaOverlay.voidSoft,
-                  },
-                ]}
-              >
-                <Text
-                  variant="muted"
-                  color={colors.onMedia}
-                  style={styles.sessionChipText}
-                >
-                  {t("recentChats")}
-                </Text>
-              </Pressable>
-              {inActiveChat || sessionId ? (
-                <Pressable
-                  onPress={startNewChat}
-                  disabled={loading}
-                  accessibilityRole="button"
-                  style={[
-                    styles.sessionChip,
-                    {
-                      borderColor: mediaOverlay.ivoryHairline,
-                      backgroundColor: mediaOverlay.voidSoft,
-                      opacity: loading ? 0.5 : 1,
-                    },
-                  ]}
-                >
-                  <Text
-                    variant="muted"
-                    color={colors.onMedia}
-                    style={styles.sessionChipText}
-                  >
-                    {t("newChat")}
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
         </ImageBackground>
         ) : (
           <View
@@ -926,11 +842,23 @@ export default function MadhavScreen() {
                 </Text>
               ) : null}
             </View>
-            <IncognitoToggle
-              on={incognito}
-              label={incognito ? t("incognitoOn") : t("incognito")}
-              onToggle={toggleIncognito}
-            />
+            <Pressable
+              testID="madhav-menu"
+              accessibilityRole="button"
+              accessibilityLabel={lang === "hi" ? "अधिक विकल्प" : "More options"}
+              onPress={() => setMenuOpen(true)}
+              style={({ pressed }) => [
+                styles.close,
+                {
+                  borderColor: colors.line,
+                  opacity: pressed ? 0.55 : 1,
+                },
+              ]}
+            >
+              <Text style={{ color: colors.text, fontSize: 22, lineHeight: 24 }}>
+                ⋯
+              </Text>
+            </Pressable>
             <Pressable
               testID="madhav-close"
               accessibilityRole="button"
@@ -950,6 +878,78 @@ export default function MadhavScreen() {
             </Pressable>
           </View>
         )}
+
+        <Modal
+          visible={menuOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMenuOpen(false)}
+        >
+          <Pressable
+            style={styles.menuBackdrop}
+            accessibilityLabel={t("closeMadhav")}
+            onPress={() => setMenuOpen(false)}
+          />
+          <View
+            style={[
+              styles.menuSheet,
+              {
+                top: insets.top + 56,
+                backgroundColor: colors.panelStrong,
+                borderColor: colors.line,
+              },
+            ]}
+          >
+            {inActiveChat || sessionId ? (
+              <Pressable
+                testID="madhav-new-chat"
+                accessibilityRole="button"
+                disabled={loading}
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  startNewChat();
+                }}
+              >
+                <Text variant="soft" color={colors.text}>
+                  {t("newChat")}
+                </Text>
+              </Pressable>
+            ) : null}
+            {isSignedIn ? (
+              <Pressable
+                testID="madhav-history"
+                accessibilityRole="button"
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  setShowSessions((v) => !v);
+                }}
+              >
+                <Text variant="soft" color={colors.text}>
+                  {t("chatHistory")}
+                </Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              testID="madhav-incognito"
+              accessibilityRole="switch"
+              accessibilityState={{ checked: incognito }}
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuOpen(false);
+                toggleIncognito();
+              }}
+            >
+              <Text
+                variant="soft"
+                color={incognito ? colors.brassSoft : colors.text}
+              >
+                {incognito ? t("incognitoOn") : t("incognito")}
+              </Text>
+            </Pressable>
+          </View>
+        </Modal>
 
         {!incognito &&
         (showSessions ||
@@ -1194,7 +1194,15 @@ export default function MadhavScreen() {
               },
             ]}
           >
-            <Text style={{ color: colors.onBrass, fontSize: 20, lineHeight: 22 }}>➤</Text>
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M5 12h13M12 6l6 6-6 6"
+                stroke={colors.onBrass}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
           </Pressable>
         </View>
         </KeyboardStickyView>
@@ -1247,13 +1255,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  incognitoToggle: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+  menuBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  menuSheet: {
+    position: "absolute",
+    right: spacing.md,
+    minWidth: 200,
     borderRadius: radii.md,
     borderWidth: StyleSheet.hairlineWidth * 2,
-    maxWidth: 128,
-    justifyContent: "center",
+    paddingVertical: spacing.xs,
+    overflow: "hidden",
+  },
+  menuItem: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
   },
   disclaimer: {
     paddingBottom: spacing.sm,
@@ -1262,23 +1282,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 10,
     lineHeight: 14,
-  },
-  sessionBar: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  sessionChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.md,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  sessionChipText: {
-    fontSize: 11,
-    letterSpacing: 0.4,
   },
   sessionList: {
     marginHorizontal: spacing.md,

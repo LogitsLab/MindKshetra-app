@@ -3,17 +3,13 @@ import {
   Animated,
   Easing,
   Platform,
-  Pressable,
-  ScrollView,
   StatusBar,
   StyleSheet,
   useWindowDimensions,
   View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Path } from "react-native-svg";
 import { BrandMark } from "@/components/BrandMark";
 import { BRAND_NAME } from "@/components/BrandWordmark";
 import { Text } from "@/components/Text";
@@ -119,19 +115,6 @@ function greetingFor(
       : "Ease into the night";
 }
 
-function CareIcon({ color, size = 15 }: { color: string; size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 20s-7-4.35-7-9a4 4 0 017-2.65A4 4 0 0119 11c0 4.65-7 9-7 9z"
-        stroke={color}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
 /**
  * Adaptive home hero: brand-first composition over a transparent atmosphere.
  */
@@ -141,7 +124,6 @@ export function HomeHero({
   streak = 0,
   bestStreak = 0,
 }: Props) {
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
@@ -294,15 +276,6 @@ export function HomeHero({
             {BRAND_NAME}
           </Text>
         </View>
-        <Pressable
-          onPress={() => router.push("/care")}
-          accessibilityRole="button"
-          accessibilityLabel={t("homeCareLabel")}
-          hitSlop={8}
-          style={styles.careBtn}
-        >
-          <CareIcon color="#e08a92" />
-        </Pressable>
       </View>
 
       <Text
@@ -319,6 +292,9 @@ export function HomeHero({
         variant="soft"
         color="rgba(232,228,220,0.94)"
         style={styles.body}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
       >
         {returning ? rotating : t("homeHeroBody")}
       </Text>
@@ -417,7 +393,6 @@ const styles = StyleSheet.create({
   },
   body: {
     marginTop: spacing.sm,
-    maxWidth: 320,
     fontSize: 14,
     lineHeight: 21,
   },
@@ -430,17 +405,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontSize: 12,
     lineHeight: 16,
-  },
-  careBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(232,224,208,0.24)",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(7,9,15,0.45)",
-    flexShrink: 0,
   },
   heroStreak: {
     flexDirection: "row",

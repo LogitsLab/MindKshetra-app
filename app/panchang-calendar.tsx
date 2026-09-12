@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
-import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
@@ -22,7 +21,6 @@ function shiftMonth(month: string, delta: number): string {
 }
 
 export default function PanchangCalendarScreen() {
-  const router = useRouter();
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const [month, setMonth] = useState(currentMonth);
@@ -89,10 +87,7 @@ export default function PanchangCalendarScreen() {
         contentContainerStyle={{ paddingBottom: spacing.xxl }}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.push("/panchang")}>
-          <Text color={colors.brassSoft}>← {t("panchangTitle")}</Text>
-        </Pressable>
-        <Text variant="title" style={{ marginTop: spacing.md, fontSize: 26 }}>
+        <Text variant="title" style={{ fontSize: 26 }}>
           {t("panchangCalendarTitle")}
         </Text>
         <Text variant="muted" style={{ marginTop: spacing.xs }}>

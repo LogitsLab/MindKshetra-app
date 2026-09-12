@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  checkIn: { marginTop: spacing.xxl, alignItems: "center" },
+  checkIn: { marginTop: spacing.md, alignItems: "center" },
   checkInTitle: { marginTop: spacing.sm, fontSize: 24 },
   moodRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.lg },
   numberChip: {

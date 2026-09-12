@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Circle, Path, Rect } from "react-native-svg";
+import Svg, { Circle, Path } from "react-native-svg";
 import { CoverImage, type CoverImageFocus } from "@/components/CoverImage";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
@@ -125,25 +125,59 @@ export function EmptyState({
   );
 }
 
+/** Explore — an open book (the scripture you browse), not a file/folder. */
 function ExplorePathMark({ size = 36 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      <Rect
-        x="10"
-        y="10"
-        width="44"
-        height="44"
-        stroke="#c9a227"
-        strokeWidth="1.25"
-        opacity={0.55}
+      <Circle cx="32" cy="32" r="20" stroke="#c9a227" strokeWidth="1.1" opacity={0.5} />
+      <Path
+        d="M32 24c-3-2.5-7-3.6-11-3.6V42c4 0 8 1.1 11 3.6"
+        stroke="#e2c45a"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
       />
       <Path
-        d="M20 44V20h16l8 8v16H20z"
+        d="M32 24c3-2.5 7-3.6 11-3.6V42c-4 0-8 1.1-11 3.6"
+        stroke="#e2c45a"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+      <Path d="M32 24v21.6" stroke="#c9a227" strokeWidth="1.1" />
+    </Svg>
+  );
+}
+
+/** Astrology — a four-point star with attendant stars inside a faint zodiac ring. */
+function AstrologyPathMark({ size = 36 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <Circle cx="32" cy="32" r="20" stroke="#c9a227" strokeWidth="1.1" opacity={0.5} />
+      <Path
+        d="M32 18 L35 29 L46 32 L35 35 L32 46 L29 35 L18 32 L29 29 Z"
         stroke="#e2c45a"
         strokeWidth="1.25"
+        strokeLinejoin="round"
       />
-      <Path d="M36 20v8h8" stroke="#e2c45a" strokeWidth="1.25" />
-      <Circle cx="32" cy="36" r="5" stroke="#c9a227" strokeWidth="1" />
+      <Circle cx="45" cy="20" r="1.5" fill="#e2c45a" />
+      <Circle cx="20" cy="44" r="1.3" fill="#c9a227" />
+    </Svg>
+  );
+}
+
+/** Themed paths — a dashed winding trail from a start dot to a destination ring. */
+function PathsPathMark({ size = 36 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <Circle cx="32" cy="32" r="20" stroke="#c9a227" strokeWidth="1.1" opacity={0.5} />
+      <Path
+        d="M26 47 C26 39 40 39 40 31 C40 23 26 23 26 15"
+        stroke="#e2c45a"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeDasharray="1.5 5"
+      />
+      <Circle cx="26" cy="47" r="2" fill="#c9a227" />
+      <Circle cx="26" cy="15" r="3.2" stroke="#e2c45a" strokeWidth="1.3" />
     </Svg>
   );
 }
@@ -240,6 +274,8 @@ export function PathMark({
   }
   if (kind === "mood") return <MoodPathMark size={size} />;
   if (kind === "meditation") return <MeditationPathMark size={size} />;
+  if (kind === "astrology") return <AstrologyPathMark size={size} />;
+  if (kind === "paths") return <PathsPathMark size={size} />;
   return <ExplorePathMark size={size} />;
 }
 
