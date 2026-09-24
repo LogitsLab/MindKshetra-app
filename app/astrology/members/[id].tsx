@@ -60,15 +60,28 @@ export default function AstrologyMemberDetailScreen() {
     setError(null);
     (async () => {
       try {
-        const [mRes, cRes] = await Promise.all([
-          astrologyApi.member(id),
-          astrologyApi.chart(id).catch(() =>
-            astrologyApi.compute({ memberId: id })
-          ),
-        ]);
+        // GET /members/:id is new. Older servers answer 405, which used to
+        // reject this whole load — the chart request was in the same
+        // Promise.all, so a saved chart never appeared. Fall back to the
+        // list, which has always returned the member.
+        const memberPromise = astrologyApi
+          .member(id)
+          .then((res) => res.member)
+          .catch(async () => {
+            const list = await astrologyApi.members();
+            return (list.members ?? []).find((m) => m.id === id) ?? null;
+          });
+        const chartPromise = astrologyApi
+          .chart(id)
+          .catch(() => astrologyApi.compute({ memberId: id }));
+        const [found, cRes] = await Promise.all([memberPromise, chartPromise]);
         if (!alive) return;
-        setMember(mRes.member);
-        attachMemberChart(id, mRes.member?.name);
+        if (!found) {
+          setError("Chart not found");
+          return;
+        }
+        setMember(found);
+        attachMemberChart(id, found.name);
         const nextChart = cRes.chart ?? null;
         setChart(nextChart);
         const existing = nextChart?.predictionsText as PredictionsText | undefined;
