@@ -2,7 +2,7 @@
   "expo": {
     "name": "MindKshetra",
     "slug": "mindkshetra",
-    "version": "2.5.0",
+    "version": "2.6.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "mindkshetra",
@@ -22,7 +22,7 @@
           "UIInterfaceOrientationPortrait"
         ]
       },
-      "buildNumber": "24"
+      "buildNumber": "25"
     },
     "android": {
       "adaptiveIcon": {
@@ -41,7 +41,7 @@
       "permissions": [
         "POST_NOTIFICATIONS"
       ],
-      "versionCode": 29
+      "versionCode": 30
     },
     "web": {
       "favicon": "./assets/favicon.png",
