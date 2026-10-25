@@ -69,6 +69,7 @@ export default function SlokaScreen() {
   const [story, setStory] = useState<string | null>(null);
   const [storyLoading, setStoryLoading] = useState(false);
   const [storyGenerating, setStoryGenerating] = useState(false);
+  const [storyError, setStoryError] = useState(false);
   const [storyLang, setStoryLang] = useState<"en" | "hi">(
     lang === "hi" ? "hi" : "en"
   );
@@ -229,14 +230,25 @@ export default function SlokaScreen() {
     if (!sloka) return;
     let alive = true;
     setStory(null);
+    setStoryError(false);
     setStoryLoading(true);
-    contentApi
-      .story(sloka.id, storyLang)
+    // A cold first visit lazily generates server-side; cap the wait so a hung
+    // request surfaces a retry state instead of spinning forever. Pregenerated
+    // stories return well within this.
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("story-timeout")), 30_000)
+    );
+    Promise.race([contentApi.story(sloka.id, storyLang), timeout])
       .then((r) => {
-        if (alive) setStory(r.story?.trim() || null);
+        if (!alive) return;
+        setStory(r.story?.trim() || null);
+        setStoryError(false);
       })
       .catch(() => {
-        if (alive) setStory(null);
+        if (alive) {
+          setStory(null);
+          setStoryError(true);
+        }
       })
       .finally(() => {
         if (alive) setStoryLoading(false);
@@ -249,11 +261,13 @@ export default function SlokaScreen() {
   async function generateStory(regenerate = false) {
     if (!sloka || storyGenerating) return;
     setStoryGenerating(true);
+    setStoryError(false);
     try {
       const r = await contentApi.generateStory(sloka.id, storyLang, regenerate);
       setStory(r.story?.trim() || null);
     } catch {
       setStory(null);
+      setStoryError(true);
     } finally {
       setStoryGenerating(false);
     }
@@ -797,6 +811,20 @@ export default function SlokaScreen() {
             <Text variant="soft" style={styles.panelCopy}>
               {story}
             </Text>
+          ) : storyError ? (
+            <View style={styles.storyEmpty}>
+              <Text variant="soft" color={colors.textMuted} style={styles.panelCopy}>
+                {lang === "hi"
+                  ? "कथा लोड नहीं हो सकी।"
+                  : "Couldn’t load the reflection."}
+              </Text>
+              <Button
+                testID="sloka-story-retry"
+                label={lang === "hi" ? "फिर कोशिश करें" : "Try again"}
+                onPress={() => void generateStory(false)}
+                style={styles.storyGenerate}
+              />
+            </View>
           ) : (
             <View style={styles.storyEmpty}>
               <Text variant="soft" color={colors.textMuted} style={styles.panelCopy}>

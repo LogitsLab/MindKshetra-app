@@ -3,6 +3,7 @@ import { View } from "react-native";
 import Svg, { Circle, G, Line, Path, Polygon, Text as SvgText } from "react-native-svg";
 import { Text } from "@/components/Text";
 import { useTheme } from "@/context/ThemeContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { spacing } from "@/theme/tokens";
 import {
   SIGN_ABBR,
@@ -56,6 +57,7 @@ export function CircularChart({
   onPlanetPress,
 }: Props) {
   const { colors } = useTheme();
+  const { lang } = useLanguage();
 
   if (tobUnknown && !ascendant) {
     return (
@@ -106,7 +108,18 @@ export function CircularChart({
 
   return (
     <View>
-      <Svg width="100%" height={SIZE} viewBox="0 0 100 100">
+      <Svg
+        width="100%"
+        height={SIZE}
+        viewBox="0 0 100 100"
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={
+          lang === "hi"
+            ? `वैदिक जन्म कुंडली — ${bodies.length} ग्रह-स्थितियाँ`
+            : `Vedic birth chart — ${bodies.length} placements`
+        }
+      >
         <Circle
           cx={CX}
           cy={CY}
