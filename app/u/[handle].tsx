@@ -19,8 +19,11 @@ type PublicProfile = {
 };
 
 /**
- * Read-only public profile stub — name, handle, bio, since-when.
- * No activity feed or counts (web `/u/[handle]` parity).
+ * Read-only public profile — name, handle, bio, since-when.
+ *
+ * Intentionally minimal by design: no activity feed or public counts, matching
+ * the app's privacy posture (web `/u/[handle]` parity) and the launch-gated
+ * sangha policy. This is complete, not a placeholder.
  */
 export default function PublicProfileScreen() {
   const { handle: raw } = useLocalSearchParams<{ handle: string }>();
@@ -105,7 +108,11 @@ export default function PublicProfileScreen() {
       <Text variant="eyebrow" color={colors.brassSoft}>
         {lang === "hi" ? "साधक" : "Seeker"}
       </Text>
-      <Text variant="display" style={{ marginTop: spacing.sm }}>
+      <Text
+        variant="display"
+        accessibilityRole="header"
+        style={{ marginTop: spacing.sm }}
+      >
         {profile.display_name || `@${profile.handle}`}
       </Text>
       <Text variant="muted" color={colors.textMuted} style={{ marginTop: 4 }}>

@@ -296,6 +296,17 @@ export default function PranayamaScreen() {
           </View>
 
           <Text variant="eyebrow" color={colors.brassSoft} style={{ marginTop: spacing.lg }}>
+            {t("pranaHowToLabel")}
+          </Text>
+          <Text variant="soft" color={colors.textMuted} style={{ marginTop: spacing.sm }}>
+            {pattern === "box"
+              ? t("pranaPatternBoxSteps")
+              : pattern === "calm478"
+                ? t("pranaPattern478Steps")
+                : t("pranaPatternEvenSteps")}
+          </Text>
+
+          <Text variant="eyebrow" color={colors.brassSoft} style={{ marginTop: spacing.lg }}>
             {t("pranaDurationLabel")}
           </Text>
           <View style={styles.chipRow}>
@@ -350,6 +361,13 @@ export default function PranayamaScreen() {
               </Pressable>
             ))}
           </View>
+
+          <Text variant="eyebrow" color={colors.brassSoft} style={{ marginTop: spacing.lg }}>
+            {t("pranaSafetyLabel")}
+          </Text>
+          <Text variant="muted" style={{ marginTop: spacing.sm }}>
+            {t("pranaSafety")}
+          </Text>
 
           <Button label={t("pranaBegin")} onPress={begin} style={{ marginTop: spacing.xl }} />
         </ScrollView>
@@ -424,7 +442,13 @@ export default function PranayamaScreen() {
         </Text>
         <View style={styles.ringStage}>
           <BreathRing scale={ring} colors={colors} />
-          <View style={styles.ringLabel} pointerEvents="none">
+          <View
+            style={styles.ringLabel}
+            pointerEvents="none"
+            accessible
+            accessibilityLiveRegion="polite"
+            accessibilityLabel={step ? t(step.labelKey) : ""}
+          >
             <Text variant="title" color={colors.brassSoft}>
               {step ? t(step.labelKey) : ""}
             </Text>
@@ -455,7 +479,11 @@ function BreathRing({
   colors: ThemeColors;
 }) {
   return (
-    <View style={styles.ringGuide}>
+    <View
+      style={styles.ringGuide}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
       <View style={[styles.guideCircle, { borderColor: colors.line }]} />
       <Animated.View
         style={[

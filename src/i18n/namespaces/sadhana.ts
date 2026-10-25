@@ -193,7 +193,7 @@ export const hi: Record<keyof typeof en, string> = {
   pathDayLocked: "यह दिन खोलने के लिए पिछला दिन पूर्ण करें।",
   sadhanaPathDayHint: "मार्ग का दिन, यह श्लोक, फिर बैठें और पूर्ण करें।",
   sadhanaTomorrowPath: "कल: आपके मार्ग का दिन {n}",
-  sadhanaChartVerse: "आज का Pressure→Practice श्लोक लें",
+  sadhanaChartVerse: "आज का ‘दबाव-से-साधना’ श्लोक लें",
   sadhanaChartVerseBlurb:
     "कुंडली का मुख्य दबाव एक गीता श्लोक से मिलता है, वैकल्पिक।",
 };
