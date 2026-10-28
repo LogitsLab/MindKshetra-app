@@ -8,12 +8,19 @@ type Props = {
   size?: number;
 };
 
-/** Lotus brand mark — the gold lotus from the MindKshetra logo. */
+/** Aspect ratio of the wide lotus mark (assets/brand/mark.png, 456x332). */
+const MARK_RATIO = 456 / 332;
+
+/**
+ * Lotus brand mark — the gold lotus from the MindKshetra logo. `size` is the
+ * height; the wide lotus takes its natural width so it sits at the right height
+ * next to the wordmark (not shrunk by square padding).
+ */
 export function BrandMark({ size = 28 }: Props) {
   return (
     <Image
       source={images.brandMark}
-      style={{ width: size, height: size }}
+      style={{ height: size, width: Math.round(size * MARK_RATIO) }}
       resizeMode="contain"
     />
   );
