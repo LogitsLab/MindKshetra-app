@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/Screen";
@@ -7,6 +7,7 @@ import { Button } from "@/components/Button";
 import { Panel } from "@/components/Panel";
 import { PageHero } from "@/components/PageHero";
 import { Rise } from "@/components/Rise";
+import { getApiUrl } from "@/api/client";
 import { eventsApi } from "@/api/endpoints";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -14,8 +15,13 @@ import { COMMUNITY_ROUTE_TARGETS } from "@/data/community";
 import { images } from "@/theme/assets";
 import { spacing } from "@/theme/tokens";
 
-const WHATSAPP = process.env.EXPO_PUBLIC_WHATSAPP_CHANNEL_URL;
 const TELEGRAM = process.env.EXPO_PUBLIC_TELEGRAM_URL;
+
+type CommunityLinks = { whatsapp: string | null; telegram: string | null };
+
+function linkOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.startsWith("https://") ? value : null;
+}
 
 export default function CommunityScreen() {
   const router = useRouter();
@@ -24,6 +30,36 @@ export default function CommunityScreen() {
   const [attended, setAttended] = useState(false);
   const [attendanceBusy, setAttendanceBusy] = useState(false);
   const [attendanceError, setAttendanceError] = useState(false);
+  const [remote, setRemote] = useState<CommunityLinks | null>(null);
+  const [linksReady, setLinksReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${getApiUrl()}/api/community-links`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(String(res.status));
+        return (await res.json()) as { whatsapp?: unknown; telegram?: unknown };
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setRemote({
+          whatsapp: linkOrNull(data.whatsapp),
+          telegram: linkOrNull(data.telegram),
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setRemote(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLinksReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const whatsapp = remote?.whatsapp ?? null;
+  const telegram = remote?.telegram ?? TELEGRAM ?? null;
 
   async function markAttended() {
     // The Sangha → Community rename is UI-only. The event name (and its
@@ -65,25 +101,25 @@ export default function CommunityScreen() {
               {t("homeBlockSanghaBody")}
             </Text>
             <View style={styles.linkRow}>
-              {WHATSAPP ? (
+              {whatsapp ? (
                 <Pressable
                   accessibilityRole="link"
-                  accessibilityLabel="Open WhatsApp community"
-                  onPress={() => void Linking.openURL(WHATSAPP)}
+                  accessibilityLabel={t("sanghaJoinWhatsApp")}
+                  onPress={() => void Linking.openURL(whatsapp)}
                 >
-                  <Text color={colors.brassSoft}>WhatsApp →</Text>
+                  <Text color={colors.brassSoft}>{t("sanghaJoinWhatsApp")}</Text>
                 </Pressable>
               ) : null}
-              {TELEGRAM ? (
+              {telegram ? (
                 <Pressable
                   accessibilityRole="link"
-                  accessibilityLabel="Open Telegram community"
-                  onPress={() => void Linking.openURL(TELEGRAM)}
+                  accessibilityLabel={t("sanghaJoinTelegram")}
+                  onPress={() => void Linking.openURL(telegram)}
                 >
-                  <Text color={colors.brassSoft}>Telegram →</Text>
+                  <Text color={colors.brassSoft}>{t("sanghaJoinTelegram")}</Text>
                 </Pressable>
               ) : null}
-              {!WHATSAPP && !TELEGRAM ? (
+              {linksReady && !whatsapp && !telegram ? (
                 <Text variant="muted">{t("sanghaChannelsSoon")}</Text>
               ) : null}
             </View>
