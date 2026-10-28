@@ -9,6 +9,7 @@ import type { ImageSourcePropType } from "react-native";
  * Boot stills under assets/backgrounds/boot/ rotate on cold start.
  */
 export const images = {
+  brandMark: require("../../assets/brand/mark.png"),
   hero: require("../../assets/backgrounds/hero.jpg"),
   /** Onboarding poster — glade flute scene. */
   onboarding: require("../../assets/backgrounds/krishna-glade.jpg"),

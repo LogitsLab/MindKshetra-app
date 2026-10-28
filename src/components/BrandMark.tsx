@@ -8,50 +8,14 @@ type Props = {
   size?: number;
 };
 
-/** Lotus/leaf brand mark — ports public/brand/mark.svg */
+/** Lotus brand mark — the gold lotus from the MindKshetra logo. */
 export function BrandMark({ size = 28 }: Props) {
-  const { colors } = useTheme();
   return (
-    <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      <Circle
-        cx="32"
-        cy="32"
-        r="30"
-        stroke={colors.brass}
-        strokeWidth="1"
-        opacity={0.45}
-      />
-      <Circle
-        cx="32"
-        cy="32"
-        r="22"
-        stroke={colors.brass}
-        strokeWidth="0.75"
-        opacity={0.3}
-      />
-      <Path
-        d="M32 14c2.8 6.2 8.5 10.5 15.2 11.8C40.5 28.2 36 34.4 34.2 41.2 32.8 34.2 28.2 28.4 21.5 25.8 27.8 24.2 32.2 19.8 32 14z"
-        fill={colors.brass}
-        opacity={0.85}
-      />
-      <Path
-        d="M32 22c1.6 3.6 4.9 6.1 8.8 6.9-3.9 1.3-6.6 4.8-7.6 8.8-.8-4.1-3.5-7.5-7.4-9 3.8-1 6.9-3.5 6.2-6.7z"
-        fill={colors.brassSoft}
-        opacity={0.7}
-      />
-      <Path
-        d="M18 46h28"
-        stroke={colors.brass}
-        strokeWidth="1"
-        opacity={0.5}
-      />
-      <Path
-        d="M22 50h20"
-        stroke={colors.brass}
-        strokeWidth="0.75"
-        opacity={0.35}
-      />
-    </Svg>
+    <Image
+      source={images.brandMark}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+    />
   );
 }
 
