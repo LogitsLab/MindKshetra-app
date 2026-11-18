@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,7 +20,9 @@ import { BrandMark } from "@/components/BrandMark";
 import { Rise } from "@/components/Rise";
 import { siteUrl } from "@/api/client";
 import { meditationApi } from "@/api/endpoints";
+import { MetaEvents } from "@/analytics/meta";
 import { useAuth } from "@/context/AuthContext";
+import { recordMeditationSit } from "@/storage/meditationStats";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { sessionTranscript, type MeditationSession, type SittingMilestone } from "@/data/meditation";
@@ -28,6 +32,7 @@ import {
   markSittingGuestDay,
   queueMeditationGuestCompletion,
 } from "@/hooks/useMeditationProgress";
+import { writeSitCredit } from "@/storage/sitCredit";
 import { uuidv4 } from "@/utils/uuid";
 import { radii, spacing } from "@/theme/tokens";
 
@@ -83,6 +88,7 @@ export function MeditationPlayer({
   const [saveError, setSaveError] = useState(false);
   const [guestSaved, setGuestSaved] = useState(false);
   const [milestone, setMilestone] = useState<SittingMilestone | null>(null);
+  const [sitCredited, setSitCredited] = useState(false);
   // The 45-day arc graduates toward unguided practice: deepening days default
   // to a silent sit, earlier tiers to the cued, music-led sit.
   const [sitMode, setSitMode] = useState<SitMode>(
@@ -92,6 +98,7 @@ export function MeditationPlayer({
   const satSecRef = useRef(0);
   const autoAdvance = useRef(true);
   const phaseIdxRef = useRef(0);
+  const breathPulse = useRef(new Animated.Value(1)).current;
 
   const playPhases = useMemo(
     () =>
@@ -125,6 +132,32 @@ export function MeditationPlayer({
       releaseAmbientPlayers();
     };
   }, []);
+
+  // Soft inhale/exhale pulse on the silence ring (8s cycle).
+  useEffect(() => {
+    if (stage !== "play" || phase?.type !== "silence") {
+      breathPulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(breathPulse, {
+          toValue: 1.08,
+          duration: 4000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(breathPulse, {
+          toValue: 0.94,
+          duration: 4000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [stage, phase?.type, breathPulse]);
 
   // The soundscape leads the whole sit — start it once we enter play and keep
   // it running continuously across cue and silence phases, so there is no gap
@@ -243,6 +276,8 @@ export function MeditationPlayer({
       return;
     }
     setSaving(false);
+    await recordMeditationSit(durationSec);
+    MetaEvents.completeSit();
     setStage("done");
   };
 
@@ -373,6 +408,7 @@ export function MeditationPlayer({
                   satSecRef.current = 0;
                   phaseIdxRef.current = 0;
                   setPhaseIdx(0);
+                  MetaEvents.startSit();
                   setStage("play");
                 }}
               />
@@ -440,7 +476,16 @@ export function MeditationPlayer({
                 </Pressable>
               </View>
             ) : (
-              <View style={[styles.breathRing, { borderColor: colors.line, backgroundColor: colors.panel }]}>
+              <Animated.View
+                style={[
+                  styles.breathRing,
+                  {
+                    borderColor: colors.line,
+                    backgroundColor: colors.panel,
+                    transform: [{ scale: breathPulse }],
+                  },
+                ]}
+              >
                 <View style={[styles.innerRing, { borderColor: colors.line }]}>
                 <Text variant="eyebrow" color={colors.brassSoft}>{t("medPhaseSilence")}</Text>
                 <Text variant="display" color={colors.brassSoft} style={styles.clock}>
@@ -448,7 +493,7 @@ export function MeditationPlayer({
                 </Text>
                 </View>
                 <Text variant="muted" style={{ marginTop: spacing.xs }}>
-                  {t("medAmbientCredit")}
+                  {t("medBreathHint")}
                 </Text>
                 <Pressable
                   accessibilityRole="button"
@@ -458,7 +503,7 @@ export function MeditationPlayer({
                 >
                   <Text color={colors.brassSoft}>{t("medNextPhase")}</Text>
                 </Pressable>
-              </View>
+              </Animated.View>
             )}
             <Pressable
               accessibilityRole="button"
@@ -679,6 +724,27 @@ export function MeditationPlayer({
                 <Text color={colors.brassSoft}>{t("medBack")} →</Text>
               </Pressable>
             )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                sitCredited ? t("medCountAsSitDone") : t("medCountAsSit")
+              }
+              disabled={sitCredited}
+              onPress={() => {
+                void writeSitCredit(
+                  session.tier === "daily" ? "daily-sit" : "meditation",
+                  Math.max(
+                    1,
+                    satSecRef.current || session.duration_minutes * 60
+                  )
+                ).then(() => setSitCredited(true));
+              }}
+              style={{ marginTop: spacing.sm }}
+            >
+              <Text color={colors.brassSoft}>
+                {sitCredited ? t("medCountAsSitDone") : t("medCountAsSit")}
+              </Text>
+            </Pressable>
             <Pressable
               accessibilityRole="link"
               accessibilityLabel={t("medBridgeSadhana")}

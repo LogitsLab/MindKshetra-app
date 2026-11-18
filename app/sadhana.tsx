@@ -35,9 +35,11 @@ import type { Milestone } from "@/data/milestones";
 import {
   addJournalDraft,
   appendSadhanaLog,
+  recordGuestPracticeDay,
   localDayStamp,
   markGuestJourneyDay,
 } from "@/storage/local";
+import { clearSitCredit, readTodaySitCredit } from "@/storage/sitCredit";
 import { images, moodAccent } from "@/theme/assets";
 import { uuidv4 } from "@/utils/uuid";
 import { radii, spacing, type ThemeColors } from "@/theme/tokens";
@@ -325,6 +327,23 @@ export default function SadhanaScreen() {
     setRemaining(min * 60);
   };
 
+  // Meditation / daily sit can count as this silence leg when opted in.
+  useEffect(() => {
+    if (!verse || sitDone) return;
+    let alive = true;
+    void readTodaySitCredit().then((credit) => {
+      if (!alive || !credit) return;
+      void clearSitCredit();
+      remainingRef.current = 0;
+      setRemaining(0);
+      setSitDone(true);
+      setRunning(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [verse, sitDone]);
+
   useEffect(() => {
     if (!running) return;
     const id = setInterval(() => {
@@ -439,6 +458,7 @@ export default function SadhanaScreen() {
       setGuestSaved(true);
     }
     doneLoggedRef.current = true;
+    void recordGuestPracticeDay();
     // At most one newly-crossed mark, and never at the cost of the sit.
     setMilestone(await takeNewMilestone());
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

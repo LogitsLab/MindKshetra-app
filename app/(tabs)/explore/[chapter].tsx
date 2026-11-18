@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
   ScrollView,
+  SectionList,
+  StyleSheet,
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Button } from "@/components/Button";
+import { ChapterListenPlayer } from "@/components/ChapterListenPlayer";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { Panel } from "@/components/Panel";
@@ -18,9 +20,15 @@ import {
   chapterMoral,
   chapterSubtitle,
   chapterSummary,
+  chapterTags,
   chapterTitle,
   getChapterMeta,
 } from "@/data/chapters";
+import {
+  formatUnitRange,
+  getUnitsForChapter,
+  type PassageUnit,
+} from "@/data/passages";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -44,18 +52,45 @@ export default function ChapterScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const listRef = useRef<FlatList<Sloka> | null>(null);
+  const listRef = useRef<SectionList<Sloka> | null>(null);
 
   const title = chapterTitle(meta, lang, `${t("chapter")} ${chapterNum}`);
   const subtitle = chapterSubtitle(meta, lang);
   const summary = chapterSummary(meta, lang);
+  const summaryParts = useMemo(
+    () =>
+      summary
+        ? summary.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
+        : [],
+    [summary]
+  );
+  const tags = useMemo(() => chapterTags(meta, lang), [meta, lang]);
   const moral = chapterMoral(meta, lang);
   const completedSet = useMemo(() => new Set(completed), [completed]);
+  const verseNumbers = useMemo(
+    () => slokas.map((s) => s.verse_number),
+    [slokas]
+  );
   const continueSloka =
     cursorVerse != null
       ? slokas.find((sloka) => sloka.verse_number === cursorVerse) ?? null
       : null;
   const showJump = slokas.length >= 24;
+
+  const sections = useMemo(() => {
+    const units = getUnitsForChapter(chapterNum);
+    if (!units.length) {
+      return [{ title: null as PassageUnit | null, data: slokas }];
+    }
+    return units
+      .map((unit) => ({
+        title: unit,
+        data: slokas.filter(
+          (s) => s.verse_number >= unit.from && s.verse_number <= unit.to
+        ),
+      }))
+      .filter((s) => s.data.length > 0);
+  }, [chapterNum, slokas]);
 
   useEffect(() => {
     let alive = true;
@@ -103,13 +138,67 @@ export default function ChapterScreen() {
   }, [continueSlokaId, slokas]);
 
   const jumpToVerse = (verse: number) => {
-    const index = slokas.findIndex((sloka) => sloka.verse_number === verse);
-    if (index < 0) return;
-    listRef.current?.scrollToIndex({ index, viewOffset: 12, animated: true });
+    let sectionIndex = -1;
+    let itemIndex = -1;
+    for (let s = 0; s < sections.length; s++) {
+      const i = sections[s].data.findIndex((sloka) => sloka.verse_number === verse);
+      if (i >= 0) {
+        sectionIndex = s;
+        itemIndex = i;
+        break;
+      }
+    }
+    if (sectionIndex < 0 || itemIndex < 0) return;
+    listRef.current?.scrollToLocation({
+      sectionIndex,
+      itemIndex,
+      viewOffset: 12,
+      animated: true,
+    });
   };
 
   const listHeader = (
     <>
+      {tags.length ? (
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: spacing.xs,
+            marginBottom: spacing.sm,
+          }}
+        >
+          {tags.map((tag) => (
+            <View
+              key={tag}
+              style={{
+                borderWidth: StyleSheet.hairlineWidth * 2,
+                borderColor: colors.line,
+                paddingHorizontal: spacing.sm,
+                paddingVertical: 4,
+                borderRadius: radii.sm,
+              }}
+            >
+              <Text
+                variant="muted"
+                color={colors.brassSoft}
+                style={{ fontSize: 11 }}
+              >
+                {tag}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+      {summaryParts.map((part) => (
+        <Text
+          key={part.slice(0, 40)}
+          variant="soft"
+          style={{ marginBottom: spacing.sm }}
+        >
+          {part}
+        </Text>
+      ))}
       {moral ? (
         <Panel style={{ marginBottom: spacing.sm }}>
           <Text variant="eyebrow" color={colors.brassSoft}>
@@ -119,6 +208,13 @@ export default function ChapterScreen() {
             {moral}
           </Text>
         </Panel>
+      ) : null}
+      {verseNumbers.length > 0 ? (
+        <ChapterListenPlayer
+          chapter={chapterNum}
+          verseNumbers={verseNumbers}
+          onVerseChange={jumpToVerse}
+        />
       ) : null}
       <View
         style={{
@@ -219,11 +315,6 @@ export default function ChapterScreen() {
         title={title}
         subtitle={subtitle || `${t("chapter")} ${chapterNum}`}
       />
-      {summary ? (
-        <Text variant="soft" style={{ marginBottom: spacing.sm }}>
-          {summary}
-        </Text>
-      ) : null}
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center" }}>
@@ -241,11 +332,56 @@ export default function ChapterScreen() {
           }}
         />
       ) : (
-        <FlatList
+        <SectionList
           ref={listRef}
-          data={slokas}
+          sections={sections}
           keyExtractor={(sloka) => String(sloka.id)}
-          initialNumToRender={8}
+          initialNumToRender={10}
+          stickySectionHeadersEnabled={false}
+          renderSectionHeader={({ section }) => {
+            const unit = section.title;
+            if (!unit) return null;
+            const first = section.data[0];
+            return (
+              <View style={{ marginTop: spacing.md, marginBottom: spacing.sm }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    gap: spacing.xs,
+                  }}
+                >
+                  <Text variant="title" color={colors.text} style={{ fontSize: 18 }}>
+                    {lang === "hi" ? unit.titleHi : unit.titleEn}
+                  </Text>
+                  <Text
+                    variant="muted"
+                    color={colors.brassSoft}
+                    style={{ fontSize: 11 }}
+                  >
+                    {unit.mode === "scene"
+                      ? t("unitBadgeScene")
+                      : t("unitBadgeTeaching")}{" "}
+                    · {formatUnitRange(unit)}
+                  </Text>
+                </View>
+                <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                  {lang === "hi" ? unit.themeHi : unit.themeEn}
+                </Text>
+                {first ? (
+                  <Pressable
+                    onPress={() => router.push(`/sloka/${first.id}`)}
+                    style={{ marginTop: spacing.sm }}
+                  >
+                    <Text color={colors.brassSoft}>
+                      {t("readUnitReflection")} →
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            );
+          }}
           renderItem={({ item }) => (
             <SlokaCard
               sloka={item}
@@ -260,20 +396,6 @@ export default function ChapterScreen() {
               body={t("noVersesBody")}
             />
           }
-          onScrollToIndexFailed={(info) => {
-            // Target not measured yet — estimate, let it render, retry.
-            listRef.current?.scrollToOffset({
-              offset: info.averageItemLength * info.index,
-              animated: true,
-            });
-            setTimeout(() => {
-              listRef.current?.scrollToIndex({
-                index: info.index,
-                viewOffset: 12,
-                animated: true,
-              });
-            }, 250);
-          }}
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}

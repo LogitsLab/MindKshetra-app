@@ -3,9 +3,8 @@
  *   - restricted FGS types from expo-audio (mediaPlayback + microphone)
  *   - BOOT_COMPLETED receivers from expo-notifications
  *
- * MindKshetra never records audio and never uses lock-screen media controls.
- * Strip those services, their FGS permissions, and boot actions on receivers
- * so a reboot cannot start a restricted foreground service.
+ * Sleep beds use media playback in the background. Recording and boot
+ * receivers stay stripped so a reboot cannot start a microphone service.
  *
  * Tradeoff: scheduled local notifications will not restore after reboot
  * until the app is opened again.
@@ -22,7 +21,6 @@ const BOOT_ACTIONS = new Set([
 ]);
 
 const AUDIO_SERVICE_SUFFIXES = [
-  "AudioControlsService",
   "AudioRecordingService",
 ];
 

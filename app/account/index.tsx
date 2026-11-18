@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   Share,
   StyleSheet,
   TextInput,
   View,
-  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
@@ -39,6 +40,7 @@ import { useOnboarding } from "@/context/OnboardingContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTextScale, type TextScaleId } from "@/context/TextScaleContext";
 import { useTheme } from "@/context/ThemeContext";
+import { brandLinkRows } from "@/lib/brandLinks";
 import { radii, spacing } from "@/theme/tokens";
 import { getAppVersionLabel } from "@/utils/appVersion";
 
@@ -109,6 +111,7 @@ export default function AccountScreen() {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [notifDailyVerse, setNotifDailyVerse] = useState(false);
   const [notifStreakReminder, setNotifStreakReminder] = useState(false);
+  const [notifFestivalReminders, setNotifFestivalReminders] = useState(false);
   const [sendHourLocal, setSendHourLocal] = useState(8);
   const [pushBusy, setPushBusy] = useState(false);
   const [votdEmailStatus, setVotdEmailStatus] = useState<
@@ -238,6 +241,7 @@ export default function AccountScreen() {
       setPushEnabled(true);
       setNotifDailyVerse(false);
       setNotifStreakReminder(false);
+      setNotifFestivalReminders(false);
       setSendHourLocal(8);
       return;
     }
@@ -249,6 +253,7 @@ export default function AccountScreen() {
         setPushEnabled(prefs.pushEnabled);
         setNotifDailyVerse(prefs.dailyVerse);
         setNotifStreakReminder(prefs.streakReminder);
+        setNotifFestivalReminders(Boolean(prefs.festivalReminders));
         setSendHourLocal(prefs.sendHourLocal);
       })
       .catch(() => {
@@ -303,6 +308,7 @@ export default function AccountScreen() {
       pushEnabled: boolean;
       dailyVerse: boolean;
       streakReminder: boolean;
+      festivalReminders: boolean;
       sendHourLocal: number;
     }>
   ) {
@@ -313,6 +319,7 @@ export default function AccountScreen() {
       setPushEnabled(data.pushEnabled);
       setNotifDailyVerse(data.dailyVerse);
       setNotifStreakReminder(data.streakReminder);
+      setNotifFestivalReminders(Boolean(data.festivalReminders));
       setSendHourLocal(data.sendHourLocal);
     } catch (e) {
       setMessage((e as Error).message);
@@ -1244,6 +1251,26 @@ export default function AccountScreen() {
                   }
                 />
               </View>
+
+              <Hairline style={{ marginVertical: spacing.md }} />
+
+              <View style={styles.votdRow}>
+                <View style={{ flex: 1, paddingRight: spacing.md }}>
+                  <Text variant="body">{t("notifFestivalReminders")}</Text>
+                  <Text variant="muted" style={{ marginTop: spacing.xs }}>
+                    {t("notifFestivalRemindersHint")}
+                  </Text>
+                </View>
+                <ToggleSwitch
+                  checked={notifFestivalReminders}
+                  disabled={prefsBusy}
+                  onPress={() =>
+                    void patchNotifPrefs({
+                      festivalReminders: !notifFestivalReminders,
+                    })
+                  }
+                />
+              </View>
             </>
           ) : (
             <Text variant="muted">{t("notifGuestRow")}</Text>
@@ -1329,6 +1356,23 @@ export default function AccountScreen() {
             );
           })}
         </View>
+
+        <Panel style={{ marginTop: spacing.xl }}>
+          <Text variant="title" style={{ fontSize: 18 }}>
+            {lang === "hi" ? "हमसे जुड़ें" : "Follow us"}
+          </Text>
+          <View style={{ marginTop: spacing.sm, gap: spacing.sm }}>
+            {brandLinkRows().map((row) => (
+              <Pressable
+                key={row.id}
+                accessibilityRole="link"
+                onPress={() => void Linking.openURL(row.href)}
+              >
+                <Text color={colors.brassSoft}>{row.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Panel>
 
         <Pressable
           testID="account-privacy"

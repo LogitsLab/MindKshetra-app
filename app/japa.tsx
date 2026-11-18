@@ -44,6 +44,7 @@ import {
   getJapaPrefs,
   getJapaStats,
   localDayStamp,
+  recordGuestPracticeDay,
   recordJapaBeads,
   setJapaPrefs,
   type JapaMode,
@@ -304,6 +305,7 @@ export default function JapaScreen() {
     // Device-local tally for lifetime + daily-goal insight (independent of the
     // server log so guests get stats too).
     void recordJapaBeads(count).then(setStats);
+    void recordGuestPracticeDay();
   }, []);
 
   useEffect(() => () => logSession(), [logSession]);

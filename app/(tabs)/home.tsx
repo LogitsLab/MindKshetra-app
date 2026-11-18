@@ -19,7 +19,7 @@ import { SadhanaCard } from "@/components/SadhanaCard";
 import { CoverImage, type CoverImageFocus } from "@/components/CoverImage";
 import { MoodIcon } from "@/components/MoodIcon";
 import { ApiError } from "@/api/client";
-import { astrologyApi, userApi } from "@/api/endpoints";
+import { astrologyApi, progressApi, userApi } from "@/api/endpoints";
 import { HOME_PATHS } from "@/data/homePaths";
 import { moods, previewMoodIds } from "@/data/moods";
 import { sittingProgram } from "@/data/meditation";
@@ -29,6 +29,10 @@ import { useTheme } from "@/context/ThemeContext";
 import { useFeaturedVerses } from "@/hooks/useFeaturedVerses";
 import { useMeditationProgress } from "@/hooks/useMeditationProgress";
 import { usePanchang } from "@/hooks/usePanchang";
+import {
+  getGuestProgress,
+  getGuestStreakCurrent,
+} from "@/storage/local";
 import { images } from "@/theme/assets";
 import { motion, radii, spacing } from "@/theme/tokens";
 import { truncateAtWord } from "@/utils/text";
@@ -52,17 +56,26 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { isSignedIn } = useAuth();
   const [streak, setStreak] = useState(0);
   const [best, setBest] = useState(0);
+  const [guestStreak, setGuestStreak] = useState(0);
+  const [continueSlokaId, setContinueSlokaId] = useState<number | null>(null);
+  const [continueCursor, setContinueCursor] = useState<{
+    chapter: number;
+    verse: number;
+  } | null>(null);
   const { verses, error: votdError, stale: votdStale } = useFeaturedVerses();
   const { panchang } = usePanchang();
   const med = useMeditationProgress();
   const [muhurat, setMuhurat] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isSignedIn) return;
+    if (!isSignedIn) {
+      void getGuestStreakCurrent().then(setGuestStreak);
+      return;
+    }
     userApi
       .streak()
       .then((s) => {
@@ -72,6 +85,31 @@ export default function HomeScreen() {
       .catch(() => undefined);
   }, [isSignedIn]);
 
+  useEffect(() => {
+    let alive = true;
+    void (isSignedIn ? progressApi.get() : getGuestProgress())
+      .then((data) => {
+        if (!alive) return;
+        setContinueSlokaId(data.continueSlokaId ?? null);
+        setContinueCursor(data.cursor ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    const first = verses[0]?.sloka;
+    if (!first) return;
+    void import("@/widgets/syncVerseOfTheDay").then((m) =>
+      m.syncVerseOfTheDayWidget({
+        sloka: first,
+        lang,
+        nakshatra: panchang?.nakshatra ?? null,
+      })
+    );
+  }, [verses, lang, panchang?.nakshatra]);
   useEffect(() => {
     let alive = true;
     void astrologyApi
@@ -99,11 +137,7 @@ export default function HomeScreen() {
   const bottomPad =
     spacing.tabBar + insets.bottom + spacing.fab + spacing.fabInset + spacing.xl;
 
-  const medProgress = Math.min(1, med.completedDays.length / (sittingProgram.days_count || 45));
-
-  // Paths — the original "Paths into" set, its own tile images. Madhav lives in
-  // the FAB, and Meditation lives in the Practice rail below — drop both here so
-  // nothing is offered twice.
+  // Paths — Madhav is FAB; meditation lives on Practise.
   const pathsRail: RailItem[] = HOME_PATHS.filter(
     (p) => p.mark !== "madhav" && p.mark !== "meditation"
   ).map((p) => ({
@@ -115,14 +149,15 @@ export default function HomeScreen() {
     href: p.href,
   }));
 
-  // Practice — the lifestyle set, same tile images as before.
-  const practiceRail: RailItem[] = [
-    { key: "sadhana", image: images.pathSadhana, titleKey: "homeSadhanaTitle", descKey: "homeSadhanaBody", href: "/sadhana" },
-    { key: "meditation", image: images.pathMeditation, titleKey: "homeMeditationTitle", descKey: "homeMeditationBlurb", href: "/meditation", progress: medProgress },
-    { key: "japa", image: images.pathPaths, titleKey: "homeJapaTitle", descKey: "homeJapaBody", href: "/japa" },
-    { key: "panchang", image: images.pathPanchangRing, titleKey: "homeBlockPanchangTitle", descKey: "homeBlockPanchangBody", href: "/panchang" },
-    { key: "reminders", image: images.pathAstrology, titleKey: "homeBlockNotifTitle", descKey: "homeBlockNotifBody", href: "/(tabs)/profile" },
-  ];
+  const nextMedDay = Math.min(
+    sittingProgram.days_count || 45,
+    Math.max(1, (med.completedDays.length ? Math.max(...med.completedDays) : 0) + 1)
+  );
+  const medHref = `/meditation/${nextMedDay}` as Href;
+  const displayStreak = isSignedIn ? streak : guestStreak;
+  const displayBest = isSignedIn ? best : guestStreak;
+  const showGuestUpgrade = !isSignedIn && guestStreak >= 2;
+  const hasContinue = continueSlokaId != null || continueCursor != null;
 
   return (
     <Screen testID="screen-home" atmosphere="soft" padded edges={["left", "right"]}>
@@ -134,8 +169,8 @@ export default function HomeScreen() {
         <HomeHero
           votdSanskrit={verses[0]?.sloka.sanskrit_devanagari}
           topInset={insets.top}
-          streak={streak}
-          bestStreak={best}
+          streak={displayStreak}
+          bestStreak={displayBest}
         />
 
         {/* Daily verse — the signature daily content, kept high */}
@@ -143,10 +178,123 @@ export default function HomeScreen() {
           <VotdCarousel verses={verses} error={votdError} stale={votdStale} />
         </Rise>
 
-        {/* Begin today's sādhana — the primary action, in the verse-card idiom
-            (replaces the hero ring-CTA) */}
+        {hasContinue ? (
+          <Rise delay={motion.staggerMs * 2} style={{ marginTop: spacing.md }}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                if (continueSlokaId != null) {
+                  router.push(`/sloka/${continueSlokaId}`);
+                  return;
+                }
+                if (continueCursor) {
+                  router.push(`/(tabs)/explore/${continueCursor.chapter}`);
+                }
+              }}
+              style={[
+                styles.infoBar,
+                { borderColor: colors.brass, backgroundColor: colors.surface },
+              ]}
+            >
+              <Text variant="muted" color={colors.brassSoft}>
+                {t("homeContinueRail")}
+              </Text>
+              <Text variant="muted" color={colors.text} style={styles.infoText} numberOfLines={1}>
+                {continueCursor
+                  ? `${continueCursor.chapter}.${continueCursor.verse}`
+                  : t("continueReading")}
+              </Text>
+              <Text style={{ color: colors.brass, fontSize: 16 }}>›</Text>
+            </Pressable>
+          </Rise>
+        ) : null}
+
+        {showGuestUpgrade ? (
+          <Rise delay={motion.staggerMs * 2} style={{ marginTop: spacing.sm }}>
+            <Pressable
+              onPress={() => router.push("/(tabs)/profile")}
+              style={[
+                styles.infoBar,
+                { borderColor: colors.line, backgroundColor: colors.surface },
+              ]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text variant="muted" color={colors.text}>
+                  {t("guestStreakLabel").replace("{n}", String(guestStreak))}
+                </Text>
+                <Text variant="muted" color={colors.textMuted} style={{ marginTop: 2 }}>
+                  {t("guestStreakUpgrade")}
+                </Text>
+              </View>
+              <Text color={colors.brassSoft}>{t("guestStreakUpgradeCta")}</Text>
+            </Pressable>
+          </Rise>
+        ) : null}
+
+        {/* Begin today's sādhana — primary action */}
         <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.lg }}>
-          <SadhanaCard streak={streak} />
+          <SadhanaCard streak={displayStreak} />
+        </Rise>
+
+        <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.md }}>
+          <View style={styles.chipRow}>
+            <Pressable
+              onPress={() => router.push("/(tabs)/explore")}
+              style={[styles.quickLink, { borderColor: colors.line, backgroundColor: colors.surface }]}
+            >
+              <Text color={colors.brassSoft}>{t("openTheGita")}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/(tabs)/practise")}
+              style={[styles.quickLink, { borderColor: colors.line, backgroundColor: colors.surface }]}
+            >
+              <Text color={colors.brassSoft}>{t("navPractise")}</Text>
+            </Pressable>
+          </View>
+        </Rise>
+
+        {/* Today’s battlefield — panchang + verse + next sit */}
+        <Rise delay={motion.staggerMs * 3} style={{ marginTop: spacing.lg }}>
+          <View
+            style={[
+              styles.battlefield,
+              { borderColor: colors.line, backgroundColor: colors.surface },
+            ]}
+          >
+            <Text variant="eyebrow" color={colors.brassSoft}>
+              {t("homeBattlefieldEyebrow")}
+            </Text>
+            <Text variant="title" color={colors.text} style={{ marginTop: spacing.xs }}>
+              {t("homeBattlefieldTitle")}
+            </Text>
+            <Text variant="muted" style={{ marginTop: spacing.xs }}>
+              {t("homeBattlefieldBlurb")}
+            </Text>
+            {panchang?.tithi ? (
+              <Text variant="muted" color={colors.brassSoft} style={{ marginTop: spacing.sm }}>
+                {panchang.tithi}
+                {panchang.nakshatra ? ` · ${panchang.nakshatra}` : ""}
+              </Text>
+            ) : null}
+            <View style={styles.battlefieldActions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push(medHref)}
+                style={[styles.battlefieldCta, { backgroundColor: colors.brass }]}
+              >
+                <Text color={colors.onBrass}>{t("homeBattlefieldSit")}</Text>
+              </Pressable>
+              {verses[0] ? (
+                <Pressable
+                  accessibilityRole="link"
+                  onPress={() => router.push(`/sloka/${verses[0].sloka.id}`)}
+                  style={[styles.battlefieldGhost, { borderColor: colors.line }]}
+                >
+                  <Text color={colors.brassSoft}>{t("homeBattlefieldVerse")}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
         </Rise>
 
         {/* Panchang — sits above Today's feeling */}
@@ -179,14 +327,8 @@ export default function HomeScreen() {
           <Rail items={pathsRail} onPress={(h) => router.push(h)} />
         </Rise>
 
-        {/* Practice */}
-        <Rise delay={motion.staggerMs * 6} style={{ marginTop: spacing.xl }}>
-          <SectionHead eyebrow={t("homePracticePathsEyebrow")} onAction={() => router.push("/(tabs)/practise")} actionLabel={t("homeSeeAll")} />
-          <Rail items={practiceRail} onPress={(h) => router.push(h)} />
-        </Rise>
-
         {/* Community & support — 3 consistent chips */}
-        <Rise delay={motion.staggerMs * 7} style={{ marginTop: spacing.xl }}>
+        <Rise delay={motion.staggerMs * 6} style={{ marginTop: spacing.xl }}>
           <Text variant="eyebrow" color={colors.brassSoft}>
             {t("homeCommunityEyebrow")}
           </Text>
@@ -517,6 +659,16 @@ const styles = StyleSheet.create({
   railDotActive: { width: 16, height: 5, borderRadius: 3 },
   railDot: { width: 5, height: 5, borderRadius: 3, opacity: 0.4 },
   chipRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
+  quickLink: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
   chip: {
     flex: 1,
     flexDirection: "row",
@@ -524,6 +676,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing.xs,
     paddingVertical: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  battlefield: {
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  battlefieldActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  battlefieldCta: {
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+  },
+  battlefieldGhost: {
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
     borderRadius: radii.md,
     borderWidth: StyleSheet.hairlineWidth * 2,
   },

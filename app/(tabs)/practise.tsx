@@ -8,7 +8,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import { spacing } from "@/theme/tokens";
 
 /**
- * Practise tab — same lifestyle grid as Home, focused view.
+ * Practise tab — ritual hub (sādhana, japa, sit, wallpapers…).
+ * Home keeps “today”; this tab is where practice lives.
  */
 export default function PractiseTabScreen() {
   const insets = useSafeAreaInsets();
@@ -17,7 +18,10 @@ export default function PractiseTabScreen() {
 
   return (
     <Screen atmosphere="soft" padded testID="screen-practise">
-      <ScreenHeader title={t("navPractise")} />
+      <ScreenHeader
+        title={t("navPractise")}
+        subtitle={t("homePracticePathsEyebrow")}
+      />
       <ScrollView
         contentContainerStyle={{ paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
