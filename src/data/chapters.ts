@@ -59,6 +59,20 @@ export function chapterSummary(
   return meta.summary?.trim() || meta.summary_hi?.trim() || "";
 }
 
+export function chapterTags(
+  meta: ChapterMeta | undefined,
+  lang: "en" | "hi"
+): string[] {
+  if (!meta) return [];
+  if (lang === "hi") {
+    const hi = meta.tags_hi?.map((t) => t.trim()).filter(Boolean) ?? [];
+    if (hi.length) return hi;
+  }
+  const en = meta.tags?.map((t) => t.trim()).filter(Boolean) ?? [];
+  if (en.length) return en;
+  return meta.tags_hi?.map((t) => t.trim()).filter(Boolean) ?? [];
+}
+
 /**
  * Contiguous sloka-id ranges per chapter (ids 1–701 in chapter order).
  * Used for Explore tile done/total without fetching every verse.

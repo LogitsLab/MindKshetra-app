@@ -50,18 +50,24 @@ export function softBellUrl(): string | null {
   return base ? `${base}/${BELL_PATH}` : null;
 }
 
-async function ensureAudioMode(): Promise<void> {
+async function ensureAudioMode(background = false): Promise<void> {
   try {
     await setAudioModeAsync({
       playsInSilentMode: true,
       interruptionMode: "doNotMix",
-      shouldPlayInBackground: false,
+      shouldPlayInBackground: background,
       allowsRecording: false,
     });
     audioModeSet = true;
   } catch {
     audioModeSet = false;
   }
+}
+
+/** Sleep beds may continue with the screen locked. Requires an EAS build with background audio. */
+export async function prepareSleepPlayback(): Promise<void> {
+  audioModeSet = false;
+  await ensureAudioMode(true);
 }
 
 function release(p: AudioPlayer | null): void {
@@ -131,7 +137,7 @@ export async function startAmbient(
   running = true;
 
   try {
-    if (!audioModeSet) await ensureAudioMode();
+    await ensureAudioMode(false);
     const url = ambientLoopUrl(bed);
     if (url) {
       try {

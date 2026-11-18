@@ -115,6 +115,11 @@ export default function ProgressScreen() {
                 value={String(data.mantras)}
                 colors={colors}
               />
+              <Stat
+                label={L === "hi" ? "बैठक" : "Sits"}
+                value={String(data.meditationSits ?? 0)}
+                colors={colors}
+              />
             </View>
 
             <View style={styles.streakSection}>

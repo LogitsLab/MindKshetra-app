@@ -378,6 +378,13 @@ export function PracticeLifestyleGrid({
         onPress: () => router.push("/panchang"),
       },
       {
+        key: "wallpapers",
+        image: images.krishnaGlade,
+        title: t("wallpapersTitle"),
+        body: t("wallpapersIntro"),
+        onPress: () => router.push("/wallpapers"),
+      },
+      {
         key: "reminders",
         image: images.pathAstrology,
         title: t("homeBlockNotifTitle"),

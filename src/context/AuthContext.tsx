@@ -240,6 +240,13 @@ async function mergeOnUpgrade(): Promise<boolean> {
   } catch {
     /* keep the log */
   }
+  // Guest local streak days are superseded by server streaks after practice merge.
+  try {
+    const { clearGuestPracticeDays } = await import("@/storage/local");
+    await clearGuestPracticeDays();
+  } catch {
+    /* ignore */
+  }
   // Journey days marked while signed out. Until now mobile had no guest store
   // at all, so a signed-out person's path progress simply vanished; these rows
   // replay through the idempotent merge endpoint, which re-validates each day

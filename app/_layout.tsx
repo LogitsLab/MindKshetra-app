@@ -51,6 +51,14 @@ function RootNavigator() {
   useEffect(() => {
     warmAudioManifest();
   }, []);
+  // Meta App Events + ATT — no-ops until Facebook App ID is configured.
+  useEffect(() => {
+    void import("@/analytics/meta").then((m) => m.initMetaSdk());
+  }, []);
+  // Register the VOTD widget kind (createWidget side effect) on native builds.
+  useEffect(() => {
+    void import("../widgets/VerseOfTheDay").catch(() => undefined);
+  }, []);
 
   // Never return bare null — that flashes pure black between splash and Stack.
   if (!ready) {
@@ -103,6 +111,10 @@ function RootNavigator() {
         />
         <Stack.Screen name="sadhana" options={{ headerShown: false }} />
         <Stack.Screen name="community" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="wallpapers"
+          options={{ title: t("wallpapersTitle") }}
+        />
         <Stack.Screen name="care" options={{ headerShown: false }} />
         <Stack.Screen name="support" options={{ headerShown: false }} />
         <Stack.Screen name="paths/index" options={{ headerShown: false }} />

@@ -36,6 +36,8 @@ const KEYS = {
   japaPrefs: "mindkshetra-japa-prefs",
   japaStats: "mindkshetra-japa-stats",
   chartInviteDismissed: "mindkshetra-chart-invite-dismissed",
+  /** Unique IST practice days for guest streak (YYYY-MM-DD[]). */
+  guestPracticeDays: "mindkshetra-guest-practice-days",
 } as const;
 
 export type PendingAstroSave = {
@@ -697,4 +699,70 @@ export async function getChartInviteDismissed(): Promise<boolean> {
 
 export async function setChartInviteDismissed(): Promise<void> {
   await AsyncStorage.setItem(KEYS.chartInviteDismissed, "1");
+}
+
+/** Unique IST calendar days the guest practiced (YYYY-MM-DD). */
+export async function getGuestPracticeDays(): Promise<string[]> {
+  const raw = await AsyncStorage.getItem(KEYS.guestPracticeDays);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((d): d is string => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Mark today (IST) as a practice day. Idempotent per day.
+ * Returns current consecutive streak ending today (or 0 if today not practiced).
+ */
+export async function recordGuestPracticeDay(
+  now = new Date()
+): Promise<{ days: string[]; current: number }> {
+  const today = istDayStamp(now);
+  const prev = await getGuestPracticeDays();
+  const days = prev.includes(today) ? prev : [...prev, today].sort();
+  if (days.length !== prev.length) {
+    await AsyncStorage.setItem(KEYS.guestPracticeDays, JSON.stringify(days));
+  }
+  return { days, current: guestStreakFromDays(days, today) };
+}
+
+export async function getGuestStreakCurrent(
+  now = new Date()
+): Promise<number> {
+  const today = istDayStamp(now);
+  const days = await getGuestPracticeDays();
+  return guestStreakFromDays(days, today);
+}
+
+/** Consecutive IST days ending on `today` (or yesterday if today empty → 0). */
+export function guestStreakFromDays(days: string[], today: string): number {
+  const set = new Set(days);
+  if (!set.has(today)) return 0;
+  let n = 0;
+  let cursor = today;
+  while (set.has(cursor)) {
+    n += 1;
+    cursor = addIstDays(cursor, -1);
+  }
+  return n;
+}
+
+function addIstDays(isoDay: string, delta: number): string {
+  const [y, m, d] = isoDay.split("-").map(Number);
+  const utc = Date.UTC(y, m - 1, d) + delta * 86400000;
+  const dt = new Date(utc);
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
+export async function clearGuestPracticeDays(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.guestPracticeDays);
 }

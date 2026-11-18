@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
@@ -24,6 +24,7 @@ import {
   useMeditationProgress,
 } from "@/hooks/useMeditationProgress";
 import { images } from "@/theme/assets";
+import { readMeditationStats, type MeditationStats } from "@/storage/meditationStats";
 import { radii, spacing } from "@/theme/tokens";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -62,6 +63,13 @@ export default function MeditationHubScreen() {
 
   const program = sittingProgram;
   const continueDay = Math.min(program.days_count, Math.max(1, currentDay));
+  const courseOpen =
+    completedDays.length > 0 && completedDays.length < program.days_count;
+  const [tally, setTally] = useState<MeditationStats | null>(null);
+
+  useEffect(() => {
+    void readMeditationStats().then(setTally);
+  }, [completedDays]);
 
   const sections = useMemo(() => {
     const groups: Array<{
@@ -102,12 +110,22 @@ export default function MeditationHubScreen() {
             intro={lang === "hi" ? program.intro_hi : program.intro_en}
             meta={
               <View>
+                {tally ? (
+                  <Text variant="muted" color={colors.onMediaMuted}>
+                    {t("medTodayLine")
+                      .replace("{min}", String(tally.dayMinutes))
+                      .replace("{sits}", String(tally.daySits))
+                      .replace("{life}", String(tally.lifetimeMinutes))}
+                  </Text>
+                ) : null}
                 <Text variant="muted" color={colors.onMediaMuted}>
                   {fill(t("medProgress"), {
                     done: completedDays.length,
                     total: program.days_count,
-                  })}{" "}
-                  · {fill(t("medDayLabel"), { n: continueDay })}
+                  })}
+                  {courseOpen
+                    ? ` · ${fill(t("medDayLabel"), { n: continueDay })}`
+                    : ""}
                 </Text>
                 <View style={[styles.pathTrack, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
                   <View
@@ -126,14 +144,34 @@ export default function MeditationHubScreen() {
               </View>
             }
             actions={
-              <Button
-                label={
-                  completedDays.length === 0
-                    ? t("medHeroBegin")
-                    : t("medHeroContinue")
-                }
-                onPress={() => router.push(`/meditation/${continueDay}`)}
-              />
+              <>
+                <Button
+                  label={
+                    courseOpen
+                      ? fill(t("medContinue"), { n: continueDay })
+                      : t("medDailySit")
+                  }
+                  onPress={() =>
+                    router.push(
+                      courseOpen
+                        ? `/meditation/${continueDay}`
+                        : "/meditation/daily/daily-breath-5"
+                    )
+                  }
+                />
+                <View style={{ height: spacing.sm }} />
+                <Button
+                  label={t("medSilentTimer")}
+                  variant="ghost"
+                  onPress={() => router.push("/meditation/silent")}
+                />
+                <View style={{ height: spacing.sm }} />
+                <Button
+                  label={t("medSleepTonight")}
+                  variant="ghost"
+                  onPress={() => router.push("/meditation/library")}
+                />
+              </>
             }
           />
 

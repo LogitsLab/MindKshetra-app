@@ -8,6 +8,7 @@ import * as sadhana from "@/i18n/namespaces/sadhana";
 import * as meditation from "@/i18n/namespaces/meditation";
 import * as pranayama from "@/i18n/namespaces/pranayama";
 import * as community from "@/i18n/namespaces/community";
+import * as wallpapers from "@/i18n/namespaces/wallpapers";
 
 export type AppLang = "en" | "hi";
 
@@ -23,6 +24,7 @@ export const dictionary = {
     ...meditation.en,
     ...pranayama.en,
     ...community.en,
+    ...wallpapers.en,
     navHome: "Home",
   },
   hi: {
@@ -36,6 +38,7 @@ export const dictionary = {
     ...meditation.hi,
     ...pranayama.hi,
     ...community.hi,
+    ...wallpapers.hi,
     navHome: "होम",
   },
 } as const;

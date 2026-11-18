@@ -40,6 +40,38 @@ function normalizeSlokaList(data: unknown): { slokas: Sloka[]; total: number } {
   return { slokas: [], total: 0 };
 }
 
+export type VerseSearchResult = {
+  results: Sloka[];
+  nearest: Sloka[];
+  didYouMean: string[];
+};
+
+function normalizeVerseSearch(data: unknown): VerseSearchResult {
+  if (Array.isArray(data)) {
+    return { results: data as Sloka[], nearest: [], didYouMean: [] };
+  }
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+    if (Array.isArray(obj.results)) {
+      return {
+        results: obj.results as Sloka[],
+        nearest: Array.isArray(obj.nearest) ? (obj.nearest as Sloka[]) : [],
+        didYouMean: Array.isArray(obj.didYouMean)
+          ? (obj.didYouMean as string[])
+          : [],
+      };
+    }
+    if (Array.isArray(obj.slokas)) {
+      return {
+        results: obj.slokas as Sloka[],
+        nearest: [],
+        didYouMean: [],
+      };
+    }
+  }
+  return { results: [], nearest: [], didYouMean: [] };
+}
+
 export const contentApi = {
   slokas: async (params?: { q?: string; chapter?: number; limit?: number }) => {
     const sp = new URLSearchParams();
@@ -49,6 +81,13 @@ export const contentApi = {
     const q = sp.toString();
     const data = await apiFetch<unknown>(`/api/slokas${q ? `?${q}` : ""}`);
     return normalizeSlokaList(data);
+  },
+  /** Full verse search payload (results + nearest + didYouMean). */
+  searchVerses: async (q: string): Promise<VerseSearchResult> => {
+    const data = await apiFetch<unknown>(
+      `/api/slokas?q=${encodeURIComponent(q.trim())}`
+    );
+    return normalizeVerseSearch(data);
   },
   sloka: (id: number) => apiFetch<Sloka>(`/api/slokas/${id}`),
   story: (id: number, lang: "en" | "hi") =>
@@ -255,6 +294,7 @@ export const userApi = {
       sessions: number;
       durationMinutes: number;
       mantras: number;
+      meditationSits: number;
       versesCompleted: number;
       journalEntries: number;
       distribution: {
@@ -440,6 +480,8 @@ export type NotificationPreferences = {
   astrologyAlerts: boolean;
   reflections: boolean;
   weeklyDigestEmail: boolean;
+  /** Opt-in named festival + Ekadashi push (default off). */
+  festivalReminders: boolean;
   /** Local hour of day the daily verse goes out, 4–21. */
   sendHourLocal: number;
 };

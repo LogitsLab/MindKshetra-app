@@ -51,6 +51,7 @@ export const PRACTICE_LABELS = {
   japa: { en: "japa", hi: "जप" },
   sit: { en: "quiet sit", hi: "शांत बैठक" },
   pranayama: { en: "pranayama", hi: "प्राणायाम" },
+  meditation: { en: "meditation", hi: "ध्यान" },
 } as const;
 
 export type MilestonePractice = keyof typeof PRACTICE_LABELS;
@@ -109,6 +110,7 @@ const PRACTICE_MOTIF: Record<MilestonePractice, MilestoneMotif> = {
   flow: "diya",
   japa: "mala",
   sit: "lotus",
+  meditation: "lotus",
   pranayama: "conch",
 };
 
