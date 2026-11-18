@@ -20,7 +20,8 @@
         ],
         "UISupportedInterfaceOrientations~ipad": [
           "UIInterfaceOrientationPortrait"
-        ]
+        ],
+        "UIBackgroundModes": ["audio"]
       },
       "buildNumber": "25"
     },
@@ -78,7 +79,33 @@
           "microphonePermission": false,
           "recordAudioAndroid": false,
           "enableBackgroundRecording": false,
-          "enableBackgroundPlayback": false
+          "enableBackgroundPlayback": true
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "VerseOfTheDay",
+              "displayName": "Verse of the Day",
+              "description": "Today’s Gita verse for your Home and Lock Screen.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "accessoryRectangular",
+                  "accessoryCircular",
+                  "accessoryInline"
+                ]
+              },
+              "android": {
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "both"
+              }
+            }
+          ]
         }
       ],
       "./plugins/withStripAudioFgsAndBootCompleted",

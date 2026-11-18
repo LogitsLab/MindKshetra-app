@@ -2,6 +2,7 @@ import foundation7 from "@/data/meditation/foundation-7.json";
 import meditation21 from "@/data/meditation/meditation-21.json";
 import meditation45 from "@/data/meditation/meditation-45.json";
 import dailySits from "@/data/meditation/daily-sits.json";
+import { adHocMeditationSession, sleepEvening } from "@/data/meditationAudio";
 
 export type MeditationPhase =
   | { type: "speak"; text_en: string; text_hi: string }
@@ -107,7 +108,10 @@ export function getFoundationDay(day: number): MeditationSession | undefined {
 export function getSessionById(id: string): MeditationSession | undefined {
   return (
     sittingProgram.days.find((d) => d.id === id) ??
-    dailySitsCatalog.sessions.find((s) => s.id === id)
+    dailySitsCatalog.sessions.find((s) => s.id === id) ??
+    sleepEvening(Number(/^sleep-7-d(\d+)$/.exec(id)?.[1])) ??
+    adHocMeditationSession(id) ??
+    undefined
   );
 }
 

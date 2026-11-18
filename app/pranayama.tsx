@@ -31,7 +31,11 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import type { Milestone } from "@/data/milestones";
 import { closingVerseFor } from "@/data/closingVerses";
-import { appendSadhanaLog, localDayStamp } from "@/storage/local";
+import {
+  appendSadhanaLog,
+  localDayStamp,
+  recordGuestPracticeDay,
+} from "@/storage/local";
 import { uuidv4 } from "@/utils/uuid";
 import { images } from "@/theme/assets";
 import { radii, spacing, type ThemeColors } from "@/theme/tokens";
@@ -162,6 +166,7 @@ export default function PranayamaScreen() {
     } else {
       void appendSadhanaLog(entry);
     }
+    void recordGuestPracticeDay();
   }, []);
 
   // Drive one breath step: animate the ring, count down, then advance. Finishes

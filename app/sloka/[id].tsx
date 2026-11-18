@@ -4,7 +4,6 @@ import {
   Pressable,
   Share,
   StyleSheet,
-  Switch,
   TextInput,
   View,
   type LayoutChangeEvent,
@@ -29,15 +28,18 @@ import {
   maybeShowNotificationPrompt,
 } from "@/components/NotificationPrompt";
 import { contentApi, eventsApi, progressApi, userApi } from "@/api/endpoints";
-import { ApiError, getApiUrl } from "@/api/client";
+import { getApiUrl } from "@/api/client";
 import { stopNarration } from "@/audio/narration";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMadhav } from "@/context/MadhavContext";
 import { useTheme } from "@/context/ThemeContext";
+import { bhashyaCompareFor } from "@/data/bhashyaCompare";
 import { chapterTitle, getChapterMeta } from "@/data/chapters";
+import { plainWordsFor } from "@/data/plainWords";
+import { usePanchang } from "@/hooks/usePanchang";
+import * as Sharing from "expo-sharing";
 import { bumpFocusVersion } from "@/hooks/useFocusRefresh";
-import { reflectionsOpen } from "@/lib/kill-switch-public";
 import {
   addJournalDraft,
   cacheVerse,
@@ -84,9 +86,8 @@ export default function SlokaScreen() {
   const [journalNotice, setJournalNotice] = useState<string | null>(null);
   const [journalBusy, setJournalBusy] = useState(false);
   const [savedJournalId, setSavedJournalId] = useState<number | null>(null);
-  const [shareBusy, setShareBusy] = useState(false);
-  const [sharedWithSangha, setSharedWithSangha] = useState(false);
-  const [shareHeld, setShareHeld] = useState(false);
+  const [storiesBusy, setStoriesBusy] = useState(false);
+  const { panchang } = usePanchang();
   const [progressNotice, setProgressNotice] = useState<string | null>(null);
   const [verseComplete, setVerseComplete] = useState(false);
   const [notifPromptVisible, setNotifPromptVisible] = useState(false);
@@ -118,8 +119,6 @@ export default function SlokaScreen() {
     setProgressNotice(null);
     setJournalNotice(null);
     setSavedJournalId(null);
-    setSharedWithSangha(false);
-    setShareHeld(false);
   }, [slokaId]);
 
   useEffect(() => {
@@ -334,6 +333,46 @@ export default function SlokaScreen() {
         .replace("{total}", String(chapterMeta.verses_count))
     : null;
   const ref = `${sloka.chapter}.${sloka.verse_number}`;
+  const plain = plainWordsFor(sloka.chapter, sloka.verse_number, lang);
+  const compareVoices = bhashyaCompareFor(
+    sloka.chapter,
+    sloka.verse_number,
+    lang === "hi" ? "hi" : "en"
+  );
+
+  const shareStoriesCard = async () => {
+    if (storiesBusy) return;
+    setStoriesBusy(true);
+    try {
+      const params = new URLSearchParams({ format: "stories" });
+      const nak = panchang?.nakshatra?.trim();
+      if (nak) params.set("nakshatra", nak);
+      const url = `${getApiUrl()}/api/og/verse/${sloka.id}?${params.toString()}`;
+      const FileSystem = await import("expo-file-system/legacy");
+      const dest = `${FileSystem.cacheDirectory}mindkshetra-stories-${sloka.id}.png`;
+      const downloaded = await FileSystem.downloadAsync(url, dest);
+      const canShare = await Sharing.isAvailableAsync();
+      if (!canShare) {
+        await Share.share({
+          message: `${ref}\n${translation ?? ""}\n${getApiUrl()}/sloka/${sloka.id}`,
+          url: downloaded.uri,
+        });
+      } else {
+        await Sharing.shareAsync(downloaded.uri, {
+          mimeType: "image/png",
+          dialogTitle: t("shareStoriesCard"),
+        });
+      }
+      void eventsApi.send("share_card", {
+        method: "stories",
+        slokaId: sloka.id,
+      });
+    } catch {
+      /* fail soft — text share still available */
+    } finally {
+      setStoriesBusy(false);
+    }
+  };
 
   const toggleComplete = async () => {
     const next = !verseComplete;
@@ -627,6 +666,15 @@ export default function SlokaScreen() {
                 }}
               />
             </View>
+            <Pressable
+              onPress={() => void shareStoriesCard()}
+              disabled={storiesBusy}
+              style={{ marginTop: spacing.sm, opacity: storiesBusy ? 0.6 : 1 }}
+            >
+              <Text variant="muted" color={colors.brassSoft}>
+                {storiesBusy ? "…" : t("shareStoriesCard")}
+              </Text>
+            </Pressable>
 
             <View style={styles.prevNext}>
               {prev ? (
@@ -727,6 +775,23 @@ export default function SlokaScreen() {
             >
               {lang === "hi" ? translation : `‘${translation}’`}
             </Text>
+            {plain ? (
+              <View
+                style={{
+                  marginTop: spacing.md,
+                  borderLeftWidth: 2,
+                  borderLeftColor: "rgba(201,162,39,0.45)",
+                  paddingLeft: spacing.sm,
+                }}
+              >
+                <Text variant="eyebrow" color={colors.brassSoft}>
+                  {t("versePlainWords")}
+                </Text>
+                <Text variant="soft" style={{ marginTop: spacing.xs }}>
+                  {plain}
+                </Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -750,6 +815,33 @@ export default function SlokaScreen() {
               ) : null}
             </View>
           )}
+          {compareVoices ? (
+            <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
+              <Text variant="eyebrow" color={colors.brassSoft}>
+                {t("bhashyaCompare")}
+              </Text>
+              <Text variant="muted" color={colors.textMuted}>
+                {t("bhashyaCompareNote")}
+              </Text>
+              {compareVoices.map((voice) => (
+                <View
+                  key={voice.id}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: colors.line,
+                    padding: spacing.sm,
+                  }}
+                >
+                  <Text variant="eyebrow" color={colors.brassSoft}>
+                    {voice.label}
+                  </Text>
+                  <Text variant="soft" style={{ marginTop: spacing.xs }}>
+                    {voice.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </Panel>
 
         <Panel blur style={styles.sectionPanel}>
@@ -870,8 +962,6 @@ export default function SlokaScreen() {
               onChangeText={(text) => {
                 setJournal(text);
                 setSavedJournalId(null);
-                setSharedWithSangha(false);
-                setShareHeld(false);
               }}
               multiline
               {...multilineInputProps}
@@ -906,8 +996,6 @@ export default function SlokaScreen() {
                     setSavedJournalId(
                       Number.isFinite(idNum) ? idNum : null
                     );
-                    setSharedWithSangha(false);
-                    setShareHeld(false);
                     bumpFocusVersion("journal");
                     setJournalNotice(
                       lang === "hi" ? "चिन्तन सहेजा गया।" : "Reflection saved."
@@ -935,100 +1023,6 @@ export default function SlokaScreen() {
                 }
               }}
             />
-            {isSignedIn && savedJournalId != null ? (
-              <View style={styles.shareRow}>
-                {reflectionsOpen() ? (
-                  shareHeld ? (
-                    <Text variant="soft" color={colors.textMuted}>
-                      {t("reflectHeld")}
-                    </Text>
-                  ) : sharedWithSangha ? (
-                    <Text variant="soft" color={colors.brassSoft}>
-                      {t("reflectShared")}
-                    </Text>
-                  ) : (
-                    <>
-                      <View style={styles.shareToggle}>
-                        <Switch
-                          testID="sloka-journal-share"
-                          value={false}
-                          disabled={shareBusy}
-                          onValueChange={(on) => {
-                            if (!on) return;
-                            void (async () => {
-                              if (!reflectionsOpen()) {
-                                setJournalNotice(t("reflectSharePaused"));
-                                return;
-                              }
-                              setShareBusy(true);
-                              try {
-                                const res = await userApi.shareJournal(
-                                  savedJournalId,
-                                  "community",
-                                  lang === "hi" ? "hi" : "en"
-                                );
-                                if (res.shared) {
-                                  setSharedWithSangha(true);
-                                  setJournalNotice(t("reflectShared"));
-                                } else if (res.held) {
-                                  setShareHeld(true);
-                                  setJournalNotice(
-                                    typeof res.message === "string"
-                                      ? res.message
-                                      : t("reflectHeld")
-                                  );
-                                } else if (typeof res.error === "string") {
-                                  setJournalNotice(res.error);
-                                }
-                              } catch (e) {
-                                if (
-                                  e instanceof ApiError &&
-                                  (e.status === 503 ||
-                                    /paused/i.test(e.message))
-                                ) {
-                                  setJournalNotice(t("reflectSharePaused"));
-                                } else {
-                                  setJournalNotice(
-                                    e instanceof Error
-                                      ? e.message
-                                      : t("reflectSharePaused")
-                                  );
-                                }
-                              } finally {
-                                setShareBusy(false);
-                              }
-                            })();
-                          }}
-                          trackColor={{
-                            false: colors.line,
-                            true: colors.brass,
-                          }}
-                          thumbColor={colors.surface}
-                        />
-                        <Text variant="soft" color={colors.textMuted}>
-                          {shareBusy
-                            ? lang === "hi"
-                              ? "साझा हो रहा है…"
-                              : "Sharing…"
-                            : t("reflectShare")}
-                        </Text>
-                      </View>
-                      <Text
-                        variant="muted"
-                        color={colors.textMuted}
-                        style={styles.shareConsent}
-                      >
-                        {t("reflectShareConsent")}
-                      </Text>
-                    </>
-                  )
-                ) : (
-                  <Text variant="muted" color={colors.textMuted}>
-                    {t("reflectSharePaused")}
-                  </Text>
-                )}
-              </View>
-            ) : null}
           </View>
         ) : null}
 
@@ -1353,18 +1347,5 @@ const styles = StyleSheet.create({
     fontFamily: "Sora_400Regular",
     fontSize: 15,
     lineHeight: 23,
-  },
-  shareRow: {
-    marginTop: spacing.lg,
-    gap: spacing.sm,
-  },
-  shareToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  shareConsent: {
-    fontSize: 12,
-    lineHeight: 18,
   },
 });

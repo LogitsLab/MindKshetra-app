@@ -22,6 +22,7 @@ export default function AchievementsScreen() {
     sessions: number;
     durationMinutes: number;
     mantras: number;
+    meditationSits: number;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -45,6 +46,7 @@ export default function AchievementsScreen() {
           sessions: yearly.sessions,
           durationMinutes: yearly.durationMinutes,
           mantras: yearly.mantras,
+          meditationSits: yearly.meditationSits ?? 0,
         });
       }
     } catch {
@@ -168,6 +170,12 @@ export default function AchievementsScreen() {
                 {lifetime.mantras}
               </Text>
               <Text variant="eyebrow">{L === "hi" ? "माला" : "Malas"}</Text>
+            </View>
+            <View style={styles.lifetimeStat}>
+              <Text variant="display" color={colors.brassSoft} style={styles.lifetimeValue}>
+                {lifetime.meditationSits}
+              </Text>
+              <Text variant="eyebrow">{L === "hi" ? "बैठक" : "Sits"}</Text>
             </View>
           </View>
         ) : null}

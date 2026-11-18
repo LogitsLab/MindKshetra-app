@@ -39,11 +39,14 @@ export type ChapterMeta = {
   /** Hindi common title (not transliteration of English). */
   name_hi?: string;
   name_sanskrit: string;
+  name_romanized?: string;
   verses_count: number;
   summary: string;
   summary_hi?: string;
   moral?: string;
   moral_hi?: string;
+  tags?: string[];
+  tags_hi?: string[];
 };
 
 export type AstrologyMember = {

@@ -78,6 +78,28 @@ export function stopNarrationIfOwner(ownerSession: number): void {
   }
 }
 
+/** Pause without ending the session (chapter playlist). */
+export function pauseNarration(): boolean {
+  if (!player) return false;
+  try {
+    player.pause();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Resume if `ownerSession` still owns the player. */
+export function resumeNarration(ownerSession: number): boolean {
+  if (ownerSession !== session || !player) return false;
+  try {
+    player.play();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export type PlayUrlOptions = {
   rate?: number;
   onStart?: () => void;
