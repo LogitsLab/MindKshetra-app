@@ -60,8 +60,8 @@
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",
         "track": "production",
-        "releaseStatus": "draft",
-        "changesNotSentForReview": true
+        "releaseStatus": "completed",
+        "changesNotSentForReview": false
       }
     }
   }
