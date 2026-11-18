@@ -33,6 +33,7 @@ describe("meditation completion", () => {
         duration_minutes,
       }))
     ).toEqual([
+      { id: "daily-first-sit-3", duration_minutes: 3 },
       { id: "daily-breath-5", duration_minutes: 5 },
       { id: "daily-release-8", duration_minutes: 8 },
     ]);
