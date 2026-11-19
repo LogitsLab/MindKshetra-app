@@ -5,6 +5,8 @@
  *
  * Sleep beds use media playback in the background. Recording and boot
  * receivers stay stripped so a reboot cannot start a microphone service.
+ * The advertising ID permission is removed so Play's "no advertising ID"
+ * declaration matches the binary.
  *
  * Tradeoff: scheduled local notifications will not restore after reboot
  * until the app is opened again.
@@ -78,7 +80,20 @@ function withStripAudioFgsAndBootCompleted(config) {
     const keepMic = remainingFgsTypes.includes("microphone");
 
     const perms = manifest["uses-permission"] ?? [];
-    manifest["uses-permission"] = perms.filter((perm) => {
+    manifest.$ = manifest.$ ?? {};
+    manifest.$["xmlns:tools"] =
+      manifest.$["xmlns:tools"] ?? "http://schemas.android.com/tools";
+
+    const withoutAdId = perms.filter(
+      (perm) => perm?.$?.["android:name"] !== "com.google.android.gms.permission.AD_ID"
+    );
+    withoutAdId.push({
+      $: {
+        "android:name": "com.google.android.gms.permission.AD_ID",
+        "tools:node": "remove",
+      },
+    });
+    manifest["uses-permission"] = withoutAdId.filter((perm) => {
       const name = perm?.$?.["android:name"];
       if (name === "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK") {
         return keepMedia;

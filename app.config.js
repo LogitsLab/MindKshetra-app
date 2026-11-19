@@ -6,7 +6,8 @@
  *
  * Meta / Facebook App Events: set EXPO_PUBLIC_FACEBOOK_APP_ID (+ client
  * token for iOS) in EAS secrets. Plugin is only injected when App ID is set
- * so Preview / local Expo Go builds stay clean.
+ * so Preview / local Expo Go builds stay clean. Advertiser ID collection
+ * stays off, and the Android AD_ID permission is removed at manifest merge.
  */
 module.exports = ({ config }) => {
   const facebookAppId = (
@@ -21,9 +22,6 @@ module.exports = ({ config }) => {
   ).trim();
 
   const plugins = [...(config.plugins || [])];
-  if (!plugins.includes("expo-tracking-transparency")) {
-    plugins.push("expo-tracking-transparency");
-  }
   if (facebookAppId) {
     plugins.push([
       "react-native-fbsdk-next",
@@ -42,14 +40,6 @@ module.exports = ({ config }) => {
   return {
     ...config,
     plugins,
-    ios: {
-      ...config.ios,
-      infoPlist: {
-        ...(config.ios?.infoPlist || {}),
-        NSUserTrackingUsageDescription:
-          "MindKshetra uses this only to measure whether ads helped you find the app — never to sell your data. You can decline.",
-      },
-    },
     android: {
       ...config.android,
       googleServicesFile:

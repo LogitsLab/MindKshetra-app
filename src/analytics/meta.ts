@@ -2,7 +2,6 @@
  * Meta App Events — no-ops until EXPO_PUBLIC_FACEBOOK_APP_ID is set and a
  * native build includes the Facebook SDK plugin. Safe to call from JS always.
  */
-import { Platform } from "react-native";
 import Constants from "expo-constants";
 
 type FbModule = {
@@ -47,24 +46,7 @@ export async function initMetaSdk(): Promise<void> {
   try {
     sdk.Settings.setAppID(appId);
     sdk.Settings.initializeSDK();
-
-    if (Platform.OS === "ios") {
-      try {
-        const Tracking = require("expo-tracking-transparency") as {
-          getTrackingPermissionsAsync: () => Promise<{ status: string }>;
-          requestTrackingPermissionsAsync: () => Promise<{ status: string }>;
-        };
-        const { status: existing } =
-          await Tracking.getTrackingPermissionsAsync();
-        const status =
-          existing === "undetermined"
-            ? (await Tracking.requestTrackingPermissionsAsync()).status
-            : existing;
-        sdk.Settings.setAdvertiserTrackingEnabled?.(status === "granted");
-      } catch {
-        /* ATT module missing in Expo Go */
-      }
-    }
+    sdk.Settings.setAdvertiserTrackingEnabled?.(false);
 
     sdk.AppEventsLogger.logEvent("fb_mobile_activate_app");
     initialized = true;
